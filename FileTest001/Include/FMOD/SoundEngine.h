@@ -39,14 +39,26 @@ public:
 
 	bool load(char* fileName, bool loop);
 	void play();
-	bool isPlaying;
+	void playUpdate();
 	static void systemUpdate();
+	void setRollOffModelCurve(FMOD_VECTOR, FMOD_VECTOR, FMOD_VECTOR);
+
+	bool isPlaying;
+	bool RollOff;
 
 	//Sound
 	FMOD::Sound   *sound;
 	FMOD::Channel *channel;
 	FMOD_VECTOR pos;
 	FMOD_VECTOR vel;
+
+	//
+	FMOD_VECTOR RollOffModelCurve[3] =
+	{
+		{ 0.0f, 1.0f, 0.0f },
+		{ 10.0f, 0.2f, 0.0f },
+		{ 60.0f, 0.0f, 0.0f }
+	};
 
 	static SoundEngine sys; //all veriables share the same sound engine
 };
