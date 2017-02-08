@@ -1866,7 +1866,7 @@ void LoadAllSounds() {
 	else { std::cout << "[ERROR] Could not find [Media]" << std::endl; }
 
 
-	drum[0].Load(_strdup((SoundPath + "standrews.wav").c_str()), TRUE, TRUE);
+	drum[0].Load(_strdup((SoundPath + "callingforrain.wav").c_str()), TRUE, TRUE);
 }
 
 /* function LoadAllObjects()

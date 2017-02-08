@@ -148,19 +148,22 @@ void Sound::play() {
 */
 FMOD::Channel* Sound::Play()
 {
-	//Play sound
-	result = sys.system->playSound(sound, 0, true, &channel);
-	CheckResult(result);
-	if (is3d)
-	{
-		result = channel->set3DAttributes(&pos, &vel);
+	if (!isPlaying) {
+		//Play sound
+		result = sys.system->playSound(sound, 0, true, &channel);
+		CheckResult(result);
+		isPlaying = TRUE;
+		if (is3d)
+		{
+			result = channel->set3DAttributes(&pos, &vel);
+			CheckResult(result);
+
+		}
+		result = channel->setPaused(false);
 		CheckResult(result);
 
+		return channel;
 	}
-	result = channel->setPaused(false);
-	CheckResult(result);
-
-	return channel;
 }
 
 void Sound::soundUpdate()
