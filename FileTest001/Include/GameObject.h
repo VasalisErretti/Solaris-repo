@@ -103,7 +103,7 @@ public:
 	void setSizeOfHitBox(glm::vec3 newSize) {
 		m_Size = (newSize);
 		m_Top = (m_Size*0.5f);
-		m_Bottom = -(m_Size*0.5f);
+		m_Bottom = (m_Size*-0.5f);
 		m_Radius = (m_Size);
 	}
 	void setMass(float newMass)

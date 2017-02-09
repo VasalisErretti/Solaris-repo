@@ -105,6 +105,15 @@ void Sound::play() {
 		result = channel->set3DAttributes(&pos, &vel); CheckResult(result);
 		result = channel->setPaused(false); CheckResult(result);
 		isPlaying = true;
+
+		result = channel->set3DMinMaxDistance(1.0f, 60.0f); CheckResult(result);
+		if (RollOff == true) {
+			result = channel->setMode(FMOD_3D_CUSTOMROLLOFF); CheckResult(result);
+			result = channel->set3DCustomRolloff(RollOffModelCurve, 3); CheckResult(result);
+		}
+		else if (RollOff == false) {
+			result = channel->setMode(FMOD_3D_LINEARROLLOFF); CheckResult(result);
+		}
 	}
 }
 
@@ -115,14 +124,7 @@ void Sound::playUpdate() {
 	}
 	result = channel->set3DAttributes(&pos, &vel); CheckResult(result);
 
-	result = channel->set3DMinMaxDistance(1.0f, 60.0f); CheckResult(result);
-	if (RollOff == true) {
-		result = channel->setMode(FMOD_3D_CUSTOMROLLOFF); CheckResult(result);
-		result = channel->set3DCustomRolloff(RollOffModelCurve, 3); CheckResult(result);
-	}
-	else if (RollOff == false) {
-		result = channel->setMode(FMOD_3D_LINEARROLLOFF); CheckResult(result);
-	}
+
 }
 
 void Sound::setRollOffModelCurve(FMOD_VECTOR ROMC_0, FMOD_VECTOR ROMC_1, FMOD_VECTOR ROMC_2) {

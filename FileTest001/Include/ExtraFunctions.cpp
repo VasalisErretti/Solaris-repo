@@ -7,38 +7,41 @@
 #include <ft2build.h> //text
 #include FT_FREETYPE_H //text
 
-
+/* class Manifold
+* Description:
+*   - this is use to compaire two game objects
+*/
 class Manifold
 {
 public:
 	Manifold() {}
-	~Manifold() { 
-		//delete[] & A; 
-		//delete[] & B;
-		//delete[] & Normal;
-		//delete[] & AreColliding;
-	}
+	~Manifold() {}
 
-	GameObject A, B;
-	glm::vec3 Normal;
-	bool AreColliding;
+	GameObject A, B; //holds two objects
+	glm::vec3 Normal; //normal between two objects
+	bool AreColliding; // didn't really use
 };
 
+/* class PhysicsMath
+* Description:
+*   - this is use for math
+*/
 class PhysicsMath
 {
 public:
 	PhysicsMath() {}
 	~PhysicsMath() {}
+	//calculate dot product 
 	float DotProduct(glm::vec3 a, glm::vec3 b)
 	{
 		return ((a.x*b.x) + (a.y*b.y) + (a.z*b.z));
 	}
-
+	//calculate distance
 	float Distance(glm::vec3 a, glm::vec3 b)
 	{
 		return hypotf(hypotf(a.x - b.x, a.y - b.y), a.z - b.z);
 	}
-
+	//calculate normal between two objects
 	glm::vec3 GetNormal(glm::vec3 a, glm::vec3 b)
 	{
 		glm::vec3 ret = (b - a);
@@ -47,6 +50,10 @@ public:
 	}
 };
 
+/* class Sliders
+* Description:
+*   - this is use to create sliders
+*/
 class Sliders
 {
 public:
@@ -64,30 +71,38 @@ public:
 		SBar_Length = glm::vec3(0.0f);
 		SNob_Length = glm::vec3(0.0f);
 		SNob_Precent = glm::vec3(0.0f);
+		YaxisSlider = false;
 	}
 	~Sliders() {}
 
-	glm::vec3 SBar_Top;
-	glm::vec3 SBar_Bot;
-	glm::vec3 SBar_Rad;
-	glm::vec3 SBar_Pos;
+	glm::vec3 SBar_Top;	 //Top XYZ of the bar
+	glm::vec3 SBar_Bot;	 //Bottom XYZ of the bar
+	glm::vec3 SBar_Rad;	 //Radius of the bar
+	glm::vec3 SBar_Pos;	 //Position of the bar
 
-	glm::vec3 SNob_Top;
-	glm::vec3 SNob_Bot;
-	glm::vec3 SNob_Rad;
-	glm::vec3 SNob_Pos;
+	glm::vec3 SNob_Top;	 //Top XYZ of the nob
+	glm::vec3 SNob_Bot;	 //Bottom XYZ of the nob
+	glm::vec3 SNob_Rad;	 //Radius of the nob
+	glm::vec3 SNob_Pos;	 //Position of the nob
 
-	glm::vec3 SBar_Length;
-	glm::vec3 SNob_Length;
-	glm::vec3 SNob_Precent;
+	glm::vec3 SBar_Length;	//Length of the bar (the middle of the bar that the nob slides along)
+	glm::vec3 SNob_Length;	//Length from the bottom of the bar to the nob
+	glm::vec3 SNob_Precent;	//001.0f to 100.0f precent of the nob along the bar
+
+	bool YaxisSlider;
 
 	bool moveNob(float MPosToOPosX, float MPosToOPosY) {
-		if ((MPosToOPosX >= SBar_Bot.x + (SNob_Rad.x*1.0f)) && (MPosToOPosX <= SBar_Top.x - (SNob_Rad.x*1.0f))) {
+		//if the slider is going side to side
+		if ((!YaxisSlider) && (MPosToOPosX >= SBar_Bot.x + (SNob_Rad.x*1.0f)) && (MPosToOPosX <= SBar_Top.x - (SNob_Rad.x*1.0f))) {
 			if ((MPosToOPosY >= SBar_Bot.z) && (MPosToOPosY <= SBar_Top.z)) {
+				//setting the nob position to the mouse position along the X-axis
 				SNob_Pos.x = MPosToOPosX;
+				//length from the bottom of the bar to the nob
 				SNob_Length = (SNob_Pos - (SBar_Bot + SNob_Rad));
+				//declaring precent of the nob along the bar
 				SNob_Precent = (SNob_Length / SBar_Length)*102.0f;
 
+				//stating the maximum and minimum precent
 				if (SNob_Precent.x < 1.0f) { SNob_Precent.x = 1.0f; }
 				else if (SNob_Precent.x > 100.0f) { SNob_Precent.x = 100.0f; }
 				if (SNob_Precent.y < 1.0f) { SNob_Precent.y = 1.0f; }
@@ -99,6 +114,29 @@ public:
 				return true;
 			}
 		}
+		//if the slider is going up and down
+		else if ((YaxisSlider) && (MPosToOPosY >= SBar_Bot.z + (SNob_Rad.z*1.0f)) && (MPosToOPosY <= SBar_Top.z - (SNob_Rad.z*1.0f))) {
+			if ((MPosToOPosX >= SBar_Bot.x) && (MPosToOPosX <= SBar_Top.x)) {
+				//setting the nob position to the mouse position along the Y-axis
+				SNob_Pos.z = MPosToOPosY;
+				//length from the bottom of the bar to the nob
+				SNob_Length = (SNob_Pos - (SBar_Bot + SNob_Rad));
+				//declaring precent of the nob along the bar
+				SNob_Precent = (SNob_Length / SBar_Length)*102.0f;
+
+				//stating the maximum and minimum precent
+				if (SNob_Precent.x < 1.0f) { SNob_Precent.x = 1.0f; }
+				else if (SNob_Precent.x > 100.0f) { SNob_Precent.x = 100.0f; }
+				if (SNob_Precent.y < 1.0f) { SNob_Precent.y = 1.0f; }
+				else if (SNob_Precent.y > 100.0f) { SNob_Precent.y = 100.0f; }
+				if (SNob_Precent.z < 1.0f) { SNob_Precent.z = 1.0f; }
+				else if (SNob_Precent.z > 100.0f) { SNob_Precent.z = 100.0f; }
+
+				std::cout << "[" << SNob_Precent.z << "]" << std::endl;
+				return true;
+			}
+		}
+
 		return false;
 	}
 	void copySlider(Sliders *SliderPath) {
@@ -115,17 +153,67 @@ public:
 		SBar_Length = SliderPath-> SBar_Length;
 		SNob_Length = SliderPath-> SNob_Length;
 		SNob_Precent = SliderPath-> SNob_Precent;
+
+		YaxisSlider = SliderPath-> YaxisSlider;
+	}
+
+};
+/* class Buttons
+* Description:
+*   - this is use to create buttons
+*/
+class Buttons
+{
+public:
+	Buttons() {
+		SBut_Top = glm::vec3(0.0f);
+		SBut_Bot = glm::vec3(0.0f);
+		SBut_Rad = glm::vec3(0.0f);
+		SBut_Pos = glm::vec3(0.0f);
+	}
+	~Buttons() {}
+
+	glm::vec3 SBut_Top;	 //Top XYZ of the button
+	glm::vec3 SBut_Bot;	 //Bottom XYZ of the button
+	glm::vec3 SBut_Rad;	 //Radius of the button
+	glm::vec3 SBut_Pos;	 //Position of the button
+
+	void copyButton(Buttons *SliderPath) {
+		SBut_Top = SliderPath->SBut_Top;
+		SBut_Bot = SliderPath->SBut_Bot;
+		SBut_Rad = SliderPath->SBut_Rad;
+		SBut_Pos = SliderPath->SBut_Pos;
+	}
+
+	bool button(float MPosToOPosX, float MPosToOPosY) {
+		//if the button is going side to side
+		if ((MPosToOPosX >= SBut_Bot.x) && (MPosToOPosX <= SBut_Top.x)) {
+			if ((MPosToOPosY >= SBut_Bot.z) && (MPosToOPosY <= SBut_Top.z)) {
+				std::cout << "[Hit]" << std::endl;
+				return true;
+			}
+		}
+		return false;
 	}
 };
 
+/* struct Character
+* Description:
+*   - this is use to store character fonts
+*/
 struct Character {
-	GLuint     TextureID;  // ID handle of the font
-	glm::ivec2 Size;       // Size of font
-	glm::ivec2 Bearing;    // Offset from baseline to left/top of font
-	GLuint     Advance;    // Offset to advance to next glyph
+	GLuint TextureID;	//ID handle of the font
+	glm::ivec2 Size;	//Size of font
+	glm::ivec2 Bearing;	//Offset from baseline to left/top of font
+	GLuint Advance;		//Offset to advance to next character
 };
 static std::map<GLchar, Character> Characters;
 
+/* class RenderText
+* Description:
+*   - this is use to load fonts
+*   - this is use to display text
+*/
 class RenderText
 {
 public:
@@ -133,7 +221,8 @@ public:
 	~RenderText() { }
 	GLuint VAO, VBO;
 
-	void TextLoad() {
+	//load all the necessary gl calls for the VBOs and VAOs
+	void LoadVBOForText() {
 		glGenVertexArrays(1, &VAO);
 		glGenBuffers(1, &VBO);
 		glBindVertexArray(VAO);
@@ -145,40 +234,48 @@ public:
 		glBindVertexArray(0);
 	}
 
+	//draw text to the screen
 	void TextDraw(Shader &s, glm::mat4x4 *pvm, std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color, int orientation)
 	{
+		//binds shader
 		s.bind();
-		// Activate corresponding render state	
+		//set the colour of the text
 		s.uniformVector("textColor", &color);
+		//set the progection matrix the will be used for the text
 		s.uniformMat4x4("projection", pvm);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindVertexArray(VAO);
 
 
-		// Iterate through all characters
+		//value the holds the text character
 		std::string::const_iterator c;
+		//lenght of total characters
 		GLfloat startOffSet = 0.0f;
+
+		//iterate through all characters to fine the lenght of the string to get a proper offset
 		for (c = text.begin(); c != text.end(); c++)
 		{
 			Character ch = Characters[*c];
 			startOffSet += ((ch.Advance >> 6) * scale);
 		}
 
+		//depending on choice, the text will be left, middle, or right orientated.
 		if (orientation == 0) { startOffSet = 0.0f; }
 		else if (orientation == 1) { startOffSet = startOffSet*0.5f; }
 		else if (orientation == 2) { startOffSet = startOffSet; }
 
+		//iterate through all characters to display the string to the screen
 		for (c = text.begin(); c != text.end(); c++)
 		{
 			Character ch = Characters[*c];
-
+			//set the position of the character
 			GLfloat xpos = x + (ch.Bearing.x * scale) - startOffSet;
 			GLfloat ypos = y - (ch.Size.y - ch.Bearing.y) * scale;
-
+			//update character size by the scale
 			GLfloat w = ch.Size.x * scale;
 			GLfloat h = ch.Size.y * scale;
-			// Update VBO for each character
+			//set the size of the plane that the characters will be drawn on
 			GLfloat vertices[6][4] = {
 				{ xpos,     ypos + h,   0.0, 0.0 },
 				{ xpos,     ypos,       0.0, 1.0 },
@@ -188,45 +285,116 @@ public:
 				{ xpos + w, ypos,       1.0, 1.0 },
 				{ xpos + w, ypos + h,   1.0, 0.0 }
 			};
-			// Render glyph texture over quad
+			//bind the charater texture
 			glBindTexture(GL_TEXTURE_2D, ch.TextureID);
 			// Update content of VBO memory
 			glBindBuffer(GL_ARRAY_BUFFER, VBO);
 			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
-			// Render quad
+			//draw the charater texture
 			glDrawArrays(GL_TRIANGLES, 0, 6);
-			// Now advance cursors for next glyph (note that advance is number of 1/64 pixels)
-			x += (ch.Advance >> 6) * scale; // Bitshift by 6 to get value in pixels (2^6 = 64)
+			//set the starting position of the next charater
+			x += (ch.Advance >> 6) * scale;
 		}
+		//unbind vertex array
 		glBindVertexArray(0);
+		//unbind texture
 		glBindTexture(GL_TEXTURE_2D, 0);
-		//std::cout << "[" << text.size() <<"]" << std::endl;
+		//unbind shader
 		s.unbind();
+	}
+
+	//load in a font
+	void LoadTextFont(std::string filePath1, RenderText &filePath2) {
+		const char* filePath = filePath1.c_str();
+		///Initialize the FreeType library
+		FT_Library ftLib;
+		if (FT_Init_FreeType(&ftLib)) { std::cout << "[ERROR] Could not init freetype library\n" << std::endl; }
+		//Initialize the Font
+		FT_Face face_font;
+		//set the file path of the font
+		FT_New_Face(ftLib, filePath, 0, &face_font);
+		//set size of font
+		FT_Set_Pixel_Sizes(face_font, 0, 48);
+		/// Disable byte-alignment restriction
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1); 
+
+		for (GLubyte c = 0; c < 128; c++)
+		{
+			//load character 
+			if (FT_Load_Char(face_font, c, FT_LOAD_RENDER))
+			{
+				std::cout << "[ERROR] Failed to load [" << c << "]" << std::endl;
+			}
+			//generate font texture
+			GLuint texture;
+			glGenTextures(1, &texture);
+			glBindTexture(GL_TEXTURE_2D, texture);
+			glTexImage2D(
+				GL_TEXTURE_2D, 0, GL_RED,
+				face_font->glyph->bitmap.width,
+				face_font->glyph->bitmap.rows,
+				0, GL_RED, GL_UNSIGNED_BYTE,
+				face_font->glyph->bitmap.buffer
+			);
+			//set font parameters
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			//set characters to [struct Character]
+			Character character = {
+				texture,
+				glm::vec2(face_font->glyph->bitmap.width, face_font->glyph->bitmap.rows),
+				glm::vec2(face_font->glyph->bitmap_left, face_font->glyph->bitmap_top),
+				face_font->glyph->advance.x
+			};
+			Characters.insert(std::pair<GLchar, Character>(c, character));
+		}
+
+		FT_Done_Face(face_font);
+		FT_Done_FreeType(ftLib);
+		filePath2.LoadVBOForText();
 	}
 };
 
-static const float degToRad = 3.14159f / 180.0f; // float myRad = myDegree * degToRad;
-static const float radToDeg = 180.0f / 3.14159f; // float myDegree = myRad * radToDegree;
+// float myRad = myDegree * degToRad;
+static const float degToRad = 3.14159f / 180.0f;
+// float myDegree = myRad * radToDegree;
+static const float radToDeg = 180.0f / 3.14159f;
+
 
 //////////////////////////////////////////////////////////////////////
 
 
+/* function enableCulling()
+* Description:
+*   - this is called to turn culling on
+*	- this is used to disable transparency
+*/
 static void enableCulling() {
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 }
+/* function disableCulling()
+* Description:
+*   - this is called to turn culling off
+*	- this is used to inable transparency
+*/
 static void disableCulling() {
 	glDisable(GL_CULL_FACE);
 }
 
+/* function DoesFileExists()
+* Description:
+*   - this is called to check if a file path exists
+*/
 inline bool DoesFileExists(const std::string& name) {
 	struct stat buffer;
 	//if (!stat(name.c_str(), &buffer)) { std::cout << "."; } //Can't open
 	//else if (stat(name.c_str(), &buffer)) { std::cout << "."; } //Opened
 	return (stat(name.c_str(), &buffer) == 0);
 }
-
 
 /* function writeSomething()
 * Description:
@@ -239,69 +407,8 @@ static void writeSomething(float xPos, float yPos, float zPos, std::string str) 
 	}
 }
 
-static void LoadText(std::string filePath1, RenderText &filePath2) {
-	const char* filePath = filePath1.c_str();
-	//Initialize the FreeType library
-	FT_Library ftLib;
-	if (FT_Init_FreeType(&ftLib)) { std::cout << "[ERROR] Could not init freetype library\n" << std::endl; }
-	//Initialize the Font
-	FT_Face face_font;
-
-	FT_New_Face(ftLib, filePath, 0, &face_font);
-	
-
-	FT_Set_Pixel_Sizes(face_font, 0, 48);
-
-
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Disable byte-alignment restriction
-
-	for (GLubyte c = 0; c < 128; c++)
-	{
-		// Load character glyph 
-		if (FT_Load_Char(face_font, c, FT_LOAD_RENDER))
-		{
-			std::cout << "[ERROR] Failed to load [" << c << "]" << std::endl;
-			//continue;
-		}
-		// Generate texture
-		GLuint texture;
-		glGenTextures(1, &texture);
-		glBindTexture(GL_TEXTURE_2D, texture);
-		glTexImage2D(
-			GL_TEXTURE_2D,
-			0,
-			GL_RED,
-			face_font->glyph->bitmap.width,
-			face_font->glyph->bitmap.rows,
-			0,
-			GL_RED,
-			GL_UNSIGNED_BYTE,
-			face_font->glyph->bitmap.buffer
-		);
-		// Set texture options
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		// Now store character for later use
-		Character character = {
-			texture,
-			glm::ivec2(face_font->glyph->bitmap.width, face_font->glyph->bitmap.rows),
-			glm::ivec2(face_font->glyph->bitmap_left, face_font->glyph->bitmap_top),
-			face_font->glyph->advance.x
-		};
-		Characters.insert(std::pair<GLchar, Character>(c, character));
-	}
-
-	FT_Done_Face(face_font);
-	FT_Done_FreeType(ftLib);
-	filePath2.TextLoad();
-}
-
-
 
 //////////////////////////////////////////////////////////////////////
-
 
 
 /* function CheckCollision()
@@ -369,6 +476,10 @@ static void ResolveCollision(Manifold &m)
 	DoPhysics.~PhysicsMath();
 	return;
 }
+/* function ResolveCollision()
+* Description:
+*   - this is called to calculate the output when two objects have hit each other
+*/
 static void ResolveCollision(Manifold &m, float correction)
 {
 	PhysicsMath DoPhysics;
@@ -392,6 +503,10 @@ static void ResolveCollision(Manifold &m, float correction)
 	DoPhysics.~PhysicsMath();
 	return;
 }
+/* function ResolveCollision()
+* Description:
+*   - this is called to calculate the output when two objects have hit each other
+*/
 static void ResolveCollision(Manifold &m, float correction, float correction2)
 {
 	PhysicsMath DoPhysics;
@@ -419,7 +534,11 @@ static void ResolveCollision(Manifold &m, float correction, float correction2)
 
 //////////////////////////////////////////////////////////////////////
 
-
+/* function setEnemySpawn()
+* Description:
+*   - this is called to set enemies position
+*	- used m.B for enemies
+*/
 static void setEnemySpawn(Manifold &m, int Inum) {
 	m.B.setColour(glm::vec4(0.0f, 0.5f, 0.0f, 1.0f));
 	m.B.setMass(5.0f);
@@ -437,6 +556,11 @@ static void setEnemySpawn(Manifold &m, int Inum) {
 	m.B.setVelocity(glm::vec3(0.0f, (-0.15f - ranFall), 0.0f));
 }
 
+/* function applyWallAvoidingSystem()
+* Description:
+*   - this applys force to objects when they get near something
+*	- used m.B for fleeing objects
+*/
 static void applyWallAvoidingSystem(Manifold &m, float infunce) {
 	glm::vec3 seek = m.A.Position() - m.B.Position();
 	if (glm::length(seek) > 0.0f) { seek = glm::normalize(seek); }
@@ -444,6 +568,11 @@ static void applyWallAvoidingSystem(Manifold &m, float infunce) {
 	seek *= infunce; //how much infunce 
 	m.B.setForceOnObject(m.B.ForceOnObject() + seek);
 }
+/* function ForceWallAvoidingSystem()
+* Description:
+*   - this over-rides the force applyed to objects when they get near something
+*	- used m.B for fleeing objects
+*/
 static void ForceWallAvoidingSystem(Manifold &m, float infunce) {
 	glm::vec3 seek = m.A.Position() - m.B.Position();
 	if (glm::length(seek) > 0.0f) { seek = glm::normalize(seek); }
@@ -451,7 +580,11 @@ static void ForceWallAvoidingSystem(Manifold &m, float infunce) {
 	seek *= infunce; //how much infunce 
 	m.B.setForceOnObject(seek);
 }
-
+/* function applySeekSystem()
+* Description:
+*   - this applys force to objects to make them go in certain directions
+*	- used m.B for seeking objects
+*/
 static void applySeekSystem(Manifold &m, float infunce) {
 	glm::vec3 seek = m.A.Position() - m.B.Position();
 	if (glm::length(seek) > 0.0f) { seek = glm::normalize(seek); }
@@ -459,6 +592,12 @@ static void applySeekSystem(Manifold &m, float infunce) {
 	seek *= infunce; //how much infunce 
 	m.B.setForceOnObject(m.B.ForceOnObject() + seek);
 }
+/* function FleeFromDirection()
+* Description:
+*   - this applys force to objects towards certain directions
+*	- used m.A for fleeing objects
+*	- not in use...
+*/
 static void FleeFromDirection(Manifold &m, float infunce, std::string fleeDirection) {
 	glm::vec3 flee;
 	if		(fleeDirection == "x")  { flee = m.A.Position() - glm::vec3(m.A.Position().x + 1.0f, m.A.Position().y, m.A.Position().z); }
@@ -474,6 +613,10 @@ static void FleeFromDirection(Manifold &m, float infunce, std::string fleeDirect
 	flee *= infunce; //how much infunce 
 	m.B.setForceOnObject(m.B.ForceOnObject() + flee);
 }
+/* function applyAvoidingSystem()
+* Description:
+*   - this applys force to both objects to make them seperate
+*/
 static void applyAvoidingSystem(Manifold &m, float infunce) {
 	glm::vec3 avoid = m.A.Position() - m.B.Position();
 	if (glm::length(avoid) > 0.0f) { avoid = glm::normalize(avoid); }
@@ -482,6 +625,10 @@ static void applyAvoidingSystem(Manifold &m, float infunce) {
 	m.A.setForceOnObject(m.B.ForceOnObject() + avoid);
 	m.B.setForceOnObject(m.B.ForceOnObject() - avoid);
 }
+/* function applyRadialAvoidingSystem()
+* Description:
+*   - this applys force to both objects to make them seperate if they are within a certain distance of each other
+*/
 static bool applyRadialAvoidingSystem(Manifold &m, float areaAvoidence, float infunce)
 {
 	float minimumSeparationX = ((m.A.Radius().x + m.B.Radius().x));
@@ -505,21 +652,11 @@ static bool applyRadialAvoidingSystem(Manifold &m, float areaAvoidence, float in
 
 	return true;
 }
-//not in use
-static int CheckSpecialAttribute(Manifold &m)
-{
-	//does not do anything at the momment
-	float minimumSeparationX = ((m.A.Radius().x + m.B.Radius().x));
-	float minimumSeparationY = ((m.A.Radius().y + m.B.Radius().y));
-	float minimumSeparationZ = ((m.A.Radius().z + m.B.Radius().z));
-	float dist = glm::distance(m.A.Position(), m.B.Position());
 
-	if (dist > (minimumSeparationX)) { return 0; }
-	else if (dist > (minimumSeparationY)) { return 0; }
-	else if (dist > (minimumSeparationZ)) { return 0; }
-	else { return m.B.SpecialAttribute(); }
-}
-
+/* function CheckIfOnObject()
+* Description:
+*   - this checks to see if two objects are inside eachother
+*/
 static bool CheckIfOnObject(Manifold &m, float OnObjRadius, bool DoSquareAndCircle) {
 	if (m.B.Viewable) {
 		//check in a square
@@ -556,6 +693,10 @@ static bool CheckIfOnObject(Manifold &m, float OnObjRadius, bool DoSquareAndCirc
 	}
 	return false;
 }
+/* function ObjectInBox()
+* Description:
+*   - this checks to see it an objects is inside the square hit box of another (boarder)
+*/
 static bool ObjectInBox(Manifold &m) {
 	//If Object go outside the box
 	if		((m.A.Position().x + (m.A.Radius().x*0.5f)) > (m.B.Top().x))	{ return false; }
@@ -566,6 +707,11 @@ static bool ObjectInBox(Manifold &m) {
 	else if ((m.A.Position().z - (m.A.Radius().z*0.5f)) < (m.B.Bottom().z))	{ return false; }
 	else { return true; }
 }
+/* function CheckIfObjectInBorderOfBox()
+* Description:
+*   - this checks to see it an objects is inside the boarder of another object (boarder edge)
+*   - this is used to set objects at the right position
+*/
 static bool CheckIfObjectInBorderOfBox(Manifold &m) {
 	//m.A is player //m.B is border
 	if ((m.A.Position().x < m.B.Bottom().x + m.A.Radius().x && m.A.Position().x > m.B.Bottom().x - m.A.Radius().x)
@@ -579,12 +725,19 @@ static bool CheckIfObjectInBorderOfBox(Manifold &m) {
 
 
 
-
+/* function ObjectsWithinRange()
+* Description:
+*   - this checks to see it an objects are inside a specified range of eachother
+*/
 static bool ObjectsWithinRange(Manifold &m, float range) {
 	glm::vec3 seek = (m.A.Position() - m.B.Position());
 	if (glm::length(seek) > 0.0f && glm::length(seek) < range) { seek = glm::normalize(seek);  return true; }
 	else { seek = glm::vec3(0.0f); return false; }
 }
+/* function applyWanderingSystem()
+* Description:
+*   - this applys a force on a object that makes is move slitly
+*/
 static void applyWanderingSystem(GameObject* obj, float infunce, float randPoseY) {
 	glm::vec3 WanderingToPostition = glm::vec3(0.0f, randPoseY, 0.0f);
 
@@ -597,7 +750,11 @@ static void applyWanderingSystem(GameObject* obj, float infunce, float randPoseY
 
 
 
-
+/* function applyGravitationalForces()
+* Description:
+*   - this applys a force on a object that makes is move down
+*	- m.A is the ground while m.B is the Objects
+*/
 static void applyGravitationalForces(Manifold &m, float gv)
 {//m.A is the ground //m.B is the Objects
 

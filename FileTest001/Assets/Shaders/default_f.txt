@@ -1,0 +1,54 @@
+#version 330
+
+//uniform sampler1D diffuseRamp;
+//uniform sampler1D specularRamp;
+//uniform sampler1D edgeRamp;
+//diffuseLighting = tex1D(diffuseRamp, diffuseLighting);
+//specularLighting = tex1D(specularRamp,specularLighting);
+//float edge = max(dot(N, V), 0); //edge = tex1D(edgeRamp, edge);
+
+uniform vec4 u_lightPos_01;
+uniform sampler2D tex1;
+
+// Fragment Shader Inputs
+in VertexData
+{
+	vec3 normal;
+	vec2 texCoord;
+	vec4 colour;
+	vec3 posEye;
+} vIn;
+
+layout(location = 0) out vec4 FragColor; //FragColor response to GL_COLOR_ATTACHMENT0 [location = 0 so GL_COLOR_ATTACHMENT0]
+
+void main()
+{
+	vec4 textureColor = texture2D(tex1,  vIn.texCoord.st);
+
+	FragColor = vec4(vIn.normal * 0.5 + 0.5, 1.0f);
+	
+	vec3 L = normalize(u_lightPos_01.xyz - vIn.posEye);
+	vec3 N = normalize(vIn.normal);
+	vec3 E = normalize(-vIn.posEye);
+	vec3 H = normalize(L + E);
+	float vdn = (1.0-max(dot(E,N), 0.0)); 
+	vec3 Rim = vec3(smoothstep(0.6, 1.0, vdn));
+
+	//diffuse conponent
+	float diffuse = max(0.0, dot(N, L));
+
+	//ambient conponent
+	float amdNum = 0.2;
+	vec4 ambient = vec4(amdNum,amdNum,amdNum,1.0)*vIn.colour; //use texture
+
+	//specular conponent
+	float specularCoefficient = pow(max(dot(N, H), 0.0f), 100.0f);
+	vec4 specular = vIn.colour * specularCoefficient; 
+	specular.w = 1.0f;
+
+	//output colour
+	FragColor = (vec4((vec3(0.5, 0.5, 0.5) * (diffuse * 0.8f) + vIn.colour.rgb + Rim.rgb), 1.0f) + specular + ambient); 
+
+	FragColor.w = 1.0f;
+	gl_FragColor = FragColor;
+}

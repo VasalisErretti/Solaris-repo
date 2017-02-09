@@ -55,8 +55,8 @@ static float TestFloat = 0.0f; static float TestFloatIncrementAmount = 01.0f;
 // Create Shader
 Shader *shader;
 Shader *TextShader;
-glm::vec3 lightPosition_01(0.0, 300.0, 0.0);
-glm::vec3 lightPosition_02(0.0, -30.0, 0.0);
+glm::vec3 lightPosition_01(0.0f, 300.0f, 0.0f);//( 48.0f, 30.0f, 0.0f);
+glm::vec3 lightPosition_02(0.0f, -30.0f, 0.0f);//(-48.0f, 30.0f, 0.0f);
 // Monitor our Projections
 glm::mat4x4 projectionMatrix[4];
 glm::mat4x4 orthoMatrix[4];
@@ -71,34 +71,42 @@ const int FRAME_DELAY = 1000 / FRAMES_PER_SECOND; // Miliseconds per frame
 float deltaTasSecs;
 int windowWidth = (16*80); int windowHeight = (9*80);
 int mousepositionX; int mousepositionY;
+int screenpositionX; int screenpositionY;
 //mouse position to object position
 float MPosToOPosX; float MPosToOPosY;
 //key input //check if a key is down or up
 bool keyDown[256];
+bool mouseDown[3];
 //Game Objects//
 const int NumberOfPlayers = 2; GameObject Players[NumberOfPlayers];
 GameObject ShockWaves[NumberOfPlayers]; GameObject Rifts[NumberOfPlayers];
 const int NumberOfObjects = 13; GameObject Objects[NumberOfObjects];
 const int NumberOfSpecials = 5; GameObject Specials[NumberOfSpecials];
-int NumberOfEnemies = 12; GameObject Enemies[12]; 
+const int NumberOfEnemies = 12; GameObject Enemies[12];
 GameObject ShadowObject[2];
-//
-const int NumberOfPlaneForText = 2; GameObject planeForText[NumberOfPlaneForText];
+//Menu Screens
+const int NumberOfPlaneForText = 5; GameObject planeForText[NumberOfPlaneForText];
+//Sliders
 const int NumberOfSliders = 10; GameObject planeForSliders[NumberOfSliders]; GameObject ButtonForSliders[NumberOfSliders];
 Sliders Slider[NumberOfSliders];
+//Buttons
+const int NumberOfButtons = 7; GameObject ButtonObjects[NumberOfButtons];
+Buttons Button[NumberOfButtons];
+//Boarders
 const int NumberOfBorders = 1; GameObject Borders[NumberOfBorders];
 
 //Random Variables//
+
 //camera viewport
-int cameralook = 0;
-int cameraMode = 0;
+int cameralook = 0; int cameraMode = 0;
 glm::vec3 cameraPosition[2];
 glm::vec3 forwardVector[2]{ glm::vec3(-1.0f, 0.0f, 0.0f) , glm::vec3(1.0f, 0.0f, 0.0f) };
 glm::vec3 rightVector;
 //player health
 int Health[2]{40,40};
 //Bool's for the game///////////////////////////
-bool inMenu = true; bool inGame = false; bool inOptions = false; 
+bool inMenu = true; bool inGame = false;
+bool inOptions = false; int inOptionsTab = 0;
 std::string lastMenu = "inMenu"; float MenuSwitchCounter[2] = { 0.0f, 0.0f };
 const bool ApplyingGravity = true;
 const bool CollisionBetweenObjects = true;
@@ -123,6 +131,12 @@ Sound drum[2];
 RenderText SystemText;
 
 //////////////////////////////////////////////////////////////////////
+
+/* function setBoardStart()
+* Description:
+*  - this sets enemies and players positions
+*  - set player health
+*/
 void setBoardStart() {
 	Manifold m;
 
@@ -263,91 +277,181 @@ void DrawTextOnScreen(int iNum)
 	shader->unbind();
 }
 
-
+/* function InMenuDraw()
+* Description:
+*  - Draws the menu screen
+*/
 void InMenuDraw(int Inum)
 {
 	shader->bind();
+	Inum = 2;
+	cameralook = Inum; //window
+	WhatCameraIsLookingAt(); //Resising Window
+
+	shader->uniformMat4x4("mvm", &modelViewMatrix[Inum]);
+	shader->uniformMat4x4("prm", &projectionMatrix[Inum]);
+	shader->uniformMat4x4("u_mvp", &(modelViewMatrix[Inum] * projectionMatrix[Inum]));
+	shader->uniformMat4x4("u_mv", &modelViewMatrix[Inum]);
+	shader->uniformMat4x4("u_lightPos_01", &(modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
+	shader->uniformMat4x4("u_lightPos_02", &(modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
+
+	if (planeForText[1].Viewable) { planeForText[1].drawObject(shader); }
+
+	for (unsigned int i = 0; i <= 2; i++) {
+		if (ButtonObjects[i].Viewable) { ButtonObjects[i].drawObject(shader); }
+	}
+
+	shader->unbind();
+}
+
+/* function MenuScreen()
+* Description:
+*  - does all the functions/calculations for the menu screen
+*/
+void MenuScreen(float deltaTasSeconds)
+{
+	//drum[0].play();
+	systemSound.systemUpdate();
+	if (mouseDown[0]) {
+		mouseDown[0] = false;
+		if (Button[0].button(MPosToOPosX, MPosToOPosY)) { setBoardStart(); inGame = true; inMenu = false; }
+		if (Button[1].button(MPosToOPosX, MPosToOPosY)) { inOptions = true; inMenu = false; }
+		if (Button[2].button(MPosToOPosX, MPosToOPosY)) { exit(0); }
+	}
+	if (mouseDown[1]) {
+		mouseDown[1] = false;
+	}
+	if (mouseDown[2]) {
+		mouseDown[2] = false; 
+	}
+}
+
+/* function InOptionDraw()
+* Description:
+*  - Draws the options screen
+*/
+void InOptionDraw(int Inum)
+{
+	shader->bind();
+	Inum = 2;
 	cameralook = Inum; //window
 	WhatCameraIsLookingAt(); //Resising Window
 
 	// Draw our scene
 	shader->uniformMat4x4("mvm", &modelViewMatrix[Inum]);
 	shader->uniformMat4x4("prm", &projectionMatrix[Inum]);
-	//shader->uniformMat4x4("cvm", &cameraViewMatrix[Inum]);
-	//shader->uniformFloat("dispNormals", dispNormals);
-	shader->uniformVector("lightPosition_01", &lightPosition_01);
-	shader->uniformVector("lightPosition_02", &lightPosition_02);
-	glBindTexture(GL_TEXTURE_2D, textureHandle);
-	shader->uniformTex("tex1", textureHandle, 0);
+	shader->uniformMat4x4("u_mvp", &(modelViewMatrix[Inum] * projectionMatrix[Inum]));
+	shader->uniformMat4x4("u_mv", &modelViewMatrix[Inum]);
+	shader->uniformMat4x4("u_lightPos_01", &(modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
+	shader->uniformMat4x4("u_lightPos_02", &(modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
 
-	for (unsigned int i = 0; i < 1/*NumberOfPlaneForText*/; i++) {
-		if (planeForText[i].Viewable) { planeForText[i].drawObject(shader); }
-	}
-	shader->unbind();
 	
-	SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[0,0]", 0.0f, 0.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f), 1);
-	SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[0123456789,9876543210]", 0.0f,  -60.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f), 0);
-	SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[0123456789,9876543210]", 0.0f, -100.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f), 1);
-	SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[0123456789,9876543210]", 0.0f, -140.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f), 2);
-
-}
-
-void MenuScreen(float deltaTasSeconds)
-{
-	//drum[0].play();
-	systemSound.systemUpdate();
-}
 
 
-void InOptionDraw(int Inum)
-{
-	shader->bind();
-	cameralook = Inum; //window
-	WhatCameraIsLookingAt(); //Resising Window
-
-							 // Draw our scene
-	shader->uniformMat4x4("mvm", &modelViewMatrix[Inum]);
-	shader->uniformMat4x4("prm", &projectionMatrix[Inum]);
-	//shader->uniformMat4x4("cvm", &cameraViewMatrix[Inum]);
-	//shader->uniformFloat("dispNormals", dispNormals);
-	shader->uniformVector("lightPosition_01", &lightPosition_01);
-	shader->uniformVector("lightPosition_02", &lightPosition_02);
-	glBindTexture(GL_TEXTURE_2D, textureHandle);
-	shader->uniformTex("tex1", textureHandle, 0);
-
-	for (unsigned int i = 0; i < NumberOfPlaneForText; i++) {
-		if (planeForText[i].Viewable) { planeForText[i].drawObject(shader); }
+	if (inOptionsTab == 0) {
+		if (planeForText[inOptionsTab + 1].Viewable) { planeForText[inOptionsTab + 1].drawObject(shader); }
+		if (ButtonObjects[3].Viewable) { ButtonObjects[3].drawObject(shader); }
+		for (unsigned int i = 4; i <= 6; i++) {
+			if (ButtonObjects[i].Viewable) { ButtonObjects[i].drawObject(shader); }
+		}
 	}
-	for (unsigned int i = 0; i < NumberOfSliders; i++) {
-		if (ButtonForSliders[i].Viewable) { ButtonForSliders[i].drawObject(shader); }
-		if (planeForSliders[i].Viewable) { planeForSliders[i].drawObject(shader); }
+	else if (inOptionsTab == 1) {
+		if (planeForText[inOptionsTab + 1].Viewable) { planeForText[inOptionsTab + 1].drawObject(shader); }
+		if (ButtonObjects[3].Viewable) { ButtonObjects[3].drawObject(shader); }
 	}
+	else if (inOptionsTab == 2) {
+		if (planeForText[inOptionsTab + 1].Viewable) { planeForText[inOptionsTab + 1].drawObject(shader); }
+		if (ButtonObjects[3].Viewable) { ButtonObjects[3].drawObject(shader); }
+	}
+	else if (inOptionsTab == 3) {
+		if (planeForText[inOptionsTab + 1].Viewable) { planeForText[inOptionsTab + 1].drawObject(shader); }
+		if (ButtonObjects[3].Viewable) { ButtonObjects[3].drawObject(shader); }
+		for (unsigned int i = 0; i < NumberOfSliders; i++) {
+			if (ButtonForSliders[i].Viewable) { ButtonForSliders[i].drawObject(shader); }
+			if (planeForSliders[i].Viewable) { planeForSliders[i].drawObject(shader); }
+		}
+	}
+
 	shader->unbind();
+	//SystemText.TextDraw(*TextShader, &projectionMatrix[3], "Text", X, Y, Size, Colour, Right_Middle_Left alinment);
+	//SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[0,0]", 0.0f, 0.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f), 1);
+
 }
 
+/* function OptionScreen()
+* Description:
+*  - does all the functions/calculations for the options screen
+*/
 void OptionScreen(float deltaTasSeconds)
 {
-	TestFloat = Slider[0].SNob_Precent.x;
-	NumberOfEnemies = static_cast<int>(12*(Slider[1].SNob_Precent.x/100));
-	Health[0] = Health[1] = static_cast<int>(Slider[2].SNob_Precent.x);
-	planeForText[1].setRotation(glm::vec3(0.0f, degToRad*TestFloat, 0.0f));
+	if (mouseDown[0]) {
+		mouseDown[0] = false; 
+		if (inOptionsTab == 0) {
+			if (Button[4].button(MPosToOPosX, MPosToOPosY)) { inOptionsTab = 1; }
+			if (Button[5].button(MPosToOPosX, MPosToOPosY)) { inOptionsTab = 2; }
+			if (Button[6].button(MPosToOPosX, MPosToOPosY)) { inOptionsTab = 3; }
+			if (Button[3].button(MPosToOPosX, MPosToOPosY)) { inOptions = false; inMenu = true; }
+		}
+		else if (inOptionsTab == 1) {
+			if (Button[3].button(MPosToOPosX, MPosToOPosY)) { inOptionsTab = 0; }
+		}
+		else if (inOptionsTab == 2) {
+			if (Button[3].button(MPosToOPosX, MPosToOPosY)) { inOptionsTab = 0; }
+		}
+		else if (inOptionsTab == 3) {
+			if (Button[3].button(MPosToOPosX, MPosToOPosY)) { inOptionsTab = 0; }
+			for (unsigned int i = 0; i < NumberOfSliders; i++) {
+				//move nob along the slider
+				if (Slider[i].moveNob(MPosToOPosX, MPosToOPosY)) { ButtonForSliders[i].setPosition(glm::vec3(MPosToOPosX, 0.02f, Slider[i].SBar_Pos.z)); }
+			}
+		}
+	}
+	if (mouseDown[1]) {
+		mouseDown[1] = false;
+	}
+	if (mouseDown[2]) {
+		mouseDown[2] = false;
+	}
+
+
+	if (inOptionsTab == 0) {
+	
+	}
+	else if (inOptionsTab == 1) {
+
+	}
+	else if (inOptionsTab == 2) {
+	
+	}
+	else if (inOptionsTab == 3) {
+		TestFloat = Slider[0].SNob_Precent.x;
+		for (int i = NumberOfEnemies; i > (NumberOfEnemies - static_cast<int>(Slider[1].SNob_Precent.x / 100)); i--) {
+			Enemies[i].Viewable = false;
+		}
+		//NumberOfEnemies
+		Health[0] = Health[1] = static_cast<int>(Slider[2].SNob_Precent.x);
+	}
 }
 
-
+/* function InGameDraw()
+* Description:
+*  - Draws the game screen
+*/
 void InGameDraw(int Inum)
 {
 	shader->bind();
 	cameralook = Inum; //window
 	WhatCameraIsLookingAt(); //Resising Window
-
-	// Draw our scene
+	
+	//Draw scene//cameraViewMatrix //modelViewMatrix
 	shader->uniformMat4x4("mvm", &modelViewMatrix[Inum]);
 	shader->uniformMat4x4("prm", &projectionMatrix[Inum]);
-	//shader->uniformFloat("dispNormals", dispNormals);
-	shader->uniformVector("lightPosition_01", &lightPosition_01);
-	shader->uniformVector("lightPosition_02", &lightPosition_02);
-	glBindTexture(GL_TEXTURE_2D, textureHandle);
-	shader->uniformTex("tex1", textureHandle, 0);
+	shader->uniformMat4x4("u_mvp", &(modelViewMatrix[Inum] * projectionMatrix[Inum]));
+	shader->uniformMat4x4("u_mv", &modelViewMatrix[Inum]);
+	shader->uniformMat4x4("u_lightPos_01", &(modelViewMatrix[Inum]*glm::translate(glm::mat4(1.0f), lightPosition_01)));
+	shader->uniformMat4x4("u_lightPos_02", &(modelViewMatrix[Inum]*glm::translate(glm::mat4(1.0f), lightPosition_02)));
+
+
 
 
 	for (unsigned int i = 0; i < NumberOfPlayers; i++) {
@@ -387,13 +491,13 @@ void InGameDraw(int Inum)
 		}
 	}
 	for (unsigned int i = 0; i < NumberOfEnemies; i++) {
-		if (NumberOfEnemies > (sizeof(Enemies) / sizeof(Enemies[0]))) {
-			for (unsigned int i = (sizeof(Enemies) / sizeof(Enemies[0])); i < NumberOfEnemies; i++) { 
-				Enemies[i].objectLoader(&Enemies[0]); 
-				std::cout << "[" << i << "] [created more enemies]" << std::endl;
-			}
-			NumberOfEnemies = (sizeof(Enemies) / sizeof(Enemies[0]));
-		}
+		//if (NumberOfEnemies > (sizeof(Enemies) / sizeof(Enemies[0]))) {
+		//	for (unsigned int i = (sizeof(Enemies) / sizeof(Enemies[0])); i < NumberOfEnemies; i++) {
+		//		Enemies[i].objectLoader(&Enemies[0]);
+		//		std::cout << "[" << i << "] [created more enemies]" << std::endl;
+		//	}
+		//	NumberOfEnemies = (sizeof(Enemies) / sizeof(Enemies[0]));
+		//}
 		if (Enemies[i].Viewable) {
 			//Enemies
 			if (Enemies[i].textureHandle_hasTransparency == true) { disableCulling(); }
@@ -432,12 +536,21 @@ void InGameDraw(int Inum)
 
 	cameralook = 3; //window
 	WhatCameraIsLookingAt(); //Resising Window
-	SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]", -(windowWidth / 4), -(windowHeight / 4), 1.0f, glm::vec3(0.8, 0.2f, 0.2f), 1);
-	SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[1]) + "]",  (windowWidth / 4), -(windowHeight / 4), 1.0f, glm::vec3(0.8, 0.2f, 0.2f), 1);
-	SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]",  (windowWidth / 4), (windowHeight / 2)-(windowHeight / 4), 1.0f, glm::vec3(0.8, 0.2f, 0.2f), 1);
-	SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[1]) + "]", -(windowWidth / 4), (windowHeight / 2)-(windowHeight / 4), 1.0f, glm::vec3(0.8, 0.2f, 0.2f), 1);
+
+	if (Inum == 0) {
+		SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]", -(windowWidth / 4), -(windowHeight / 4), 1.0f, glm::vec3(0.8, 0.2f, 0.2f), 1);
+		SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[1]) + "]", -(windowWidth / 4), (windowHeight / 2) - (windowHeight / 4), 1.0f, glm::vec3(0.8, 0.2f, 0.2f), 1);
+	}
+	else if (Inum == 1) {
+		SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]",  (windowWidth / 4), (windowHeight / 2) - (windowHeight / 4), 1.0f, glm::vec3(0.8, 0.2f, 0.2f), 1);
+		SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[1]) + "]", (windowWidth / 4), -(windowHeight / 4), 1.0f, glm::vec3(0.8, 0.2f, 0.2f), 1);
+	}
 }
 
+/* function GameField()
+* Description:
+*  - does all the functions/calculations for the game screen
+*/
 void GameField(float deltaTasSeconds) 
 {
 
@@ -1049,7 +1162,7 @@ void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 {
 	float MovementModifier = 12.0f;
 	portNumber = portNumber - 1;
-	if (inGame == true) {
+	if (inGame) {
 		if (cameraMode == 0) {
 			//JoySticks
 			if (portNumber == 0) {
@@ -1060,12 +1173,16 @@ void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 				if (gamepad.leftStickX < -0.1) { Tz -= gamepad.leftStickX * 0.0666666f; } //X-Left
 				if (gamepad.leftStickX > 00.1) { Tz -= gamepad.leftStickX * 0.0666666f; } //X-Right
 
-				if (gamepad.rightStickX > 0.1) { rotY -= gamepad.rightStickX * 0.0666666f; }
+				if (Tx > 00.055f) { Tx = 00.055f; } else if (Tx < -0.055f) { Tx = -0.055f; }
+				if (Tz > 00.055f) { Tz = 00.055f; } else if (Tz < -0.055f) { Tz = -0.055f; }
+				Tx = Tx * 1.25f; Ty = Ty * 1.25f; Tz = Tz * 1.25f;
+
+				if (gamepad.rightStickX > 00.1) { rotY -= gamepad.rightStickX * 0.0666666f; }
 				if (gamepad.rightStickX < -0.1) { rotY -= gamepad.rightStickX * 0.0666666f; }
 
-				Tx = ((Tx*MovementModifier)*(Tx*MovementModifier)*(Tx*MovementModifier));
-				Ty = ((Ty*MovementModifier)*(Ty*MovementModifier)*(Ty*MovementModifier));
-				Tz = ((Tz*MovementModifier)*(Tz*MovementModifier)*(Tz*MovementModifier));
+				Tx = ((Tx*MovementModifier*0.750f));//(Tx*MovementModifier)*(Tx*MovementModifier));
+				Ty = ((Ty*MovementModifier*0.750f));//(Ty*MovementModifier)*(Ty*MovementModifier));
+				Tz = ((Tz*MovementModifier*0.750f));//(Tz*MovementModifier)*(Tz*MovementModifier));
 
 				Players[portNumber].setForceOnObject(glm::vec3(Tx, Ty, Tz));
 				Players[portNumber].setVelocity(glm::vec3(Tx, Ty, Tz));
@@ -1080,12 +1197,16 @@ void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 				if (gamepad.leftStickX < -0.1) { Tz += gamepad.leftStickX * 0.0666666f; } //X-Left
 				if (gamepad.leftStickX > 00.1) { Tz += gamepad.leftStickX * 0.0666666f; } //X-Right
 
+				if (Tx > 00.055f) { Tx = 00.055f; } else if (Tx < -0.055f) { Tx = -0.055f; }
+				if (Tz > 00.055f) { Tz = 00.055f; } else if (Tz < -0.055f) { Tz = -0.055f; }
+				Tx = Tx * 1.25f; Ty = Ty * 1.25f; Tz = Tz * 1.25f;
+
 				if (gamepad.rightStickX > 0.1) { rotY -= gamepad.rightStickX * 0.0666666f; }
 				if (gamepad.rightStickX < -0.1) { rotY -= gamepad.rightStickX * 0.0666666f; }
 
-				Tx = ((Tx*MovementModifier)*(Tx*MovementModifier)*(Tx*MovementModifier));
-				Ty = ((Ty*MovementModifier)*(Ty*MovementModifier)*(Ty*MovementModifier));
-				Tz = ((Tz*MovementModifier)*(Tz*MovementModifier)*(Tz*MovementModifier));
+				Tx = ((Tx*MovementModifier*0.750f));//(Tx*MovementModifier)*(Tx*MovementModifier));
+				Ty = ((Ty*MovementModifier*0.750f));//(Ty*MovementModifier)*(Ty*MovementModifier));
+				Tz = ((Tz*MovementModifier*0.750f));//(Tz*MovementModifier)*(Tz*MovementModifier));
 
 				Players[portNumber].setForceOnObject(glm::vec3(Tx, Ty, Tz));
 				Players[portNumber].setVelocity(glm::vec3(Tx, Ty, Tz));
@@ -1239,13 +1360,14 @@ void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 			}
 		}
 	}
-	else if (inMenu == true) {
+	else if (inMenu || inOptions) {
+		MovementModifier = MovementModifier*10.0f;
 
-		if (mousepositionX > GetSystemMetrics(SM_CXSCREEN)) { mousepositionX = GetSystemMetrics(SM_CXSCREEN); }
-		if (mousepositionX < 0) { mousepositionX = 0; }
-		if (mousepositionY > GetSystemMetrics(SM_CYSCREEN)) { mousepositionY = GetSystemMetrics(SM_CYSCREEN); }
-		if (mousepositionY < 0) { mousepositionY = 0; }
-		//
+		if (mousepositionX + screenpositionX > GetSystemMetrics(SM_CXSCREEN)) { mousepositionX = GetSystemMetrics(SM_CXSCREEN) - screenpositionX; }
+		else if (mousepositionX + screenpositionX < 0) { mousepositionX = 0 - screenpositionX; }
+		if (mousepositionY + screenpositionY > GetSystemMetrics(SM_CYSCREEN)) { mousepositionY = GetSystemMetrics(SM_CYSCREEN) - screenpositionY; }
+		else if (mousepositionY + screenpositionY < 0) { mousepositionY = 0 - screenpositionY; }
+
 		if (portNumber >= 0) {
 			float Tx = 0.0f; float Ty = 0.0f; float Tz = 0.0f; float rotY = 0.0f;
 			//checks to see if the sticks are out of the deadzone, then translates them based on how far the stick is pushed.
@@ -1259,12 +1381,14 @@ void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 			if (gamepad.rightStickX < -0.10f) { Tx -= gamepad.rightStickX * 0.0366666f; } //X-Left
 			if (gamepad.rightStickX > 00.10f) { Tx -= gamepad.rightStickX * 0.0366666f; } //X-Right
 
-			Tx = ((Tx*(MovementModifier*10.0f))*(Tx*(MovementModifier*10.0f))*(Tx*(MovementModifier*10.0f)));
-			Ty = ((Ty*(MovementModifier*10.0f))*(Ty*(MovementModifier*10.0f))*(Ty*(MovementModifier*10.0f)));
-			Tz = ((Tz*(MovementModifier*10.0f))*(Tz*(MovementModifier*10.0f))*(Tz*(MovementModifier*10.0f)));
+			Tx = (Tx*MovementModifier);
+			Ty = (Ty*MovementModifier);
+			Tz = (Tz*MovementModifier);
 			
 			mousepositionX -= Tx; mousepositionY += Ty;
-			if (Tx != 0.0f || Ty != 0.0f || Tz != 0.0f) { SetCursorPos(mousepositionX, mousepositionY); }
+			//
+			//std::cout << "[" << screen_pos_x << "] [" << screen_pos_y << "]" << std::endl;
+			if (Tx != 0.0f || Ty != 0.0f || Tz != 0.0f) { SetCursorPos(glutGet((GLenum)GLUT_WINDOW_X)+mousepositionX, glutGet((GLenum)GLUT_WINDOW_Y)+mousepositionY); }
 		
 			if (MenuSwitchCounter[portNumber] > 0.0f) { MenuSwitchCounter[portNumber] -= deltaTasSeconds; }
 			else {
@@ -1278,7 +1402,12 @@ void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 					input.mi.time = 0;
 					SendInput(1, &input, sizeof(INPUT));
 
-					MenuSwitchCounter[portNumber] = 1.0f;
+					bool pressedA = false;
+					for (unsigned int i = 0; i < NumberOfSliders; i++) {
+						//move nob along the slider
+						if (Slider[i].moveNob(MPosToOPosX, MPosToOPosY)) { ButtonForSliders[i].setPosition(glm::vec3(MPosToOPosX, 0.02f, Slider[i].SBar_Pos.z)); pressedA = true; }
+					}
+					if (!pressedA) { MenuSwitchCounter[portNumber] = 0.50f; }
 				}
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_B)) {
 					std::cout << "[B]";
@@ -1327,12 +1456,8 @@ void DisplayCallbackFunction(void)
 	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //Clear the screen
 	if (inMenu) { InMenuDraw(2); }
-	else if (inOptions) { InOptionDraw(2); }
-	else if (inGame) {
-		for (int i = 0; i < 2; i++) {
-			InGameDraw(i);
-		}
-	}
+	else if (inOptions) { InOptionDraw(inOptionsTab); }
+	else if (inGame) { for (int i = 0; i < 2; i++) { InGameDraw(i); } }
 	else {}
 
 	glutSwapBuffers();
@@ -1434,7 +1559,6 @@ void KeyboardCallbackFunction(unsigned char key, int x, int y)
 		{
 		case 'o':
 		case 'O': {
-			//bool inMenu = true; bool inGame = false; bool inOptions = false; 
 			if (inOptions == false) {
 				if (inMenu == true) { inOptions = true; inMenu = false; lastMenu == "inMenu"; }
 				else if (inGame == true) { inOptions = true; inGame = false; lastMenu == "inGame"; }
@@ -1722,6 +1846,8 @@ void WindowReshapeCallbackFunction(int w, int h)
 		}
 	}
 	glutReshapeWindow(windowWidth, windowHeight);
+	screenpositionX = glutGet((GLenum)GLUT_WINDOW_X); 
+	screenpositionY = glutGet((GLenum)GLUT_WINDOW_Y);
 }
 
 /* function MouseClickCallbackFunction()
@@ -1733,47 +1859,13 @@ void MouseClickCallbackFunction(int button, int state, int x, int y)
 	// Handle mouse clicks
 	if (state == GLUT_DOWN)
 	{
-		//std::cout << "Mouse X: " << x << " Y: " << y << std::endl;
-		if (inGame) {
-			std::cout << "Game" << std::endl;
-			if (button == GLUT_LEFT_BUTTON) {}
-			if (button == GLUT_RIGHT_BUTTON) {}
-			if (button == GLUT_MIDDLE_BUTTON) {}
+		mouseDown[button] = true;
+		if (button == GLUT_LEFT_BUTTON) {
+			MPosToOPosX = ((((float)mousepositionX / (float)windowWidth) * 56.0f) - 28.0f);
+			MPosToOPosY = -((((float)(windowHeight - mousepositionY) / (float)windowHeight) * 56.0f) - 28.0f);
 		}
-		if (inMenu) {
-			std::cout << "Menu" << std::endl;
-			if (button == GLUT_LEFT_BUTTON) {
-				MPosToOPosX = ((((float)mousepositionX / (float)windowWidth) * 56) - 28);
-				MPosToOPosY = -((((float)(windowHeight - mousepositionY) / (float)windowHeight) * 56) - 28);
-				if (x > (windowWidth/4) && x < (windowWidth/3.076)) {
-					if (y > (windowHeight/4.545) && y < (windowHeight/3.947)) {  }
-					if (y > (windowHeight/3.125) && y < (windowHeight/2.830)) {  }
-				}
-			}
-			if (button == GLUT_RIGHT_BUTTON) { }
-			if (button == GLUT_MIDDLE_BUTTON) {}
-		}
-		if (inOptions) {
-			std::cout << "Options" << std::endl;
-			if (button == GLUT_LEFT_BUTTON) {
-				MPosToOPosX = ((((float)mousepositionX / (float)windowWidth) * 56) - 28);
-				MPosToOPosY = -((((float)(windowHeight - mousepositionY) / (float)windowHeight) * 56) - 28);
-				if (x > (windowWidth / 4) && x < (windowWidth / 3.076)) {
-					if (y >(windowHeight / 4.545) && y < (windowHeight / 3.947)) {}
-					if (y >(windowHeight / 3.125) && y < (windowHeight / 2.830)) {}
-				}
-				for (unsigned int i = 0; i < NumberOfSliders; i++) {
-					//move nob along the slider
-					if (Slider[i].moveNob(MPosToOPosX, MPosToOPosY)) { ButtonForSliders[i].setPosition(glm::vec3(MPosToOPosX, 0.02f, Slider[i].SBar_Pos.z)); }
-				}
-				//std::cout << "Pixel Pos[" << mousepositionX << "]	[" << windowHeight - mousepositionY << "]" << std::endl;
-				//std::cout << "Obj space[" << MPosToOPosX << "]	[" << MPosToOPosY << "]" << std::endl;
-				//std::cout << "%of windo[" << ((float)mousepositionX / (float)windowWidth) << "%]	[" << ((float)(windowHeight - mousepositionY) / (float)windowHeight) << "%]" << std::endl;
-			}
-			if (button == GLUT_RIGHT_BUTTON) {}
-			if (button == GLUT_MIDDLE_BUTTON) {}
-		}
-		
+		if (button == GLUT_RIGHT_BUTTON) {}
+		if (button == GLUT_MIDDLE_BUTTON) {}
 	}
 }
 
@@ -1787,20 +1879,12 @@ void MouseMotionCallbackFunction(int x, int y) //while a mouse button is pressed
 	float changey = y - mousepositionY;
 	mousepositionX = x;
 	mousepositionY = y;
-	if (inGame) { }
-	else if (inMenu) {
-		MPosToOPosX = ((((float)mousepositionX / (float)windowWidth) * 56) - 28);
-		MPosToOPosY = -((((float)(windowHeight - mousepositionY) / (float)windowHeight) * 56) - 28);
-	}
-	else if (inOptions) {
-		MPosToOPosX = ((((float)mousepositionX / (float)windowWidth) * 56) - 28);
-		MPosToOPosY = -((((float)(windowHeight - mousepositionY) / (float)windowHeight) * 56) - 28);
+	MPosToOPosX = ((((float)mousepositionX / (float)windowWidth) * 56) - 28);
+	MPosToOPosY = -((((float)(windowHeight - mousepositionY) / (float)windowHeight) * 56) - 28);
 
-		for (unsigned int i = 0; i < NumberOfSliders; i++) {
-			//move nob along the slider
-			if (Slider[i].moveNob(MPosToOPosX, MPosToOPosY)) { ButtonForSliders[i].setPosition(glm::vec3(MPosToOPosX, 0.02f, Slider[i].SBar_Pos.z)); }
-		}
-	}
+	if (inGame) { }
+	else if (inMenu) { }
+	else if (inOptions) { }
 }
 
 /* function MousePassiveMotionCallbackFunction()
@@ -1811,10 +1895,14 @@ void MousePassiveMotionCallbackFunction(int x, int y) //while a mouse button isn
 {
 	mousepositionX = x;
 	mousepositionY = y;
+
 	if (inGame) { }
-	else if (inMenu) {
-		//MPosToOPosY = ((((float)mousepositionX / (float)windowWidth) * 56) - 28);
-		//MPosToOPosX = ((((float)(windowHeight - mousepositionY) / (float)windowHeight) * 56) - 28);
+	else if (inMenu) { }
+	else if (inOptions) {
+		for (unsigned int i = 0; i < NumberOfSliders; i++) {
+			//move nob along the slider
+			if (Slider[i].moveNob(MPosToOPosX, MPosToOPosY)) { ButtonForSliders[i].setPosition(glm::vec3(MPosToOPosX, 0.02f, Slider[i].SBar_Pos.z)); }
+		}
 	}
 }
 
@@ -1855,6 +1943,11 @@ void init()
 	//glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 }
 
+/* function LoadAllSounds()
+* Description:
+*   - this is called when the file first loads
+*   - loads all the needed sounds into the game
+*/
 void LoadAllSounds() {
 	std::string SoundPath;
 	if (DoesFileExists("..//Assets//Media")) {
@@ -1865,7 +1958,7 @@ void LoadAllSounds() {
 	}
 	else { std::cout << "[ERROR] Could not find [Media]" << std::endl; }
 
-
+	systemSound.sys.init();
 	drum[0].load(_strdup((SoundPath + "drumloop.wav").c_str()), true);
 }
 
@@ -2060,6 +2153,11 @@ void LoadAllObjects()
 	//Players[0].addChild(skeleton.getRootGameObject());
 }
 
+/* function LoadAllTextPlane()
+* Description:
+*   - this is called when the file first loads
+*   - loads all the menu pages into the game
+*/
 void LoadAllTextPlane()
 {
 	std::string ImagePath;
@@ -2078,16 +2176,57 @@ void LoadAllTextPlane()
 	planeForText[0].objectLoader(ObjectPath + "PlainForText.obj");
 	planeForText[0].setMass(0.0f);
 	planeForText[0].Viewable = true;
-	planeForText[0].setScale(glm::vec3(50.0f, 1.0f, 65.0f));
+	planeForText[0].setScale(glm::vec3(39.0f*0.9f, 1.0f, 39.0f*1.6f));
 	planeForText[0].setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
 	planeForText[0].setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-	planeForText[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Page0.png").c_str())));
+	planeForText[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Main_Menu.png").c_str())));
 
 	planeForText[1].objectLoader(&planeForText[0]);
-	planeForText[1].setScale(glm::vec3(5.0f, 1.0f, 17.50f));
-	planeForText[1].setPosition(glm::vec3(20.0f, 0.01f, -20.0f));
-	planeForText[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Box.png").c_str())));
+	planeForText[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Options.png").c_str())));
 
+	planeForText[2].objectLoader(&planeForText[0]);
+	planeForText[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Controls.png").c_str())));
+
+	planeForText[3].objectLoader(&planeForText[0]);
+	planeForText[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups.png").c_str())));
+
+	planeForText[4].objectLoader(&planeForText[0]);
+	planeForText[4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Options.png").c_str())));
+
+
+
+	//Start Button
+	ButtonObjects[0].objectLoader(ObjectPath + "PlainForText.obj");
+	ButtonObjects[0].setScale(glm::vec3(9.0f*0.9f, 1.0f, 7.0f*1.6f));
+	ButtonObjects[0].setSizeOfHitBox(glm::vec3(9.0f*1.45f, 1.0f, 7.0f*1.58f));
+	ButtonObjects[0].setPosition(glm::vec3(0.0f, 0.01f, -3.0f));
+	ButtonObjects[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Start_Button.png").c_str())));
+	for (unsigned int i = 1; i < NumberOfButtons; i++) { ButtonObjects[i].objectLoader(&ButtonObjects[0]); }
+	//Options Button
+	ButtonObjects[1].setPosition(glm::vec3(0.0f, 0.01f, 9.0f));
+	ButtonObjects[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Options_Button.png").c_str())));
+	//Exit Button
+	ButtonObjects[2].setPosition(glm::vec3(0.0f, 0.01f, 21.0f));
+	ButtonObjects[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Exit_Button.png").c_str())));
+	//Back Button
+	ButtonObjects[3].setPosition(glm::vec3(-21.0f, 0.01f, -21.0f));
+	ButtonObjects[3].setScale(glm::vec3(2.0f*0.9f, 1.0f, 3.50f*0.9f));
+	ButtonObjects[3].setSizeOfHitBox(glm::vec3(2.0f*1.5f, 1.0f, 3.50f*0.9f));
+	ButtonObjects[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Back_Button.png").c_str())));
+	//Exit Button
+	ButtonObjects[4].setPosition(glm::vec3(0.0f, 0.01f, -3.0f));
+	ButtonObjects[4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Exit_Button.png").c_str())));
+	//Exit Button
+	ButtonObjects[5].setPosition(glm::vec3(0.0f, 0.01f, 9.0f));
+	ButtonObjects[5].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Exit_Button.png").c_str())));
+	//Exit Button
+	ButtonObjects[6].setPosition(glm::vec3(0.0f, 0.01f, 21.0f));
+	ButtonObjects[6].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Exit_Button.png").c_str())));
+	//_Button.png
+	for (unsigned int i = 0; i < NumberOfButtons; i++) {
+		Button[i].SBut_Top = ButtonObjects[i].Top(), Button[i].SBut_Bot = ButtonObjects[i].Bottom(), Button[i].SBut_Pos = ButtonObjects[i].Position(), Button[i].SBut_Rad = (ButtonObjects[i].Radius() / 2.0f);
+	}
+	
 
 	//Slider bar
 	planeForSliders[0].objectLoader(ObjectPath + "PlainForText.obj");
@@ -2098,7 +2237,7 @@ void LoadAllTextPlane()
 	//Slider nob
 	ButtonForSliders[0].objectLoader(&planeForSliders[0]);
 	ButtonForSliders[0].setScale(glm::vec3(1.0f, 1.0f, 3.50f));
-	ButtonForSliders[0].setSizeOfHitBox(glm::vec3(1.0f*1.6f, 1.0f, 3.50f*0.9f));
+	ButtonForSliders[0].setSizeOfHitBox(glm::vec3(1.0f, 1.0f, 3.50f*0.9f));
 	ButtonForSliders[0].setPosition(glm::vec3(20.0f, 0.02f, -10.0f));
 	ButtonForSliders[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Slider_Nob.png").c_str())));
 
@@ -2147,6 +2286,7 @@ int main(int argc, char **argv)
 	glutInitWindowSize(windowWidth, windowHeight);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
 	glutCreateWindow("Rift Ball");
+	glutGetWindow();
 
 
 	//Initialize OpenGL Extention Wrangler
@@ -2173,28 +2313,39 @@ int main(int argc, char **argv)
 	iluInit();
 	ilutRenderer(ILUT_OPENGL);
 	//Initialize Shader
+
 	if (DoesFileExists("..//Assets//shaders//")) { shader = new Shader("..//Assets//shaders//passthru_v.glsl", "..//Assets//shaders//passthru_f.glsl"); }
 	else if (DoesFileExists("Assets//shaders//")) { shader = new Shader("Assets//shaders//passthru_v.glsl", "Assets//shaders//passthru_f.glsl"); }
 	else { std::cout << "[ERROR] Could not find [Shaders]" << std::endl; }
 
+	//if (DoesFileExists("..//Assets//shaders//")) { shader = new Shader("..//Assets//shaders//default_v.glsl", "..//Assets//shaders//default_f.glsl"); }
+	//else if (DoesFileExists("Assets//shaders//")) { shader = new Shader("Assets//shaders//default_v.glsl", "Assets//shaders//default_f.glsl"); }
+	//else { std::cout << "[ERROR] Could not find [Shaders]" << std::endl; }
+
+	//Initialize Font/Text Shader
 	if (DoesFileExists("..//Assets//shaders//")) { TextShader = new Shader("..//Assets//shaders//text_v.glsl", "..//Assets//shaders//text_f.glsl"); }
 	else if (DoesFileExists("Assets//shaders//")) { TextShader = new Shader("Assets//shaders//text_v.glsl", "Assets//shaders//text_f.glsl"); }
 	else { std::cout << "[ERROR] Could not find [Shaders]" << std::endl; }
+
 	
 
 	shader->bind();
-	glEnableVertexAttribArray(4);	glBindAttribLocation(shader->getID(), 4, "vPos");
-	glEnableVertexAttribArray(5);	glBindAttribLocation(shader->getID(), 5, "texture");
-	glEnableVertexAttribArray(6);	glBindAttribLocation(shader->getID(), 6, "normal");
-	glEnableVertexAttribArray(7);	glBindAttribLocation(shader->getID(), 7, "color");
-	glEnableVertexAttribArray(8);	glBindAttribLocation(shader->getID(), 8, "blend");
+	glEnableVertexAttribArray(0);	glBindAttribLocation(shader->getID(), 0, "vIn_vertex");
+	glEnableVertexAttribArray(1);	glBindAttribLocation(shader->getID(), 1, "vIn_uv");
+	glEnableVertexAttribArray(2);	glBindAttribLocation(shader->getID(), 2, "vIn_normal");
+	glEnableVertexAttribArray(3);	glBindAttribLocation(shader->getID(), 3, "vIn_colour");
+
+	//glEnableVertexAttribArray(4);	glBindAttribLocation(shader->getID(), 4, "vIn_vertex");
+	//glEnableVertexAttribArray(5);	glBindAttribLocation(shader->getID(), 5, "vIn_uv");
+	//glEnableVertexAttribArray(6);	glBindAttribLocation(shader->getID(), 6, "vIn_normal");
+	//glEnableVertexAttribArray(7);	glBindAttribLocation(shader->getID(), 7, "vIn_colour");
 
 	if (DoesFileExists("..//Assets//img//win.png")) { textureHandle = ilutGLLoadImage("..//Assets//img//win.png"); }
 	else if (DoesFileExists("Assets//img//win.png")) { textureHandle = ilutGLLoadImage("Assets//img//win.png"); }
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	if (DoesFileExists("..//Assets//Fonts//")) { LoadText("..//Assets//Fonts//FreeSans.ttf", SystemText); }
-	else if (DoesFileExists("Assets//Fonts//")) { LoadText("Assets//Fonts//FreeSans.ttf", SystemText); }
+	if (DoesFileExists("..//Assets//Fonts//")) { SystemText.LoadTextFont("..//Assets//Fonts//FreeSans.ttf", SystemText); }
+	else if (DoesFileExists("Assets//Fonts//")) { SystemText.LoadTextFont("Assets//Fonts//FreeSans.ttf", SystemText); }
 	else { std::cout << "[ERROR] Could not find [Font]" << std::endl; }
 
 	LoadAllSounds();
@@ -2210,7 +2361,7 @@ int main(int argc, char **argv)
 	std::cout << std::endl << "Press [Esc] to exit." << std::endl;
 	std::cout << "_____________________________________" << std::endl;
 	planeForText[0].Viewable = true;
-	//InMenuDraw(2);
+
 	// start the event handler
 	glutMainLoop();
 

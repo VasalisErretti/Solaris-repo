@@ -156,6 +156,8 @@
     <ClInclude Include="Include\Shader.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\Shaders\default_f.glsl" />
+    <None Include="Assets\Shaders\default_v.glsl" />
     <None Include="Assets\Shaders\passThru_f.glsl" />
     <None Include="Assets\Shaders\passThru_v.glsl" />
     <None Include="Assets\Shaders\text_f.glsl" />
