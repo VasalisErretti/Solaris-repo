@@ -289,33 +289,62 @@ bool GameObject::objectLoader(const char* filePath)
 	glGenBuffers(1, &vertbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vertbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*numtris * 3, this->verts, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(4); // position/vertices
-	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(0); // position/vertices
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
 	// textures tho(poopybutt)
 	glGenBuffers(1, &texbo);
 	glBindBuffer(GL_ARRAY_BUFFER, texbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*numtris * 2, this->texs, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(5); // texcoords/uv
-	glVertexAttribPointer(5, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(1); // texcoords/uv
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
 	// normals tho
 	glGenBuffers(1, &normbo);
 	glBindBuffer(GL_ARRAY_BUFFER, normbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*numtris * 3, this->norms, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(6); //  normals
-	glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(2); //  normals
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
 	//color tho
 	glGenBuffers(1, &colorbo);
 	glBindBuffer(GL_ARRAY_BUFFER, colorbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*numtris * 3, this->colors, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(7); //  normals
-	glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(3); //  colour
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+
+
+
+	//// verts tho
+	//glGenBuffers(1, &vertbo);
+	//glBindBuffer(GL_ARRAY_BUFFER, vertbo);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(float)*numtris * 3, this->verts, GL_STATIC_DRAW);
+	//glEnableVertexAttribArray(4); // position/vertices
+	//glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	//glBindBuffer(GL_ARRAY_BUFFER, 0);
+	//// textures tho(poopybutt)
+	//glGenBuffers(1, &texbo);
+	//glBindBuffer(GL_ARRAY_BUFFER, texbo);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(float)*numtris * 2, this->texs, GL_STATIC_DRAW);
+	//glEnableVertexAttribArray(5); // texcoords/uv
+	//glVertexAttribPointer(5, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	//glBindBuffer(GL_ARRAY_BUFFER, 0);
+	//// normals tho
+	//glGenBuffers(1, &normbo);
+	//glBindBuffer(GL_ARRAY_BUFFER, normbo);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(float)*numtris * 3, this->norms, GL_STATIC_DRAW);
+	//glEnableVertexAttribArray(6); //  normals
+	//glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	//glBindBuffer(GL_ARRAY_BUFFER, 0);
+	////color tho
+	//glGenBuffers(1, &colorbo);
+	//glBindBuffer(GL_ARRAY_BUFFER, colorbo);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(float)*numtris * 3, this->colors, GL_STATIC_DRAW);
+	//glEnableVertexAttribArray(7); //  colour
+	//glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	//glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 
 
@@ -444,33 +473,59 @@ bool GameObject::objectLoader(std::string filePath1)
 	glGenBuffers(1, &vertbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vertbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*numtris * 3, this->verts, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(4); // position/vertices
-	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(0); // position/vertices
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
 	// textures tho(poopybutt)
 	glGenBuffers(1, &texbo);
 	glBindBuffer(GL_ARRAY_BUFFER, texbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*numtris * 2, this->texs, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(5); // texcoords/uv
-	glVertexAttribPointer(5, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(1); // texcoords/uv
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
 	// normals tho
 	glGenBuffers(1, &normbo);
 	glBindBuffer(GL_ARRAY_BUFFER, normbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*numtris * 3, this->norms, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(6); //  normals
-	glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(2); //  normals
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
 	//color tho
 	glGenBuffers(1, &colorbo);
 	glBindBuffer(GL_ARRAY_BUFFER, colorbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*numtris * 3, this->colors, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(7); //  normals
-	glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(3); //  colour
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	//// verts tho
+	//glGenBuffers(1, &vertbo);
+	//glBindBuffer(GL_ARRAY_BUFFER, vertbo);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(float)*numtris * 3, this->verts, GL_STATIC_DRAW);
+	//glEnableVertexAttribArray(4); // position/vertices
+	//glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	//glBindBuffer(GL_ARRAY_BUFFER, 0);
+	//// textures tho(poopybutt)
+	//glGenBuffers(1, &texbo);
+	//glBindBuffer(GL_ARRAY_BUFFER, texbo);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(float)*numtris * 2, this->texs, GL_STATIC_DRAW);
+	//glEnableVertexAttribArray(5); // texcoords/uv
+	//glVertexAttribPointer(5, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	//glBindBuffer(GL_ARRAY_BUFFER, 0);
+	//// normals tho
+	//glGenBuffers(1, &normbo);
+	//glBindBuffer(GL_ARRAY_BUFFER, normbo);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(float)*numtris * 3, this->norms, GL_STATIC_DRAW);
+	//glEnableVertexAttribArray(6); //  normals
+	//glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	//glBindBuffer(GL_ARRAY_BUFFER, 0);
+	////color tho
+	//glGenBuffers(1, &colorbo);
+	//glBindBuffer(GL_ARRAY_BUFFER, colorbo);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(float)*numtris * 3, this->colors, GL_STATIC_DRAW);
+	//glEnableVertexAttribArray(7); //  normals
+	//glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	//glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 
 

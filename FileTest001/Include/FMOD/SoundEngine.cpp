@@ -94,7 +94,8 @@ bool Sound::load(char* fileName, bool loop) {
 	result = sound->set3DMinMaxDistance(0.5f, 5000.0f); CheckResult(result);
 	if (loop) { result = sound->setMode(FMOD_LOOP_NORMAL); CheckResult(result); }
 	else { result = sound->setMode(FMOD_LOOP_OFF); CheckResult(result); }
-	
+	RollOff = false;
+
 	return true;
 }
 
@@ -104,7 +105,30 @@ void Sound::play() {
 		result = channel->set3DAttributes(&pos, &vel); CheckResult(result);
 		result = channel->setPaused(false); CheckResult(result);
 		isPlaying = true;
+
+		result = channel->set3DMinMaxDistance(1.0f, 60.0f); CheckResult(result);
+		if (RollOff == true) {
+			result = channel->setMode(FMOD_3D_CUSTOMROLLOFF); CheckResult(result);
+			result = channel->set3DCustomRolloff(RollOffModelCurve, 3); CheckResult(result);
+		}
+		else if (RollOff == false) {
+			result = channel->setMode(FMOD_3D_LINEARROLLOFF); CheckResult(result);
+		}
 	}
+}
+
+void Sound::playUpdate() {
+	if (result != FMOD_OK) {
+		//cout << "Could not update sound position." << endl;
+		return;
+	}
+	result = channel->set3DAttributes(&pos, &vel); CheckResult(result);
+
+
+}
+
+void Sound::setRollOffModelCurve(FMOD_VECTOR ROMC_0, FMOD_VECTOR ROMC_1, FMOD_VECTOR ROMC_2) {
+	RollOffModelCurve[0] = ROMC_0; RollOffModelCurve[1] = ROMC_1; RollOffModelCurve[2] = ROMC_2;
 }
 
 void Sound::systemUpdate() {

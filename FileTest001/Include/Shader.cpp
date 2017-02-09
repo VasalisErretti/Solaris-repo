@@ -30,7 +30,7 @@ void Shader::init(const char *vsFile, const char *fsFile){
 	if (result == GL_FALSE)
 	{
 		glGetShaderInfoLog(vertShader, sizeof(error), NULL, error);
-		std::cerr << "[ERROR] Compiling Shader: ["<< vsFile << "] " << error << std::endl;
+		std::cerr << "[ERROR.2] Compiling Vertex Shader: ["<< vsFile << "] " << error << std::endl;
 	}
 	//else printf("Compiled!\n");
 
@@ -42,7 +42,7 @@ void Shader::init(const char *vsFile, const char *fsFile){
 	if (result == GL_FALSE)
 	{
 		glGetShaderInfoLog(vertShader, sizeof(error), NULL, error);
-		std::cerr << "[ERROR] Compiling Shader: [" << vsFile << "] " << error << std::endl;
+		std::cerr << "[ERROR.3] Compiling Fragment Shader: [" << fsFile << "] " << error << std::endl;
 	}
 	//else printf("Compiled!\n");
 	
