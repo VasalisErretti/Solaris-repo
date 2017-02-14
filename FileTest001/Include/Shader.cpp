@@ -138,6 +138,12 @@ void Shader::uniformTex(const char* varName, GLuint data, unsigned short activeT
 	case 2:
 		glActiveTexture(GL_TEXTURE2);
 		break;
+	case 3:
+		glActiveTexture(GL_TEXTURE3);
+		break;
+	case 4:
+		glActiveTexture(GL_TEXTURE4);
+		break;
 	default:
 		glActiveTexture(GL_TEXTURE0);
 		break;

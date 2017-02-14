@@ -359,9 +359,9 @@ public:
 };
 
 // float myRad = myDegree * degToRad;
-static const float degToRad = 3.14159f / 180.0f;
+static const float degToRad = (3.14159f / 180.0f);
 // float myDegree = myRad * radToDegree;
-static const float radToDeg = 180.0f / 3.14159f;
+static const float radToDeg = (180.0f / 3.14159f);
 
 
 //////////////////////////////////////////////////////////////////////

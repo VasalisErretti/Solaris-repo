@@ -58,7 +58,7 @@ void GameObject::update(float deltaT)
 				//if (m_Velocity.x <= -0.01f || m_Velocity.x >= 0.01f || m_Velocity.z <= -0.01f || m_Velocity.z >= 0.01f) {
 					ForwardDirection = (m_Position - (m_Position + m_Velocity));
 					FaceYRotation = atan2(ForwardDirection.z, -ForwardDirection.x);
-					this->setRotation(glm::vec3(0.0f, FaceYRotation, 0.0f));
+					this->setRotation(glm::vec3(0.0f, FaceYRotation*(180.0f / 3.14159f), 0.0f));
 				}
 				//update position based on velocity
 				m_Position += m_Velocity;
@@ -115,8 +115,8 @@ void GameObject::updateP(float deltaT)
 				if (m_Velocity.x <= -0.01f || m_Velocity.x >= 0.01f || m_Velocity.z <= -0.01f || m_Velocity.z >= 0.01f) {
 					//ForwardDirection = (m_Position - (m_Position + m_Velocity));
 					FaceYRotation = atan2(-ForwardDirection.z, ForwardDirection.x);
-					if (!IsJumping) { this->setRotation(glm::vec3(0.0f, FaceYRotation, 0.0f)); }
-					if (IsJumping && FaceYRotation != 0.0f) { this->setRotation(glm::vec3(0.0f, FaceYRotation, 0.0f)); }
+					if (!IsJumping) { this->setRotation(glm::vec3(0.0f, FaceYRotation*(180.0f / 3.14159f), 0.0f)); }
+					if (IsJumping && FaceYRotation != 0.0f) { this->setRotation(glm::vec3(0.0f, FaceYRotation*(180.0f / 3.14159f), 0.0f)); }
 				}
 				//update position based on velocity
 				m_Position += (m_Velocity + (((m_ForceOnObject / m_Mass))*1.5f));

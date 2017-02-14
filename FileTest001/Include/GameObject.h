@@ -93,9 +93,9 @@ public:
 	void setRotation(glm::vec3 newRotation) { 
 		m_Angle = newRotation;
 
-		glm::mat4 rx = glm::rotate(newRotation.x, glm::vec3(1.0f, 0.0f, 0.0f));
-		glm::mat4 ry = glm::rotate(newRotation.y, glm::vec3(0.0f, 1.0f, 0.0f));
-		glm::mat4 rz = glm::rotate(newRotation.z, glm::vec3(0.0f, 0.0f, 1.0f));
+		glm::mat4 rx = glm::rotate(newRotation.x*(3.14159f / 180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		glm::mat4 ry = glm::rotate(newRotation.y*(3.14159f / 180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		glm::mat4 rz = glm::rotate(newRotation.z*(3.14159f / 180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
 		m_Rotation = rz * ry * rx;
 	}

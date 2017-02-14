@@ -80,7 +80,7 @@ bool mouseDown[3];
 //Game Objects//
 const int NumberOfPlayers = 2; GameObject Players[NumberOfPlayers];
 GameObject ShockWaves[NumberOfPlayers]; GameObject Rifts[NumberOfPlayers];
-const int NumberOfObjects = 13; GameObject Objects[NumberOfObjects];
+const int NumberOfObjects = 9; GameObject Objects[NumberOfObjects];
 const int NumberOfSpecials = 5; GameObject Specials[NumberOfSpecials];
 const int NumberOfEnemies = 12; GameObject Enemies[12];
 GameObject ShadowObject[2];
@@ -97,6 +97,7 @@ const int NumberOfBorders = 1; GameObject Borders[NumberOfBorders];
 
 //Random Variables//
 
+float randomSpecialTime;
 //camera viewport
 int cameralook = 0; int cameraMode = 0;
 glm::vec3 cameraPosition[2];
@@ -295,7 +296,7 @@ void InMenuDraw(int Inum)
 	shader->uniformMat4x4("u_lightPos_01", &(modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
 	shader->uniformMat4x4("u_lightPos_02", &(modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
 
-	if (planeForText[1].Viewable) { planeForText[1].drawObject(shader); }
+	if (planeForText[0].Viewable) { planeForText[0].drawObject(shader); }
 
 	for (unsigned int i = 0; i <= 2; i++) {
 		if (ButtonObjects[i].Viewable) { ButtonObjects[i].drawObject(shader); }
@@ -508,7 +509,11 @@ void InGameDraw(int Inum)
 				if (ShadowObject[0].textureHandle_hasTransparency == true) { disableCulling(); }
 				else { enableCulling(); }
 				ShadowObject[0].setPosition(glm::vec3(Enemies[i].Position().x, 0.01f, Enemies[i].Position().z));
-				ShadowObject[0].setScale(Enemies[i].Scale());
+
+				if ((Enemies[i].Position().y*0.05f) > 1.50f) { ShadowObject[0].setScale(Enemies[i].Scale()*1.50f); }
+				else if ((Enemies[i].Position().y*0.05f) < 1.0f) { ShadowObject[0].setScale(Enemies[i].Scale()*1.0f); }
+				else { ShadowObject[0].setScale(Enemies[i].Scale()*(Enemies[i].Position().y*0.05f)); }
+
 				ShadowObject[0].setRotation(Enemies[i].Angle());
 				ShadowObject[0].drawObject(shader);
 			}
@@ -537,13 +542,14 @@ void InGameDraw(int Inum)
 	cameralook = 3; //window
 	WhatCameraIsLookingAt(); //Resising Window
 
+	
 	if (Inum == 0) {
-		SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]", -(windowWidth / 4), -(windowHeight / 4), 1.0f, glm::vec3(0.8, 0.2f, 0.2f), 1);
-		SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[1]) + "]", -(windowWidth / 4), (windowHeight / 2) - (windowHeight / 4), 1.0f, glm::vec3(0.8, 0.2f, 0.2f), 1);
+		SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]", -(windowWidth / 4), -(windowHeight / 4), 1.0f, glm::vec3(0.3, 0.3f, 0.9f), 1);
+		SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[1]) + "]", -(windowWidth / 4), (windowHeight / 2) - (windowHeight / 4), 1.0f, glm::vec3(0.9, 0.2f, 0.2f), 1);
 	}
 	else if (Inum == 1) {
-		SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]",  (windowWidth / 4), (windowHeight / 2) - (windowHeight / 4), 1.0f, glm::vec3(0.8, 0.2f, 0.2f), 1);
-		SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[1]) + "]", (windowWidth / 4), -(windowHeight / 4), 1.0f, glm::vec3(0.8, 0.2f, 0.2f), 1);
+		SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]",  (windowWidth / 4), (windowHeight / 2) - (windowHeight / 4), 1.0f, glm::vec3(0.3, 0.3f, 0.9f), 1);
+		SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[1]) + "]", (windowWidth / 4), -(windowHeight / 4), 1.0f, glm::vec3(0.9, 0.2f, 0.2f), 1);
 	}
 }
 
@@ -766,7 +772,7 @@ void GameField(float deltaTasSeconds)
 						m.B.Viewable = false;
 						Health[i] += 10; 
 					}
-					else if (m.B.SpecialAttribute() == 4) {}
+					else if (m.B.SpecialAttribute() == 4) { }
 				}
 				if (checkRadialCollision(m)) { ResolveCollision(m, 0.01f); }
 				Specials[j] = m.B;
@@ -856,6 +862,7 @@ void GameField(float deltaTasSeconds)
 
 				Objects[j] = m.A;
 			}//end for
+
 			if (onAObjectTemp && !m.B.IsJumping) { m.B.onObject = true; m.B.inAir = false; }
 			else { m.B.onObject = false; m.B.inAir = true; }
 			Players[i] = m.B;
@@ -942,7 +949,15 @@ void GameField(float deltaTasSeconds)
 				if (ObjectInBox(m)) { InBorder = true; }
 			}
 
-			if (InBorder) {}
+			if (InBorder) {
+				m.A = Borders[0]; m.B = Enemies[i];
+				//If players are nearing the walls
+				if (m.B.Position().x >(m.A.Top().x*0.90)) { FleeFromDirection(m, 2.0f, "x"); }
+				else if (m.B.Position().x < (m.A.Bottom().x*0.90)) { FleeFromDirection(m, 2.0f, "-x"); }
+				if (m.B.Position().z >(m.A.Top().z*0.90)) { FleeFromDirection(m, 2.0f, "z"); }
+				else if (m.B.Position().z < (m.A.Bottom().z*0.90)) { FleeFromDirection(m, 2.0f, "-z"); }
+				Enemies[i] = m.B;
+			}
 			//if the player is not in any box, seek to nearest one
 			else {
 				float distanceToNearestBox; int boxNumber_1 = 0; glm::vec3 boxWithLargerRadius(0.0f); int boxNumber_2 = 0;
@@ -995,11 +1010,15 @@ void GameField(float deltaTasSeconds)
 					m.B.setPosition(glm::vec3(m.B.Position().x, m.B.Position().y, m.A.Bottom().z + (m.B.Radius().z*0.5f)));
 					m.B.setVelocity(glm::vec3((m.B.Velocity().x*speedToWallDegradation.x), (m.B.Velocity().y*speedToWallDegradation.y), -(m.B.Velocity().z*speedToWallDegradation.z)));
 				}
-				////If players are nearing the walls
-				//if (m.B.Position().x > (m.A.Top().x*0.95)) { FleeFromDirection(m, 1.0f, "x"); }
-				//else if (m.B.Position().x < (m.A.Bottom().x*0.95)) { FleeFromDirection(m, 1.0f, "-x"); }
-				//if (m.B.Position().z > (m.A.Top().z*0.95)) { FleeFromDirection(m, 1.0f, "z"); }
-				//else if (m.B.Position().z < (m.A.Bottom().z*0.95)) { FleeFromDirection(m, 1.0f, "-z"); }
+
+
+				//If players are nearing the walls
+				if (m.B.Position().x >(m.A.Top().x*0.90)) { FleeFromDirection(m, 2.0f, "x"); }
+				else if (m.B.Position().x < (m.A.Bottom().x*0.90)) { FleeFromDirection(m, 2.0f, "-x"); }
+				if (m.B.Position().z >(m.A.Top().z*0.90)) { FleeFromDirection(m, 2.0f, "z"); }
+				else if (m.B.Position().z < (m.A.Bottom().z*0.90)) { FleeFromDirection(m, 2.0f, "-z"); }
+
+
 				Enemies[i] = m.B;
 			}
 		}
@@ -1010,7 +1029,7 @@ void GameField(float deltaTasSeconds)
 		m.A = Objects[0];
 		//apply gravity relative to object[0]
 		for (int i = 0; i < NumberOfPlayers; i++) { m.B = Players[i]; applyGravitationalForces(m, 0.0f); Players[i] = m.B; }
-		for (int i = 0; i < NumberOfEnemies; i++) { m.B = Enemies[i]; applyGravitationalForces(m, -1.0f); Enemies[i] = m.B; }
+		for (int i = 0; i < NumberOfEnemies; i++) { m.B = Enemies[i]; applyGravitationalForces(m, -2.0f); Enemies[i] = m.B; }
 		for (int i = 0; i < NumberOfSpecials; i++) { m.B = Specials[i]; applyGravitationalForces(m, -1.0f); Specials[i] = m.B; }
 	}
 
@@ -1060,7 +1079,7 @@ void GameField(float deltaTasSeconds)
 				else { sizeofShockWave = morphmath.Lerp(glm::vec3(5.0f, 5.0f, 5.0f), glm::vec3(5.0f + (ForceWeight*0.1f), 5.0f + (ForceWeight*0.1f), 5.0f + (ForceWeight*0.1f)), PShockWaveCounter[i]); }
 
 				ShockWaves[i].setScale(glm::vec3(sizeofShockWave.x, 01.0f + (0.50f*PShockWaveChargeUp[i]), sizeofShockWave.z));
-				ShockWaves[i].setRotation(glm::vec3(0.0f, PShockWaveChargeUp[i], 0.0f));
+				ShockWaves[i].setRotation(glm::vec3(0.0f, PShockWaveChargeUp[i]*(180.0f / 3.14159f), 0.0f));
 				ShockWaves[i].setSizeOfHitBox(sizeofShockWave);
 
 				m.A = ShockWaves[i];
@@ -1092,7 +1111,7 @@ void GameField(float deltaTasSeconds)
 				
 				sizeofShockWave.y = 01.0f;
 				ShockWaves[i].setScale(glm::vec3(sizeofShockWave.x, 01.0f + (0.50f*PShockWaveChargeUp[i]), sizeofShockWave.z));
-				ShockWaves[i].setRotation(glm::vec3(0.0f, PShockWaveChargeUp[i], 0.0f));
+				ShockWaves[i].setRotation(glm::vec3(0.0f, PShockWaveChargeUp[i] * (180.0f / 3.14159f), 0.0f));
 			}
 			else { ShockWaves[i].Viewable = false; }
 		}//end for
@@ -1144,6 +1163,20 @@ void GameField(float deltaTasSeconds)
 		}
 	}
 
+	if (randomSpecialTime <= 0.0f)
+	{
+
+		float ranPosZ = (rand() % 80 - 40) + ((rand() % 100 - 50)*0.01f); //-39.50 to 40.50
+		float ranPosY = (rand() % 20 + 10) + ((rand() % 100 - 50)*0.01f); //  9.50 to 30.50
+		float ranPosX = (rand() % 80 - 40) + ((rand() % 100 - 50)*0.01f); //-39.50 to 40.50
+		int ranSpec = (rand() % 3 + 1); //1 to 4
+
+		Specials[ranSpec].setPosition(glm::vec3(ranPosX, ranPosY, ranPosZ));
+		Specials[ranSpec].Viewable = true;
+
+		randomSpecialTime = (rand() % 60 + 30) + ((rand() % 100 - 50)*0.01f); //-29.50 to 90.50
+	}
+	else { randomSpecialTime -= deltaTasSeconds; }
 
 	//Updating Targets
 	for (int i = 0; i < NumberOfPlayers; i++) { Players[i].updateP(deltaTasSeconds); }
@@ -1407,7 +1440,7 @@ void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 						//move nob along the slider
 						if (Slider[i].moveNob(MPosToOPosX, MPosToOPosY)) { ButtonForSliders[i].setPosition(glm::vec3(MPosToOPosX, 0.02f, Slider[i].SBar_Pos.z)); pressedA = true; }
 					}
-					if (!pressedA) { MenuSwitchCounter[portNumber] = 0.50f; }
+					if (pressedA) { MenuSwitchCounter[portNumber] = 0.50f; }
 				}
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_B)) {
 					std::cout << "[B]";
@@ -1486,13 +1519,13 @@ void KeyboardCallbackFunction(unsigned char key, int x, int y)
 		case '=':
 			TestFloat += TestFloatIncrementAmount;
 			std::cout << "[[" << TestFloat << "]]" << std::endl;
-			ButtonForSliders[0].setRotation(glm::vec3(0.0f, (degToRad*TestFloat + 0.0f), 0.0f));
+			ButtonForSliders[0].setRotation(glm::vec3(0.0f, (TestFloat + 0.0f), 0.0f));
 			break;
 		case '_':
 		case '-':
 			TestFloat -= TestFloatIncrementAmount;
 			std::cout << "[[" << TestFloat << "]]" << std::endl;
-			ButtonForSliders[0].setRotation(glm::vec3(0.0f, (degToRad*TestFloat + 0.0f), 0.0f));
+			ButtonForSliders[0].setRotation(glm::vec3(0.0f, (TestFloat + 0.0f), 0.0f));
 			break;
 		case 'o':
 		case 'O': {
@@ -1899,9 +1932,16 @@ void MousePassiveMotionCallbackFunction(int x, int y) //while a mouse button isn
 	if (inGame) { }
 	else if (inMenu) { }
 	else if (inOptions) {
-		for (unsigned int i = 0; i < NumberOfSliders; i++) {
-			//move nob along the slider
-			if (Slider[i].moveNob(MPosToOPosX, MPosToOPosY)) { ButtonForSliders[i].setPosition(glm::vec3(MPosToOPosX, 0.02f, Slider[i].SBar_Pos.z)); }
+
+
+		if (MenuSwitchCounter[0] > 0.0f) { MenuSwitchCounter[0] -= deltaTasSecs; }
+		else {
+			bool pressedA = false;
+			for (unsigned int i = 0; i < NumberOfSliders; i++) {
+				//move nob along the slider
+				if (Slider[i].moveNob(MPosToOPosX, MPosToOPosY)) { ButtonForSliders[i].setPosition(glm::vec3(MPosToOPosX, 0.02f, Slider[i].SBar_Pos.z)); pressedA = true; }
+			}
+			if (pressedA) { MenuSwitchCounter[0] = 0.50f; }
 		}
 	}
 }
@@ -2015,15 +2055,17 @@ void LoadAllObjects()
 	Rifts[0].objectLoader(ObjectPath + "Square.obj");
 	Rifts[0].setColour(glm::vec4(1.5f, 1.5f, 0.0f, 0.10f));
 	Rifts[0].setMass(0.0f);
-	Rifts[0].setScale(glm::vec3(2.0f, 7.0f, 30.0f));
-	Rifts[0].setSizeOfHitBox(glm::vec3(1.0f, 7.0f, 30.0f)); //HitBox
-	Rifts[0].setPosition(glm::vec3(48.0f, 3.50f, 0.0f));
-	Rifts[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rift_01.png").c_str())));
-	//Player TWO Tower
+	Rifts[0].setScale(glm::vec3(2.0f, 14.0f, 30.0f));
+	Rifts[0].setSizeOfHitBox(glm::vec3(2.0f, 14.0f, 30.0f)); //HitBox
+	Rifts[0].setPosition(glm::vec3(48.0f, 7.0f, 0.0f));
+	//Rifts[0].textureHandle_hasTransparency = true;
+	Rifts[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Hexagons.png").c_str())));
+	//Player TWO Tower	//Rift_01  Rift_02  
 	Rifts[1].objectLoader(&Rifts[0]);
-	Rifts[1].setPosition(glm::vec3(-48.0f, 3.50f, 0.0f));
-	Rifts[1].setRotation(glm::vec3(0.0f, (degToRad*180.0f), 0.0f));
-	Rifts[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rift_02.png").c_str())));
+	Rifts[1].setPosition(glm::vec3(-48.0f, 7.0f, 0.0f));
+	Rifts[1].setRotation(glm::vec3(0.0f, 180.0f, 0.0f));
+	//Rifts[1].textureHandle_hasTransparency = true;
+	Rifts[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Hexagons.png").c_str())));
 
 	//Specials
 	Specials[0].objectLoader(ObjectPath + "Square.obj");
@@ -2033,24 +2075,24 @@ void LoadAllObjects()
 	Specials[0].setSizeOfHitBox(glm::vec3(4.0f, 2.0f, 4.0f)); //HitBox
 	Specials[0].setPosition(glm::vec3(0.0f, 10.0f, 0.0f));
 	Specials[0].setSpecialAttribute(0);
-	Specials[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Box.png").c_str())));
+	Specials[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Box.png").c_str())));
 	Specials[0].Viewable = false;
 	Specials[1].objectLoader(&Specials[0]);
 	Specials[1].setPosition(glm::vec3(0.0f, 20.0f, 0.0f));
 	Specials[1].setSpecialAttribute(1);
-	Specials[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Box_RushRift.png").c_str())));
+	Specials[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Box_RushRift.png").c_str())));
 	Specials[2].objectLoader(&Specials[0]);
 	Specials[2].setPosition(glm::vec3(0.0f, 20.0f, 0.0f));
 	Specials[2].setSpecialAttribute(2);
-	Specials[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Box_InAir.png").c_str())));
+	Specials[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Box_InAir.png").c_str())));
 	Specials[3].objectLoader(&Specials[0]);
 	Specials[3].setPosition(glm::vec3(0.0f, 20.0f, 0.0f));
 	Specials[3].setSpecialAttribute(3);
-	Specials[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Box_Health.png").c_str())));
+	Specials[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Box_Health.png").c_str())));
 	Specials[4].objectLoader(&Specials[0]);
 	Specials[4].setPosition(glm::vec3(0.0f, 20.0f, 0.0f));
 	Specials[4].setSpecialAttribute(4);
-	Specials[4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Box.png").c_str())));
+	Specials[4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Box.png").c_str())));
 
 	//*degToRad
 
@@ -2063,15 +2105,16 @@ void LoadAllObjects()
 	Objects[0].setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
 	Objects[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Ground.png").c_str())));
 	//Walls Left
-	Objects[1].objectLoader(ObjectPath + "Wall_LR.obj");
+	Objects[1].objectLoader(ObjectPath + "Stands.obj");//Wall_LR
 	Objects[1].setColour(glm::vec4(0.5f, 0.50f, 0.5f, 1.0f));
 	Objects[1].setMass(0.0f);
 	Objects[1].setScale(glm::vec3(1.0f, 1.0f, 1.0f)); //size //not HitBox
 	//Objects[1].setSizeOfHitBox(glm::vec3(100.0f, 10.0f, 1.0f)); //HitBox
 	Objects[1].setPosition(glm::vec3(0.0f, -1.0f, -50.0f));
+	Objects[1].setRotation(glm::vec3(0.0f, 180.0f, 0.0f));
 	Objects[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Walls_LR.png").c_str())));
 	//Walls Right
-	Objects[2].objectLoader(ObjectPath + "Wall_LR.obj");
+	Objects[2].objectLoader(ObjectPath + "Stands.obj");//Wall_LR
 	Objects[2].setColour(glm::vec4(0.5f, 0.50f, 0.5f, 1.0f));
 	Objects[2].setMass(0.0f);
 	Objects[2].setScale(glm::vec3(1.0f, 1.0f, 1.0f)); //size //not HitBox
@@ -2079,54 +2122,58 @@ void LoadAllObjects()
 	Objects[2].setPosition(glm::vec3(0.0f, -1.0f, 50.0f));
 	Objects[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Walls_LR.png").c_str())));
 	//Walls Front
-	Objects[3].objectLoader(ObjectPath + "Wall_FB.obj");
+	Objects[3].objectLoader(ObjectPath + "Stands.obj"); //Wall_FB
 	Objects[3].setColour(glm::vec4(0.5f, 0.50f, 0.5f, 1.0f));
 	Objects[3].setMass(0.0f);
 	Objects[3].setScale(glm::vec3(1.0f, 1.0f, 1.0f)); //size //not HitBox
 	//Objects[3].setSizeOfHitBox(glm::vec3(1.0f, 10.0f, 100.0f)); //HitBox
 	Objects[3].setPosition(glm::vec3(-50.0f, -1.0f, 0.0f));
+	Objects[3].setRotation(glm::vec3(0.0f, 270.0f, 0.0f));
 	Objects[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Walls_FB.png").c_str())));
 	//Walls Back
-	Objects[4].objectLoader(ObjectPath + "Wall_FB.obj");
+	Objects[4].objectLoader(ObjectPath + "Stands.obj"); //Wall_FB
 	Objects[4].setColour(glm::vec4(0.5f, 0.50f, 0.5f, 1.0f));
 	Objects[4].setMass(0.0f);
 	Objects[4].setScale(glm::vec3(1.0f, 1.0f, 1.0f)); //size //not HitBox
 	//Objects[4].setSizeOfHitBox(glm::vec3(1.0f, 10.0f, 100.0f)); //HitBox
 	Objects[4].setPosition(glm::vec3(50.0f, -1.0f, 0.0f));
+	Objects[4].setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
 	Objects[4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Walls_FB.png").c_str())));
 	//Rift magnets
 	Objects[5].objectLoader(ObjectPath + "Rift//Magnet_Left.obj");
 	Objects[5].setPosition(glm::vec3(47.0f, 0.0f, -20.0f));
 	Objects[5].setMass(0.0f);
-	Objects[5].setScale(glm::vec3(1.0f, 1.0f, 2.0f));
-	Objects[5].setSizeOfHitBox(glm::vec3(2.650f, 7.0f, 3.60f)); //HitBox
-	Objects[5].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Magnet_Rift.png").c_str())));
+	Objects[5].setScale(glm::vec3(1.0f, 1.50f, 1.50f));
+	Objects[5].setSizeOfHitBox(glm::vec3(2.650f, 7.0f, 3.60f));
+	Objects[5].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Magnet_Rift_01.png").c_str())));
 	Objects[6].objectLoader(ObjectPath + "Rift//Magnet_Right.obj");
 	Objects[6].setPosition(glm::vec3(47.0f, 0.0f, 20.0f));
 	Objects[6].setMass(0.0f);
-	Objects[6].setScale(glm::vec3(1.0f, 1.0f, 2.0f));
-	Objects[6].setSizeOfHitBox(glm::vec3(2.650f, 7.0f, 3.60f)); //HitBox
-	Objects[6].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Magnet_Rift.png").c_str())));
+	Objects[6].setScale(glm::vec3(1.0f, 1.50f, 1.50f));
+	Objects[6].setSizeOfHitBox(glm::vec3(2.650f, 7.0f, 3.60f));
+	Objects[6].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Magnet_Rift_01.png").c_str())));
 	Objects[7].objectLoader(&Objects[5]);//left
 	Objects[7].setPosition(glm::vec3(-47.0f, 0.0f, 20.0f));
-	Objects[7].setRotation(glm::vec3(0.0f, (degToRad*180.0f), 0.0f));
+	Objects[7].setRotation(glm::vec3(0.0f, 180.0f, 0.0f));
+	Objects[7].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Magnet_Rift_02.png").c_str())));
 	Objects[8].objectLoader(&Objects[6]);//right
 	Objects[8].setPosition(glm::vec3(-47.0f, 0.0f, -20.0f));
-	Objects[8].setRotation(glm::vec3(0.0f, (degToRad*180.0f), 0.0f));
+	Objects[8].setRotation(glm::vec3(0.0f, 180.0f, 0.0f));
+	Objects[8].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Magnet_Rift_02.png").c_str())));
 
 	//
-	Objects[9].objectLoader(ObjectPath + "Square.obj");
-	Objects[9].setMass(0.0f);
-	Objects[9].setScale(glm::vec3(4.0f, 4.0f, 4.0f));
-	Objects[9].setSizeOfHitBox(glm::vec3(4.0f, 2.0f, 4.0f)); //HitBox
-	Objects[9].setPosition(glm::vec3(-15.0f, 2.0f, 10.0f));
-	Objects[9].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Box.png").c_str())));
-	Objects[10].objectLoader(&Objects[9]);
-	Objects[10].setPosition(glm::vec3(10.0f, 2.0f, 20.0f));
-	Objects[11].objectLoader(&Objects[9]);
-	Objects[11].setPosition(glm::vec3(6.0f, 2.0f, -15.0f));
-	Objects[12].objectLoader(&Objects[9]);
-	Objects[12].setPosition(glm::vec3(-30.0f, 2.0f, -20.0f));
+	//Objects[9].objectLoader(ObjectPath + "Square.obj");
+	//Objects[9].setMass(0.0f);
+	//Objects[9].setScale(glm::vec3(4.0f, 4.0f, 4.0f));
+	//Objects[9].setSizeOfHitBox(glm::vec3(4.0f, 2.0f, 4.0f)); //HitBox
+	//Objects[9].setPosition(glm::vec3(-15.0f, 2.0f, 10.0f));
+	//Objects[9].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Box.png").c_str())));
+	//Objects[10].objectLoader(&Objects[9]);
+	//Objects[10].setPosition(glm::vec3(10.0f, 2.0f, 20.0f));
+	//Objects[11].objectLoader(&Objects[9]);
+	//Objects[11].setPosition(glm::vec3(6.0f, 2.0f, -15.0f));
+	//Objects[12].objectLoader(&Objects[9]);
+	//Objects[12].setPosition(glm::vec3(-30.0f, 2.0f, -20.0f));
 
 
 	//Enemies
@@ -2179,19 +2226,19 @@ void LoadAllTextPlane()
 	planeForText[0].setScale(glm::vec3(39.0f*0.9f, 1.0f, 39.0f*1.6f));
 	planeForText[0].setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
 	planeForText[0].setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-	planeForText[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Main_Menu.png").c_str())));
+	planeForText[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Main_Menu.png").c_str())));
 
 	planeForText[1].objectLoader(&planeForText[0]);
-	planeForText[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Options.png").c_str())));
+	planeForText[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Options.png").c_str())));
 
 	planeForText[2].objectLoader(&planeForText[0]);
-	planeForText[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Controls.png").c_str())));
+	planeForText[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Controls.png").c_str())));
 
 	planeForText[3].objectLoader(&planeForText[0]);
-	planeForText[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups.png").c_str())));
+	planeForText[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Power_Ups.png").c_str())));
 
 	planeForText[4].objectLoader(&planeForText[0]);
-	planeForText[4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Options.png").c_str())));
+	planeForText[4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Options.png").c_str())));
 
 
 
@@ -2200,28 +2247,28 @@ void LoadAllTextPlane()
 	ButtonObjects[0].setScale(glm::vec3(9.0f*0.9f, 1.0f, 7.0f*1.6f));
 	ButtonObjects[0].setSizeOfHitBox(glm::vec3(9.0f*1.45f, 1.0f, 7.0f*1.58f));
 	ButtonObjects[0].setPosition(glm::vec3(0.0f, 0.01f, -3.0f));
-	ButtonObjects[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Start_Button.png").c_str())));
+	ButtonObjects[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Start_Button.png").c_str())));
 	for (unsigned int i = 1; i < NumberOfButtons; i++) { ButtonObjects[i].objectLoader(&ButtonObjects[0]); }
 	//Options Button
 	ButtonObjects[1].setPosition(glm::vec3(0.0f, 0.01f, 9.0f));
-	ButtonObjects[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Options_Button.png").c_str())));
+	ButtonObjects[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Options_Button.png").c_str())));
 	//Exit Button
 	ButtonObjects[2].setPosition(glm::vec3(0.0f, 0.01f, 21.0f));
-	ButtonObjects[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Exit_Button.png").c_str())));
+	ButtonObjects[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Exit_Button.png").c_str())));
 	//Back Button
 	ButtonObjects[3].setPosition(glm::vec3(-21.0f, 0.01f, -21.0f));
 	ButtonObjects[3].setScale(glm::vec3(2.0f*0.9f, 1.0f, 3.50f*0.9f));
 	ButtonObjects[3].setSizeOfHitBox(glm::vec3(2.0f*1.5f, 1.0f, 3.50f*0.9f));
-	ButtonObjects[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Back_Button.png").c_str())));
+	ButtonObjects[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Back_Button.png").c_str())));
 	//Exit Button
 	ButtonObjects[4].setPosition(glm::vec3(0.0f, 0.01f, -3.0f));
-	ButtonObjects[4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Exit_Button.png").c_str())));
+	ButtonObjects[4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Controls_Button.png").c_str())));
 	//Exit Button
 	ButtonObjects[5].setPosition(glm::vec3(0.0f, 0.01f, 9.0f));
-	ButtonObjects[5].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Exit_Button.png").c_str())));
+	ButtonObjects[5].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Power_Ups_Button.png").c_str())));
 	//Exit Button
 	ButtonObjects[6].setPosition(glm::vec3(0.0f, 0.01f, 21.0f));
-	ButtonObjects[6].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Exit_Button.png").c_str())));
+	ButtonObjects[6].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Config_Button.png").c_str())));
 	//_Button.png
 	for (unsigned int i = 0; i < NumberOfButtons; i++) {
 		Button[i].SBut_Top = ButtonObjects[i].Top(), Button[i].SBut_Bot = ButtonObjects[i].Bottom(), Button[i].SBut_Pos = ButtonObjects[i].Position(), Button[i].SBut_Rad = (ButtonObjects[i].Radius() / 2.0f);
@@ -2233,13 +2280,13 @@ void LoadAllTextPlane()
 	planeForSliders[0].setScale(glm::vec3(5.0f, 1.0f, 3.50f));
 	planeForSliders[0].setSizeOfHitBox(glm::vec3(5.0f*1.6f, 1.0f, 3.50f*0.9f));
 	planeForSliders[0].setPosition(glm::vec3(20.0f, 0.01f, -10.0f));
-	planeForSliders[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Slider_Bar.png").c_str())));
+	planeForSliders[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Slider_Bar.png").c_str())));
 	//Slider nob
 	ButtonForSliders[0].objectLoader(&planeForSliders[0]);
 	ButtonForSliders[0].setScale(glm::vec3(1.0f, 1.0f, 3.50f));
 	ButtonForSliders[0].setSizeOfHitBox(glm::vec3(1.0f, 1.0f, 3.50f*0.9f));
 	ButtonForSliders[0].setPosition(glm::vec3(20.0f, 0.02f, -10.0f));
-	ButtonForSliders[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Slider_Nob.png").c_str())));
+	ButtonForSliders[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Slider_Nob.png").c_str())));
 
 
 	//Slider full
@@ -2361,6 +2408,9 @@ int main(int argc, char **argv)
 	std::cout << std::endl << "Press [Esc] to exit." << std::endl;
 	std::cout << "_____________________________________" << std::endl;
 	planeForText[0].Viewable = true;
+
+
+	randomSpecialTime = (rand() % 45 + 15) + ((rand() % 100 - 50)*0.01f); //-29.50 to 90.50
 
 	// start the event handler
 	glutMainLoop();

@@ -38,7 +38,7 @@ void main()
 	vec4 textureColor = texture2D(tex1, vIn.texCoord.st);
 
 	//Transparent
-	if (textureColor.a < 0.7){ discard; }
+	//if (textureColor.a < 0.7){ discard; }
 
 	//diffuse conponent
 	float lightIntensity = clamp(dot(vIn.normal, L_01), 0.0, 1.0);
@@ -67,7 +67,7 @@ void main()
 
 	FragColor = (out_Color_01 + out_Color_02)*0.50;
 	FragColor.w = 1.0;
-	//if (textureColor.a < 0.7){ FragColor.a = (textureColor.a*0.5); }
-	//if (textureColor.a < 0.3){ discard; }
+	if (textureColor.a < 0.9){ FragColor.a = (textureColor.a*0.5); }
+	if (textureColor.a < 0.3){ discard; }
 	
 }
