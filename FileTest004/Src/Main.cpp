@@ -129,6 +129,7 @@ MorphMath morphmath;
 Sound systemSound;
 Sound drum[2];
 Sound powerup[8];
+FMOD::Channel *powChannel;
 //Text
 RenderText SystemText;
 
@@ -313,8 +314,17 @@ void InMenuDraw(int Inum)
 void MenuScreen(float deltaTasSeconds)
 {
 	//Put dynamic background soundtrack here!
-	//drum[0].play();
-	systemSound.systemUpdate();
+	drum[0].Play();
+	
+	systemSound.SystemUpdate();
+
+	FMOD_VECTOR drumPos; drumPos.x = 0; drumPos.y = 0; drumPos.z = 0;
+	FMOD_VECTOR drumVel; drumVel.x = 12.0f; drumVel.y = 0.0f; drumVel.z = 0.0f;
+
+	powerup[5].SetPosition(powChannel, drumPos, drumVel);
+
+
+
 	if (mouseDown[0]) {
 		mouseDown[0] = false;
 		if (Button[0].button(MPosToOPosX, MPosToOPosY)) { setBoardStart(); inGame = true; inMenu = false; }
@@ -561,7 +571,7 @@ void InGameDraw(int Inum)
 */
 void GameField(float deltaTasSeconds) 
 {
-	systemSound.systemUpdate();
+	systemSound.SystemUpdate();
 	Manifold m;
 
 
@@ -1576,12 +1586,14 @@ void KeyboardCallbackFunction(unsigned char key, int x, int y)
 			else if (cameraMode == 1) { cameraMode = 0; }
 			break;
 		case '1': 
-			Specials[1].Viewable = true; Specials[1].setPosition(glm::vec3(0.0f, 20.0f, 0.0f));//Seeker swarm
 			powerup[5].Play();
+			Specials[1].Viewable = true; Specials[1].setPosition(glm::vec3(0.0f, 20.0f, 0.0f));//Seeker swarm
+		
 				  break;
 		case '2': 
-			Specials[2].Viewable = true; Specials[2].setPosition(glm::vec3(0.0f, 20.0f, 0.0f));// Toss up
 			powerup[7].Play();
+			Specials[2].Viewable = true; Specials[2].setPosition(glm::vec3(0.0f, 20.0f, 0.0f));// Toss up
+
 				  break;
 		case '3': 
 			Specials[3].Viewable = true; Specials[3].setPosition(glm::vec3(0.0f, 20.0f, 0.0f));//Health up
@@ -2002,17 +2014,21 @@ void LoadAllSounds() {
 	}
 	else { std::cout << "[ERROR] Could not find [Media]" << std::endl; }
 
-	systemSound.sys.Soundengineinit();
+	systemSound.Sys.Init();
+	Sound::Sys.listenerPos.x = 0.0f; Sound::Sys.listenerPos.y = 0.0f; Sound::Sys.listenerPos.z = 0.0f;
 	// drum[0].Load(_strdup((SoundPath + "callingforrain.wav").c_str()), TRUE, TRUE);
 	//Power up sound effects
-	powerup[0].Load(_strdup((SoundPath + "Voicerecording_boost.wav").c_str()), TRUE, FALSE);//boost
-	powerup[1].Load(_strdup((SoundPath + "Voicerecording_flee.wav").c_str()), TRUE, FALSE);//flee
-	powerup[2].Load(_strdup((SoundPath + "Voicerecording_flipped.wav").c_str()), TRUE, FALSE);//flipped
-	powerup[3].Load(_strdup((SoundPath + "Voicerecording_invincible.wav").c_str()), TRUE, FALSE);//invincibility
-	powerup[4].Load(_strdup((SoundPath + "Voicerecording_sc.wav").c_str()), TRUE, FALSE);//Short Circuit
-	powerup[5].Load(_strdup((SoundPath + "Voicerecording_seeker.wav").c_str()), TRUE, FALSE);//Seeker Swarm
-	powerup[6].Load(_strdup((SoundPath + "Voicerecording_ss.wav").c_str()), TRUE, FALSE);//Super Shockwave
-	powerup[7].Load(_strdup((SoundPath + "Voicerecording_toss.wav").c_str()), TRUE, FALSE);//Toss up
+	powerup[0].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_boost.wav").c_str()), TRUE, FALSE);//boost
+	powerup[1].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_flee.wav").c_str()), TRUE, FALSE);//flee
+	powerup[2].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_flipped.wav").c_str()), TRUE, FALSE);//flipped
+	powerup[3].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_invincible.wav").c_str()), TRUE, FALSE);//invincibility
+	powerup[4].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_sc.wav").c_str()), TRUE, FALSE);//Short Circuit
+	powerup[5].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_seeker.wav").c_str()), TRUE, FALSE);//Seeker Swarm
+	powerup[6].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_ss.wav").c_str()), TRUE, FALSE);//Super Shockwave
+	powerup[7].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_toss.wav").c_str()), TRUE, FALSE);//Toss up
+
+
+	powChannel = powerup[5].Play();
 }
 
 /* function LoadAllObjects()
