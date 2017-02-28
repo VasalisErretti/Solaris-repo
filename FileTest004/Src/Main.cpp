@@ -314,7 +314,7 @@ void InMenuDraw(int Inum)
 void MenuScreen(float deltaTasSeconds)
 {
 	//Put dynamic background soundtrack here!
-	drum[0].Play();
+	//drum[0].Play();
 	
 	systemSound.SystemUpdate();
 
@@ -2028,7 +2028,7 @@ void LoadAllSounds() {
 	powerup[7].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_toss.wav").c_str()), TRUE, FALSE);//Toss up
 
 
-	powChannel = powerup[5].Play();
+	//powChannel = powerup[5].Play();
 }
 
 /* function LoadAllObjects()
