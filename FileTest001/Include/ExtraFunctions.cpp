@@ -596,7 +596,7 @@ static void applySeekSystem(Manifold &m, float infunce) {
 * Description:
 *   - this applys force to objects towards certain directions
 *	- used m.A for fleeing objects
-*	- not in use...
+*	- used to make enemies flee walls
 */
 static void FleeFromDirection(Manifold &m, float infunce, std::string fleeDirection) {
 	glm::vec3 flee;

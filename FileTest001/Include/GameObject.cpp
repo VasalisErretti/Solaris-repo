@@ -100,41 +100,42 @@ void GameObject::updateP(float deltaT)
 				inShock = false;
 			}
 		}
-
-		float TopSpeed = 4.0f;
-		if (m_Mass > 0.0f) {
-			if (((m_Velocity.x < TopSpeed) && (m_Velocity.y < TopSpeed) && (m_Velocity.z < TopSpeed))
-				&& ((m_Velocity.x > -TopSpeed) && (m_Velocity.y > -TopSpeed) && (m_Velocity.z > -TopSpeed)))
-			{
-				m_Acceleration = (m_ForceOnObject / m_Mass);//update acceleration based on external force
-				//if a force is applyed to the object //update velocity based on acceleration
-				if (m_Acceleration != glm::vec3(0.0f)) { m_Velocity += ((m_Acceleration * deltaT)*0.5f); }
-				//if no force is applyed to the object
-				else { m_Velocity -= (m_Velocity * m_Drag); }
-				//facing a direction
-				if (m_Velocity.x <= -0.01f || m_Velocity.x >= 0.01f || m_Velocity.z <= -0.01f || m_Velocity.z >= 0.01f) {
-					//ForwardDirection = (m_Position - (m_Position + m_Velocity));
-					FaceYRotation = atan2(-ForwardDirection.z, ForwardDirection.x);
-					if (!IsJumping) { this->setRotation(glm::vec3(0.0f, FaceYRotation*(180.0f / 3.14159f), 0.0f)); }
-					if (IsJumping && FaceYRotation != 0.0f) { this->setRotation(glm::vec3(0.0f, FaceYRotation*(180.0f / 3.14159f), 0.0f)); }
+		else {
+			float TopSpeed = 4.0f;
+			if (m_Mass > 0.0f) {
+				if (((m_Velocity.x < TopSpeed) && (m_Velocity.y < TopSpeed) && (m_Velocity.z < TopSpeed))
+					&& ((m_Velocity.x > -TopSpeed) && (m_Velocity.y > -TopSpeed) && (m_Velocity.z > -TopSpeed)))
+				{
+					m_Acceleration = (m_ForceOnObject / m_Mass);//update acceleration based on external force
+					//if a force is applyed to the object //update velocity based on acceleration
+					if (m_Acceleration != glm::vec3(0.0f)) { m_Velocity += ((m_Acceleration * deltaT)*0.5f); }
+					//if no force is applyed to the object
+					else { m_Velocity -= (m_Velocity * m_Drag); }
+					//facing a direction
+					if (m_Velocity.x <= -0.01f || m_Velocity.x >= 0.01f || m_Velocity.z <= -0.01f || m_Velocity.z >= 0.01f) {
+						//ForwardDirection = (m_Position - (m_Position + m_Velocity));
+						FaceYRotation = atan2(-ForwardDirection.z, ForwardDirection.x);
+						if (!IsJumping) { this->setRotation(glm::vec3(0.0f, FaceYRotation*(180.0f / 3.14159f), 0.0f)); }
+						if (IsJumping && FaceYRotation != 0.0f) { this->setRotation(glm::vec3(0.0f, FaceYRotation*(180.0f / 3.14159f), 0.0f)); }
+					}
+					//update position based on velocity
+					m_Position += (m_Velocity + (((m_ForceOnObject / m_Mass))*1.5f));
 				}
-				//update position based on velocity
-				m_Position += (m_Velocity + (((m_ForceOnObject / m_Mass))*1.5f));
+				else if (m_Velocity.x > TopSpeed) { m_Velocity.x = (TopSpeed*0.95); }
+				else if (m_Velocity.x < -TopSpeed) { m_Velocity.x = -(TopSpeed*0.95); }
+				else if (m_Velocity.y > TopSpeed) { m_Velocity.y = (TopSpeed*0.95); }
+				else if (m_Velocity.y < -TopSpeed) { m_Velocity.y = -(TopSpeed*0.95); }
+				else if (m_Velocity.z > TopSpeed) { m_Velocity.z = (TopSpeed*0.95); }
+				else if (m_Velocity.z < -TopSpeed) { m_Velocity.z = -(TopSpeed*0.95); }
+
+				else if (m_Velocity.x == NULL) { m_Velocity.x = 0.0f; }
+				else if (m_Velocity.y == NULL) { m_Velocity.y = 0.0f; }
+				else if (m_Velocity.z == NULL) { m_Velocity.z = 0.0f; }
 			}
-			else if (m_Velocity.x >  TopSpeed) { m_Velocity.x = (TopSpeed*0.95); }
-			else if (m_Velocity.x < -TopSpeed) { m_Velocity.x = -(TopSpeed*0.95); }
-			else if (m_Velocity.y >  TopSpeed) { m_Velocity.y = (TopSpeed*0.95); }
-			else if (m_Velocity.y < -TopSpeed) { m_Velocity.y = -(TopSpeed*0.95); }
-			else if (m_Velocity.z >  TopSpeed) { m_Velocity.z = (TopSpeed*0.95); }
-			else if (m_Velocity.z < -TopSpeed) { m_Velocity.z = -(TopSpeed*0.95); }
+			m_ForceOnObject = glm::vec3(0.0f, 0.0f, 0.0f);//zero out the old force
 
-			else if (m_Velocity.x == NULL) { m_Velocity.x = 0.0f; }
-			else if (m_Velocity.y == NULL) { m_Velocity.y = 0.0f; }
-			else if (m_Velocity.z == NULL) { m_Velocity.z = 0.0f; }
+			if (!inAir && !onObject) { m_Position.y = m_Radius.y; }
 		}
-		m_ForceOnObject = glm::vec3(0.0f, 0.0f, 0.0f);//zero out the old force
-
-		if (!inAir && !onObject) { m_Position.y = m_Radius.y; }
 	}
 	else if (Viewable == false) {
 		m_Acceleration = glm::vec3(0.0f, 0.0f, 0.0f);//update acceleration based on external force
@@ -196,6 +197,7 @@ bool GameObject::objectLoader(const char* filePath)
 		while (1)// this can't be 0
 		{
 			char lineHeader[64];
+			lineHeader[0] = '\0';
 			// read the first word of the line
 			int res = fscanf_s(file, "%s", lineHeader, _countof(lineHeader));
 			if (res == EOF) { break; } //when it reaches the end of the file, exit the while loop
@@ -253,7 +255,7 @@ bool GameObject::objectLoader(const char* filePath)
 	fclose(file);
 
 	//convert obj to interleaved vertex array
-	numtris = faces.size() * 3;
+	this->numtris = faces.size() * 3;
 
 	this->verts = new float[numtris * 3];
 	this->norms = new float[numtris * 3];
@@ -380,6 +382,7 @@ bool GameObject::objectLoader(std::string filePath1)
 		while (1)// this can't be 0
 		{
 			char lineHeader[64];
+			lineHeader[0] = '\0';
 			// read the first word of the line
 			int res = fscanf_s(file, "%s", lineHeader, _countof(lineHeader));
 			if (res == EOF) { break; } //when it reaches the end of the file, exit the while loop
@@ -437,7 +440,7 @@ bool GameObject::objectLoader(std::string filePath1)
 	fclose(file);
 
 	//convert obj to interleaved vertex array
-	numtris = faces.size() * 3;
+	this->numtris = faces.size() * 3;
 
 	this->verts = new float[numtris * 3];
 	this->norms = new float[numtris * 3];

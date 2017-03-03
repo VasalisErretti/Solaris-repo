@@ -75,6 +75,7 @@ protected:
 
 public:
 	bool Viewable = true;
+	float SprintSpeed = 1.5f;
 
 	bool inAir = false; float InAirCounter = 0.0f; bool IsJumping = false;
 	bool onObject = false; int onObjectNum = 0;

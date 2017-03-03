@@ -215,6 +215,7 @@ bool HTRLoader::processBasePositionSection(FILE* fp, char* loc)
 
 		sscanf(buffer, "%s %f %f %f %f %f %f %f", jointNameBuff, &tx, &ty, &tz, &rx, &ry, &rz, &boneLength);
 
+
 		// Find the joint descriptor by name
 		JointDescriptor* jd = getJointDescriptorByName(jointNameBuff);
 
@@ -257,6 +258,7 @@ bool HTRLoader::processAnimationSection(FILE* fp, char* loc)
 			float scale;
 
 			sscanf(buffer, "%d %f %f %f %f %f %f %f", &frame, &tx, &ty, &tz, &rx, &ry, &rz, &scale);
+
 
 			// CODE HERE C //////////////////////////////////////////////////////////////////////////
 			// Store values

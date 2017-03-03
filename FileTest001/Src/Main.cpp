@@ -1,21 +1,21 @@
 // Memory Leak Detection
-#define _CRTDBG_MAP_ALLOC
-#ifdef _DEBUG
-	#ifndef DBG_NEW
-		#define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
-		#define new DBG_NEW
-		#pragma comment(lib, "DevIL.lib")
-		#pragma comment(lib, "glew32.lib")
-		#pragma comment(lib, "glut32.lib")
-		#pragma comment(lib, "ILU.lib")
-		#pragma comment(lib, "ILUT.lib")
-		#pragma comment(lib, "XInput.lib")
-		#pragma comment(lib, "Include/FMOD/fmod_vc.lib")
-	#endif
-#endif  
-// _DEBUG
-#include <stdlib.h>
-#include <crtdbg.h>
+//#define _CRTDBG_MAP_ALLOC
+//#ifdef _DEBUG
+//	#ifndef DBG_NEW
+//		#define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
+//		#define new DBG_NEW
+//		#pragma comment(lib, "DevIL.lib")
+//		#pragma comment(lib, "glew32.lib")
+//		#pragma comment(lib, "glut32.lib")
+//		#pragma comment(lib, "ILU.lib")
+//		#pragma comment(lib, "ILUT.lib")
+//		#pragma comment(lib, "XInput.lib")
+//		#pragma comment(lib, "Include/FMOD/fmod_vc.lib")
+//	#endif
+//#endif  
+//// _DEBUG
+//#include <stdlib.h>
+//#include <crtdbg.h>
 
 // Core Libraries
 #define WIN32_LEAN_AND_MEAN //cmd
@@ -47,6 +47,8 @@
 #include "ExtraFunctions.cpp"
 #include "HTRLoader.h"
 #include "FMOD/SoundEngine.h"
+#include "FileLoader.h"
+
 
 //temp
 static float TestFloat = 0.0f; static float TestFloatIncrementAmount = 01.0f;
@@ -80,7 +82,7 @@ bool mouseDown[3];
 //Game Objects//
 const int NumberOfPlayers = 2; GameObject Players[NumberOfPlayers];
 GameObject ShockWaves[NumberOfPlayers]; GameObject Rifts[NumberOfPlayers];
-const int NumberOfObjects = 9; GameObject Objects[NumberOfObjects];
+const int NumberOfObjects = 6; GameObject Objects[NumberOfObjects];
 const int NumberOfSpecials = 5; GameObject Specials[NumberOfSpecials];
 const int NumberOfEnemies = 12; GameObject Enemies[12];
 GameObject ShadowObject[2];
@@ -111,7 +113,6 @@ bool inOptions = false; int inOptionsTab = 0;
 std::string lastMenu = "inMenu"; float MenuSwitchCounter[2] = { 0.0f, 0.0f };
 const bool ApplyingGravity = true;
 const bool CollisionBetweenObjects = true;
-const bool EnemiesSeekTowers = true; int EnemiesSeekingTower = -1; float EnemiesSeekTowerLength = 6.0f; float EnemiesSeekTowerCounter = 0.0f;
 const bool IdleEnemiesRespawn = true;
 const bool EnableShadows = true;
 //Shock wave attributes
@@ -120,14 +121,22 @@ bool AButtonDown = false; bool ShockWaveOn = true;
 bool PShockWave[2] = { false }; float PShockWaveCounter[2] = { 0.0f }; float PShockWaveChargeUp[2] = { 0.0f };
 //Sprint attributes
 float PSprintCounter[2] = { 0.0f }; float PSprintCoolDown = 2.0f; 
-float SprintSpeed = 1.5f;
 glm::vec3 speedToWallDegradation(0.80f, 0.50f, 0.80f);
+
+bool FlipedControllers[2];
+float SprintSpeed = 1.5f;
+const bool EnemiesSeekTowers = true;
+int PlayerAffected[2];
+int AbilityAffected[10];
+float AbilityCounter[10]	{ 6.0f,6.0f,6.0f,6.0f,6.0f, 6.0f,6.0f,6.0f,6.0f,6.0f };//{ 0.0f,0.0f,0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f,0.0f,0.0f }; 
+float AbilityLength[10]		{ 6.0f,6.0f,6.0f,6.0f,6.0f, 6.0f,6.0f,6.0f,6.0f,6.0f };
+
 //Gamepad controls
 Gamepad gamepad;
 MorphMath morphmath;
 //Sounds
-Sound systemSound;
 Sound drum[2];
+FMOD::Channel *drumChannel;
 //Text
 RenderText SystemText;
 
@@ -243,40 +252,137 @@ void WhatCameraIsLookingAt()
 
 //////////////////////////////////////////////////////////////////////
 
-void DrawTextOnScreen(int iNum)
+/* function InGameDraw()
+* Description:
+*  - Draws the game screen
+*/
+void InEditorDraw(int Inum)
 {
 	shader->bind();
-	cameralook = iNum; //window
+	cameralook = Inum; //window
 	WhatCameraIsLookingAt(); //Resising Window
-	// Draw our scene
-	shader->uniformMat4x4("mvm", &modelViewMatrix[2]);
-	shader->uniformMat4x4("prm", &projectionMatrix[2]);
-	//shader->uniformFloat("dispNormals", dispNormals);
-	shader->uniformVector("lightPosition_01", &lightPosition_01);
-	shader->uniformVector("lightPosition_02", &lightPosition_02);
-	glBindTexture(GL_TEXTURE_2D, textureHandle);
-	shader->uniformTex("tex1", textureHandle, 0);
+	 //Draw scene//cameraViewMatrix //modelViewMatrix
+	shader->uniformMat4x4("mvm", &modelViewMatrix[Inum]);
+	shader->uniformMat4x4("prm", &projectionMatrix[Inum]);
+	shader->uniformMat4x4("u_mvp", &(modelViewMatrix[Inum] * projectionMatrix[Inum]));
+	shader->uniformMat4x4("u_mv", &modelViewMatrix[Inum]);
+	shader->uniformMat4x4("u_lightPos_01", &(modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
+	shader->uniformMat4x4("u_lightPos_02", &(modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
 
-	//no longer works
-	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-	glBindTexture(GL_TEXTURE_2D, textureHandle);
+	for (unsigned int i = 0; i < NumberOfPlayers; i++) {
+		if (Players[i].Viewable) {
+			//Players
+			if (Players[i].textureHandle_hasTransparency == true) { disableCulling(); }
+			else { enableCulling(); }
+			Players[i].drawObject(shader);
+			//Shadows
+			if (EnableShadows) {
+				if (ShadowObject[0].textureHandle_hasTransparency == true) { disableCulling(); }
+				else { enableCulling(); }
+				ShadowObject[0].setPosition(glm::vec3(Players[i].Position().x, 0.01f, Players[i].Position().z));
+				ShadowObject[0].setScale(Players[i].Scale());
+				ShadowObject[0].setRotation(Players[i].Angle());
+				ShadowObject[0].drawObject(shader);
+			}
+			//ShockWaves
+			if (ShockWaveOn) {
+				if (ShockWaves[i].textureHandle_hasTransparency == true) { disableCulling(); }
+				else { enableCulling(); }
+				ShockWaves[i].drawObject(shader);
+			}
+			//Rifts
+			if (Rifts[i].textureHandle_hasTransparency == true) { disableCulling(); }
+			else { enableCulling(); }
+			Rifts[i].drawObject(shader);
 
-	// compute local transformation
-	glm::mat4x4 scaleMatrix(1.0f);
-	glm::mat4x4 rotationX = glm::rotate(0.0f, glm::vec3(1.0, 0.0, 0.0));
-	glm::mat4x4 rotationY = glm::rotate(0.0f, glm::vec3(0.0, 1.0, 0.0));
-	glm::mat4x4 rotationZ = glm::rotate(0.0f, glm::vec3(0.0, 0.0, 1.0));
-	glm::mat4x4 rotationMatrix = (rotationZ * rotationY * rotationX);
-	glm::mat4x4 translationMatrix = glm::translate(glm::vec3(20.0, 0.0, -10.0));
+			//Players[i].drawHTR(shader);
+		}
+	}
+	for (unsigned int i = 0; i < NumberOfObjects; i++) {
+		if (Objects[i].Viewable) {
+			if (Objects[i].textureHandle_hasTransparency == true) { disableCulling(); }
+			else { enableCulling(); }
+			Objects[i].drawObject(shader);
+		}
+	}
+	for (unsigned int i = 0; i < NumberOfEnemies; i++) {
+		//if (NumberOfEnemies > (sizeof(Enemies) / sizeof(Enemies[0]))) {
+		//	for (unsigned int i = (sizeof(Enemies) / sizeof(Enemies[0])); i < NumberOfEnemies; i++) {
+		//		Enemies[i].objectLoader(&Enemies[0]);
+		//		std::cout << "[" << i << "] [created more enemies]" << std::endl;
+		//	}
+		//	NumberOfEnemies = (sizeof(Enemies) / sizeof(Enemies[0]));
+		//}
+		if (Enemies[i].Viewable) {
+			//Enemies
+			if (Enemies[i].textureHandle_hasTransparency == true) { disableCulling(); }
+			else { enableCulling(); }
+			Enemies[i].drawObject(shader);
+			//Shadows
+			if (EnableShadows) {
+				if (ShadowObject[0].textureHandle_hasTransparency == true) { disableCulling(); }
+				else { enableCulling(); }
+				ShadowObject[0].setPosition(glm::vec3(Enemies[i].Position().x, 0.01f, Enemies[i].Position().z));
 
+				if ((Enemies[i].Position().y*0.05f) > 1.50f) { ShadowObject[0].setScale(Enemies[i].Scale()*1.50f); }
+				else if ((Enemies[i].Position().y*0.05f) < 1.0f) { ShadowObject[0].setScale(Enemies[i].Scale()*1.0f); }
+				else { ShadowObject[0].setScale(Enemies[i].Scale()*(Enemies[i].Position().y*0.05f)); }
 
-	glm::mat4x4 transform = translationMatrix * rotationMatrix * scaleMatrix;
-	shader->uniformMat4x4("localTransform", &transform);
-
-	writeSomething(1.0f, 1.0f, 1.0f, "Health:" + std::to_string(Health[iNum]));
+				ShadowObject[0].setRotation(Enemies[i].Angle());
+				ShadowObject[0].drawObject(shader);
+			}
+		}
+	}
+	for (unsigned int i = 0; i < NumberOfSpecials; i++) {
+		if (Specials[i].Viewable) {
+			//Specials
+			if (Specials[i].textureHandle_hasTransparency == true) { disableCulling(); }
+			else { enableCulling(); }
+			Specials[i].drawObject(shader);
+			//Shadows
+			if (EnableShadows) {
+				if (ShadowObject[1].textureHandle_hasTransparency == true) { disableCulling(); }
+				else { enableCulling(); }
+				ShadowObject[1].setPosition(glm::vec3(Specials[i].Position().x, 0.01f, Specials[i].Position().z));
+				ShadowObject[1].setScale(Specials[i].Scale());
+				ShadowObject[1].setRotation(Specials[i].Angle());
+				ShadowObject[1].drawObject(shader);
+			}
+		}
+	}
 
 	shader->unbind();
+
+
+
+
+	cameralook = 3; //window
+	WhatCameraIsLookingAt(); //Resising Window
+
+	SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]", -(windowWidth / 4), -(windowHeight / 4), 1.0f, glm::vec3(0.3, 0.3f, 0.9f), 1);
+
 }
+
+/* function GameField()
+* Description:
+*  - does all the functions/calculations for the game screen
+*/
+void EditorScreen(float deltaTasSeconds)
+{
+
+	Manifold m;
+
+	//Updating Targets
+	for (int i = 0; i < NumberOfPlayers; i++)	{ Players[i].updateP(deltaTasSeconds); }
+	for (int i = 0; i < NumberOfEnemies; i++)	{ Enemies[i].update(deltaTasSeconds); }
+	for (int i = 0; i < NumberOfSpecials; i++)	{ Specials[i].update(deltaTasSeconds); }
+	for (int i = 0; i < NumberOfObjects; i++)	{ Objects[i].update(deltaTasSeconds); }
+
+	m.~Manifold();
+}
+
+
+
 
 /* function InMenuDraw()
 * Description:
@@ -311,8 +417,8 @@ void InMenuDraw(int Inum)
 */
 void MenuScreen(float deltaTasSeconds)
 {
-	//drum[0].play();
-	systemSound.systemUpdate();
+	Sound::SystemUpdate();
+
 	if (mouseDown[0]) {
 		mouseDown[0] = false;
 		if (Button[0].button(MPosToOPosX, MPosToOPosY)) { setBoardStart(); inGame = true; inMenu = false; }
@@ -385,6 +491,8 @@ void InOptionDraw(int Inum)
 */
 void OptionScreen(float deltaTasSeconds)
 {
+	Sound::SystemUpdate();
+
 	if (mouseDown[0]) {
 		mouseDown[0] = false; 
 		if (inOptionsTab == 0) {
@@ -426,7 +534,7 @@ void OptionScreen(float deltaTasSeconds)
 	}
 	else if (inOptionsTab == 3) {
 		TestFloat = Slider[0].SNob_Precent.x;
-		for (int i = NumberOfEnemies; i > (NumberOfEnemies - static_cast<int>(Slider[1].SNob_Precent.x / 100)); i--) {
+		for (int i = NumberOfEnemies-1; i > (NumberOfEnemies - static_cast<int>(Slider[1].SNob_Precent.x / 100)); i--) {
 			Enemies[i].Viewable = false;
 		}
 		//NumberOfEnemies
@@ -559,7 +667,12 @@ void InGameDraw(int Inum)
 */
 void GameField(float deltaTasSeconds) 
 {
-
+	for (int i = 0; i < 2; i++) {
+		Sound::Sys.listenerPos[i].x = Players[i].Position().x*10.0f;
+		Sound::Sys.listenerPos[i].y = Players[i].Position().y*10.0f;
+		Sound::Sys.listenerPos[i].z = Players[i].Position().z*10.0f;
+	}
+	Sound::SystemUpdate();
 	Manifold m;
 
 
@@ -698,17 +811,17 @@ void GameField(float deltaTasSeconds)
 
 
 
-							m.A = Borders[boxNumber_2]; m.B = Players[i]; std::cout << "[Double border collid to bigger box] \n"; 
+							m.A = Borders[boxNumber_2]; m.B = Players[i]; /*std::cout << "[Double border collid to bigger box] \n";*/ 
 						}
 						else {
-							if (CheckCollision(m)) { m.A = Borders[boxNumber_1]; m.B = Players[i]; std::cout << "[In border collid to nearest box] \n"; }
-							else { m.A = Borders[boxNumber_2]; m.B = Players[i]; std::cout << "[In border collid to bigger box] \n"; }
+							if (CheckCollision(m)) { m.A = Borders[boxNumber_1]; m.B = Players[i]; /*std::cout << "[In border collid to nearest box] \n";*/ }
+							else { m.A = Borders[boxNumber_2]; m.B = Players[i]; /*std::cout << "[In border collid to bigger box] \n";*/ }
 						}
 					}
-					else if (CheckCollision(m)) { m.A = Borders[boxNumber_2]; m.B = Players[i]; std::cout << "[Collid to bigger box] \n"; }
-					else { m.A = Borders[boxNumber_1]; m.B = Players[i]; std::cout << "[Collid to nearest box] \n"; }
+					else if (CheckCollision(m)) { m.A = Borders[boxNumber_2]; m.B = Players[i]; /*std::cout << "[Collid to bigger box] \n";*/ }
+					else { m.A = Borders[boxNumber_1]; m.B = Players[i]; /*std::cout << "[Collid to nearest box] \n";*/ }
 				}
-				else { m.A = Borders[boxNumber_1]; m.B = Players[i]; std::cout << "[Collid to only box] \n"; }
+				else { m.A = Borders[boxNumber_1]; m.B = Players[i]; /*std::cout << "[Collid to only box] \n";*/ }
 
 				
 
@@ -754,13 +867,15 @@ void GameField(float deltaTasSeconds)
 				m.B = Specials[j];
 				if (checkRadialCollision(m)) {
 					if (m.B.SpecialAttribute() == 0) {}
+					//Seeker Swarm
 					else if (m.B.SpecialAttribute() == 1) {
 						m.B.Viewable = false;
-						if (i == 0) { EnemiesSeekingTower = 1; }
-						else if (i == 1) { EnemiesSeekingTower = 0; }
-						else { EnemiesSeekingTower = -1; }
-						EnemiesSeekTowerCounter = 0.0f;
+						if (i == 0) { AbilityAffected[1] = 1; }
+						else if (i == 1) { AbilityAffected[1] = 0; }
+						else { AbilityAffected[1] = -1; }
+						AbilityCounter[1] = 0.0f;
 					}
+					//Toss-Up
 					else if (m.B.SpecialAttribute() == 2) {
 						m.B.Viewable = false;
 						for (int ij = 0; ij < NumberOfEnemies; ij++) {
@@ -768,11 +883,41 @@ void GameField(float deltaTasSeconds)
 							Enemies[ij].setForceOnObject(Enemies[ij].ForceOnObject() + glm::vec3(0.0f, ranPosY, 0.0f));
 						}
 					}
+					//Health Up
 					else if (m.B.SpecialAttribute() == 3) {
 						m.B.Viewable = false;
 						Health[i] += 10; 
 					}
-					else if (m.B.SpecialAttribute() == 4) { }
+					//Boost
+					else if (m.B.SpecialAttribute() == 4) {
+						m.B.Viewable = false;
+						if (i == 0) { AbilityAffected[4] = 0; }
+						else if (i == 1) { AbilityAffected[4] = 1; }
+						else { AbilityAffected[4] = -1; }
+						AbilityCounter[4] = 0.0f;
+					}
+					//Flee
+					else if (m.B.SpecialAttribute() == 5) {}
+					//Short Circuit
+					else if (m.B.SpecialAttribute() == 6) {
+						m.B.Viewable = false;
+						if (i == 0) { AbilityAffected[6] = 0; }
+						else if (i == 1) { AbilityAffected[6] = 1; }
+						else { AbilityAffected[6] = -1; }
+						AbilityCounter[6] = 0.0f;
+					}
+					//Super Shockwave
+					else if (m.B.SpecialAttribute() == 7) {}
+					//Invincibility
+					else if (m.B.SpecialAttribute() == 8) {}
+					//Flipped
+					else if (m.B.SpecialAttribute() == 9) {
+						m.B.Viewable = false;
+						if (i == 0) { AbilityAffected[9] = 1; }
+						else if (i == 1) { AbilityAffected[9] = 0; }
+						else { AbilityAffected[9] = -1; }
+						AbilityCounter[9] = 0.0f;
+					}
 				}
 				if (checkRadialCollision(m)) { ResolveCollision(m, 0.01f); }
 				Specials[j] = m.B;
@@ -784,83 +929,84 @@ void GameField(float deltaTasSeconds)
 			m.B = Players[i];
 			bool onAObjectTemp = false;
 			for (int j = 0; j < NumberOfObjects; j++) {
-				m.A = Objects[j];
-				//avoid objects
-				applyRadialAvoidingSystem(m, 0.00f, 01.0f);
-				//collid with objects
-				if (checkRadialCollision(m)) { ResolveCollision(m, 0.01f); }
-				//stand ontop of objects
-				if (CheckIfOnObject(m, 0.0f, false)) {
-					if (m.B.onObjectNum != j) { std::cout << "[P:" << i << "]on[O:" << j << "]" << std::endl; }
-					onAObjectTemp = true; m.B.onObjectNum = j;
-				}
-
-				/*
-				if (CheckCollision(m)) {
-					bool positiveXYZ[3] { false, false, false };
-					bool negitiveXYZ[3] { false, false, false };
-
-					if ((m.B.Position().x - (m.B.Radius().x*0.50f) < m.A.Top().x) && (m.B.Position().x - (m.B.Radius().x*0.50f) > m.A.Bottom().x)) {
-						positiveXYZ[0] = true; negitiveXYZ[0] = false;
+				if (Objects[j].Viewable) {
+					m.A = Objects[j];
+					//avoid objects
+					applyRadialAvoidingSystem(m, 0.00f, 01.0f);
+					//collid with objects
+					if (checkRadialCollision(m)) { ResolveCollision(m, 0.01f); }
+					//stand ontop of objects
+					if (CheckIfOnObject(m, 0.0f, false)) {
+						if (m.B.onObjectNum != j) { std::cout << "[P:" << i << "]on[O:" << j << "]" << std::endl; }
+						onAObjectTemp = true; m.B.onObjectNum = j;
 					}
-					else if ((m.B.Position().x + (m.B.Radius().x*0.50f) > m.A.Bottom().x) && (m.B.Position().x + (m.B.Radius().x*0.50f) < m.A.Top().x)) {
-						negitiveXYZ[0] = true; positiveXYZ[0] = false;
-					}
-					else { positiveXYZ[0] = false; negitiveXYZ[0] = false; }
 
-					//if (m.B.Position().y + (m.B.Radius().y*0.5f) > m.A.Top().y) {
-						//	m.B.setPosition(glm::vec3(m.B.Position().x, m.A.Top().y - (m.B.Radius().y*0.5f), m.B.Position().z));
-						//	m.B.setVelocity(glm::vec3((m.B.Velocity().x*speedToWallDegradation.x), -(m.B.Velocity().y*speedToWallDegradation.y), (m.B.Velocity().z*speedToWallDegradation.z)));
-						//}
-						//else if (m.B.Position().y - (m.B.Radius().y*0.5f) < m.A.Bottom().y) {
-						//	m.B.setPosition(glm::vec3(m.B.Position().x, m.A.Bottom().y + (m.B.Radius().y*0.5f), m.B.Position().z));
-						//	m.B.setVelocity(glm::vec3((m.B.Velocity().x*speedToWallDegradation.x), -(m.B.Velocity().y), (m.B.Velocity().z*speedToWallDegradation.z)));
-						//}
-					if ((m.B.Position().z - (m.B.Radius().z*0.50f) < m.A.Top().z) && (m.B.Position().z - (m.B.Radius().z*0.50f) > m.A.Bottom().z)) {
-						positiveXYZ[2] = true; negitiveXYZ[2] = false;
-					}
-					else if ((m.B.Position().z + (m.B.Radius().z*0.50f) > m.A.Bottom().z) && (m.B.Position().z + (m.B.Radius().z*0.50f) < m.A.Top().z)) {
-						negitiveXYZ[2] = true; positiveXYZ[2] = false;
-					}
-					else { positiveXYZ[2] = false; negitiveXYZ[2] = false; }
+					/*
+					if (CheckCollision(m)) {
+						bool positiveXYZ[3] { false, false, false };
+						bool negitiveXYZ[3] { false, false, false };
 
-					// check two sides at once too see if in a corner
-					//if in a corner; find distance to nearest output, than do collion to that one
-					for (int ij = 0; ij < 3; ij++) {
-						for (int ji = 0; ji < 3; ji++) {
-							if (positiveXYZ[ij] && negitiveXYZ[ji]) {
-								//find distance to nearest output, than do collion to that one
-							}
-							if (ij != ji && positiveXYZ[ij] && positiveXYZ[ji]) {
-							}
-							if (ij != ji && negitiveXYZ[ij] && negitiveXYZ[ji]) {
+						if ((m.B.Position().x - (m.B.Radius().x*0.50f) < m.A.Top().x) && (m.B.Position().x - (m.B.Radius().x*0.50f) > m.A.Bottom().x)) {
+							positiveXYZ[0] = true; negitiveXYZ[0] = false;
+						}
+						else if ((m.B.Position().x + (m.B.Radius().x*0.50f) > m.A.Bottom().x) && (m.B.Position().x + (m.B.Radius().x*0.50f) < m.A.Top().x)) {
+							negitiveXYZ[0] = true; positiveXYZ[0] = false;
+						}
+						else { positiveXYZ[0] = false; negitiveXYZ[0] = false; }
+
+						//if (m.B.Position().y + (m.B.Radius().y*0.5f) > m.A.Top().y) {
+							//	m.B.setPosition(glm::vec3(m.B.Position().x, m.A.Top().y - (m.B.Radius().y*0.5f), m.B.Position().z));
+							//	m.B.setVelocity(glm::vec3((m.B.Velocity().x*speedToWallDegradation.x), -(m.B.Velocity().y*speedToWallDegradation.y), (m.B.Velocity().z*speedToWallDegradation.z)));
+							//}
+							//else if (m.B.Position().y - (m.B.Radius().y*0.5f) < m.A.Bottom().y) {
+							//	m.B.setPosition(glm::vec3(m.B.Position().x, m.A.Bottom().y + (m.B.Radius().y*0.5f), m.B.Position().z));
+							//	m.B.setVelocity(glm::vec3((m.B.Velocity().x*speedToWallDegradation.x), -(m.B.Velocity().y), (m.B.Velocity().z*speedToWallDegradation.z)));
+							//}
+						if ((m.B.Position().z - (m.B.Radius().z*0.50f) < m.A.Top().z) && (m.B.Position().z - (m.B.Radius().z*0.50f) > m.A.Bottom().z)) {
+							positiveXYZ[2] = true; negitiveXYZ[2] = false;
+						}
+						else if ((m.B.Position().z + (m.B.Radius().z*0.50f) > m.A.Bottom().z) && (m.B.Position().z + (m.B.Radius().z*0.50f) < m.A.Top().z)) {
+							negitiveXYZ[2] = true; positiveXYZ[2] = false;
+						}
+						else { positiveXYZ[2] = false; negitiveXYZ[2] = false; }
+
+						// check two sides at once too see if in a corner
+						//if in a corner; find distance to nearest output, than do collion to that one
+						for (int ij = 0; ij < 3; ij++) {
+							for (int ji = 0; ji < 3; ji++) {
+								if (positiveXYZ[ij] && negitiveXYZ[ji]) {
+									//find distance to nearest output, than do collion to that one
+								}
+								if (ij != ji && positiveXYZ[ij] && positiveXYZ[ji]) {
+								}
+								if (ij != ji && negitiveXYZ[ij] && negitiveXYZ[ji]) {
+								}
 							}
 						}
-					}
 
-					// check one side
-					if (positiveXYZ[0]) {
-						m.B.setPosition(glm::vec3(m.A.Top().x + (m.B.Radius().x*0.50f), m.B.Position().y, m.B.Position().z));
-						m.B.setVelocity(glm::vec3(-(m.B.Velocity().x*speedToWallDegradation.x), (m.B.Velocity().y*speedToWallDegradation.y), (m.B.Velocity().z*speedToWallDegradation.z)));
-					}
-					else if (negitiveXYZ[0]) {
-						m.B.setPosition(glm::vec3(m.A.Bottom().x - (m.B.Radius().x*0.50f), m.B.Position().y, m.B.Position().z));
-						m.B.setVelocity(glm::vec3(-(m.B.Velocity().x*speedToWallDegradation.x), (m.B.Velocity().y*speedToWallDegradation.y), (m.B.Velocity().z*speedToWallDegradation.z)));
-					}
+						// check one side
+						if (positiveXYZ[0]) {
+							m.B.setPosition(glm::vec3(m.A.Top().x + (m.B.Radius().x*0.50f), m.B.Position().y, m.B.Position().z));
+							m.B.setVelocity(glm::vec3(-(m.B.Velocity().x*speedToWallDegradation.x), (m.B.Velocity().y*speedToWallDegradation.y), (m.B.Velocity().z*speedToWallDegradation.z)));
+						}
+						else if (negitiveXYZ[0]) {
+							m.B.setPosition(glm::vec3(m.A.Bottom().x - (m.B.Radius().x*0.50f), m.B.Position().y, m.B.Position().z));
+							m.B.setVelocity(glm::vec3(-(m.B.Velocity().x*speedToWallDegradation.x), (m.B.Velocity().y*speedToWallDegradation.y), (m.B.Velocity().z*speedToWallDegradation.z)));
+						}
 
-					if (positiveXYZ[2]) {
-						m.B.setPosition(glm::vec3(m.B.Position().x, m.B.Position().y, m.A.Top().z + (m.B.Radius().z*0.50f)));
-						m.B.setVelocity(glm::vec3((m.B.Velocity().x*speedToWallDegradation.x), (m.B.Velocity().y*speedToWallDegradation.y), -(m.B.Velocity().z*speedToWallDegradation.z)));
+						if (positiveXYZ[2]) {
+							m.B.setPosition(glm::vec3(m.B.Position().x, m.B.Position().y, m.A.Top().z + (m.B.Radius().z*0.50f)));
+							m.B.setVelocity(glm::vec3((m.B.Velocity().x*speedToWallDegradation.x), (m.B.Velocity().y*speedToWallDegradation.y), -(m.B.Velocity().z*speedToWallDegradation.z)));
+						}
+						else if (negitiveXYZ[2]) {
+							m.B.setPosition(glm::vec3(m.B.Position().x, m.B.Position().y, m.A.Bottom().z - (m.B.Radius().z*0.50f)));
+							m.B.setVelocity(glm::vec3((m.B.Velocity().x*speedToWallDegradation.x), (m.B.Velocity().y*speedToWallDegradation.y), -(m.B.Velocity().z*speedToWallDegradation.z)));
+						}
 					}
-					else if (negitiveXYZ[2]) {
-						m.B.setPosition(glm::vec3(m.B.Position().x, m.B.Position().y, m.A.Bottom().z - (m.B.Radius().z*0.50f)));
-						m.B.setVelocity(glm::vec3((m.B.Velocity().x*speedToWallDegradation.x), (m.B.Velocity().y*speedToWallDegradation.y), -(m.B.Velocity().z*speedToWallDegradation.z)));
-					}
-				}
-				*/
-
+					*/
 
 				Objects[j] = m.A;
+				}
 			}//end for
 
 			if (onAObjectTemp && !m.B.IsJumping) { m.B.onObject = true; m.B.inAir = false; }
@@ -1029,32 +1175,82 @@ void GameField(float deltaTasSeconds)
 		m.A = Objects[0];
 		//apply gravity relative to object[0]
 		for (int i = 0; i < NumberOfPlayers; i++) { m.B = Players[i]; applyGravitationalForces(m, 0.0f); Players[i] = m.B; }
-		for (int i = 0; i < NumberOfEnemies; i++) { m.B = Enemies[i]; applyGravitationalForces(m, -2.0f); Enemies[i] = m.B; }
-		for (int i = 0; i < NumberOfSpecials; i++) { m.B = Specials[i]; applyGravitationalForces(m, -1.0f); Specials[i] = m.B; }
+		for (int i = 0; i < NumberOfEnemies; i++) { m.B = Enemies[i]; applyGravitationalForces(m, -5.0f); Enemies[i] = m.B; }
+		for (int i = 0; i < NumberOfSpecials; i++) { m.B = Specials[i]; applyGravitationalForces(m, -2.0f); Specials[i] = m.B; }
 	}
 
-	//Enemies seek towers
-	if (EnemiesSeekTowers && EnemiesSeekingTower >= 0 && EnemiesSeekTowerCounter < EnemiesSeekTowerLength) {
-		EnemiesSeekTowerCounter += deltaTasSeconds;
-		std::cout << "	[S]("<< EnemiesSeekingTower<<")[" << EnemiesSeekTowerCounter << "]" << std::endl;
-		for (int j = 0; j < NumberOfEnemies; j++) {
-			//Seek towards Player Ones tower
-			if (EnemiesSeekingTower == 0) {
-				m.A = Rifts[0];
-				m.B = Enemies[j];
-				applySeekSystem(m, 3.0f);
-				m.B.setColour(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-				Enemies[j] = m.B;
-			}
-			//Seek towards Player Twos tower
-			else if (EnemiesSeekingTower == 1) {
-				m.A = Rifts[1];
-				m.B = Enemies[j];
-				applySeekSystem(m, 3.0f);
-				m.B.setColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
-				Enemies[j] = m.B;
+	
+	bool enableAbilitys = true;
+	//Applys all over-time abilitys
+	if (enableAbilitys) {
+
+		//Enemies seek towers
+		if (EnemiesSeekTowers && AbilityAffected[1] >= 0 && AbilityCounter[1] < AbilityLength[1]) {
+			AbilityCounter[1] += deltaTasSeconds;
+			//std::cout << "	[S]("<< EnemiesSeekingTower<<")[" << EnemiesSeekTowerCounter << "]" << std::endl;
+			for (int j = 0; j < NumberOfEnemies; j++) {
+				//Seek towards Player Ones tower
+				if (AbilityAffected[1] == 0) {
+					m.A = Rifts[0];
+					m.B = Enemies[j];
+					applySeekSystem(m, 3.0f);
+					m.B.setColour(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+					Enemies[j] = m.B;
+				}
+				//Seek towards Player Twos tower
+				else if (AbilityAffected[1] == 1) {
+					m.A = Rifts[1];
+					m.B = Enemies[j];
+					applySeekSystem(m, 3.0f);
+					m.B.setColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+					Enemies[j] = m.B;
+				}
 			}
 		}
+
+		//Boost
+		if (AbilityAffected[4] >= 0 && AbilityCounter[4] < AbilityLength[4]) {
+			AbilityCounter[4] += deltaTasSeconds;
+			if (AbilityAffected[4] == 0) {
+				Players[0].SprintSpeed = SprintSpeed;
+			}
+			else if (AbilityAffected[4] == 1) {
+				Players[1].SprintSpeed = SprintSpeed;
+			}
+		}
+		else { Players[0].SprintSpeed = 1.0f; Players[1].SprintSpeed = 1.0f; }
+
+		//not in yet
+		//Flee 
+		if (AbilityAffected[5] >= 0 && AbilityCounter[5] < AbilityLength[5]) {
+			AbilityCounter[5] += deltaTasSeconds;
+			if (AbilityAffected[5] == 0) {}
+			else if (AbilityAffected[5] == 1) {}
+		}
+		else { }
+
+		//Short Circuit
+		if (AbilityAffected[6] >= 0 && AbilityCounter[6] < AbilityLength[6]) {
+			AbilityCounter[6] += deltaTasSeconds;
+			if (AbilityAffected[6] == 0) {
+				Players[1].inShock = true;
+			}
+			else if (AbilityAffected[6] == 1) {
+				Players[0].inShock = true;
+			}
+		}
+		else { Players[0].inShock = false; Players[1].inShock = false; }
+
+
+
+		//Short Circuit
+		if (AbilityAffected[9] >= 0 && AbilityCounter[9] < AbilityLength[9]) {
+			AbilityCounter[9] += deltaTasSeconds;
+			if (AbilityAffected[9] == 0) { FlipedControllers[0] = true; }
+			else if (AbilityAffected[9] == 1) { FlipedControllers[1] = true; }
+		}
+		else { FlipedControllers[0] = false; FlipedControllers[1] = false; }
+
 	}
 
 	//Can the users use the shock wave ability
@@ -1187,24 +1383,34 @@ void GameField(float deltaTasSeconds)
 }
 
 
-/* function debug()
+/* function ControllerDelayButton()
 * Description:
-*   - this is called to check certain things for the reasons to debug the program
+*   - this is called to get inputs from controllers
 */
 void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 {
 	float MovementModifier = 12.0f;
 	portNumber = portNumber - 1;
+
+
 	if (inGame) {
 		if (cameraMode == 0) {
 			//JoySticks
 			if (portNumber == 0) {
 				float Tx = 0.0f; float Ty = 0.0f; float Tz = 0.0f; float rotY = 0.0f;
 				//checks to see if the sticks are out of the deadzone, then translates them based on how far the stick is pushed.
-				if (gamepad.leftStickY < -0.1) { Tx -= gamepad.leftStickY * 0.0666666f; } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
-				if (gamepad.leftStickY > 00.1) { Tx -= gamepad.leftStickY * 0.0666666f; } //Y-Up
-				if (gamepad.leftStickX < -0.1) { Tz -= gamepad.leftStickX * 0.0666666f; } //X-Left
-				if (gamepad.leftStickX > 00.1) { Tz -= gamepad.leftStickX * 0.0666666f; } //X-Right
+				if (!FlipedControllers[portNumber]) {
+					if (gamepad.leftStickY < -0.1) { Tx -= gamepad.leftStickY * 0.0666666f; } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
+					if (gamepad.leftStickY > 00.1) { Tx -= gamepad.leftStickY * 0.0666666f; } //Y-Up
+					if (gamepad.leftStickX < -0.1) { Tz -= gamepad.leftStickX * 0.0666666f; } //X-Left
+					if (gamepad.leftStickX > 00.1) { Tz -= gamepad.leftStickX * 0.0666666f; } //X-Right
+				}
+				else {
+					if (gamepad.leftStickY < -0.1) { Tx -= gamepad.leftStickY * -0.0666666f; } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
+					if (gamepad.leftStickY > 00.1) { Tx -= gamepad.leftStickY * -0.0666666f; } //Y-Up
+					if (gamepad.leftStickX < -0.1) { Tz -= gamepad.leftStickX * -0.0666666f; } //X-Left
+					if (gamepad.leftStickX > 00.1) { Tz -= gamepad.leftStickX * -0.0666666f; } //X-Right
+				}
 
 				if (Tx > 00.055f) { Tx = 00.055f; } else if (Tx < -0.055f) { Tx = -0.055f; }
 				if (Tz > 00.055f) { Tz = 00.055f; } else if (Tz < -0.055f) { Tz = -0.055f; }
@@ -1218,17 +1424,25 @@ void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 				Tz = ((Tz*MovementModifier*0.750f));//(Tz*MovementModifier)*(Tz*MovementModifier));
 
 				Players[portNumber].setForceOnObject(glm::vec3(Tx, Ty, Tz));
-				Players[portNumber].setVelocity(glm::vec3(Tx, Ty, Tz));
+				Players[portNumber].setVelocity(glm::vec3(Tx, Ty, Tz)*Players[portNumber].SprintSpeed);
 				Players[portNumber].ForwardDirection = (Players[portNumber].Position() - (Players[portNumber].Position() + Players[portNumber].Velocity()));
 				ShockWaves[portNumber].setPosition(Players[portNumber].Position());
 			}
 			if (portNumber == 1) {
 				float Tx = 0.0f; float Ty = 0.0f; float Tz = 0.0f; float rotY = 0.0f;
 				//checks to see if the sticks are out of the deadzone, then translates them based on how far the stick is pushed.
-				if (gamepad.leftStickY < -0.1) { Tx += gamepad.leftStickY * 0.0666666f; } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
-				if (gamepad.leftStickY > 00.1) { Tx += gamepad.leftStickY * 0.0666666f; } //Y-Up
-				if (gamepad.leftStickX < -0.1) { Tz += gamepad.leftStickX * 0.0666666f; } //X-Left
-				if (gamepad.leftStickX > 00.1) { Tz += gamepad.leftStickX * 0.0666666f; } //X-Right
+				if (!FlipedControllers[portNumber]) {
+					if (gamepad.leftStickY < -0.1) { Tx += gamepad.leftStickY * 0.0666666f; } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
+					if (gamepad.leftStickY > 00.1) { Tx += gamepad.leftStickY * 0.0666666f; } //Y-Up
+					if (gamepad.leftStickX < -0.1) { Tz += gamepad.leftStickX * 0.0666666f; } //X-Left
+					if (gamepad.leftStickX > 00.1) { Tz += gamepad.leftStickX * 0.0666666f; } //X-Right
+				}
+				else {
+					if (gamepad.leftStickY < -0.1) { Tx -= gamepad.leftStickY * 0.0666666f; } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
+					if (gamepad.leftStickY > 00.1) { Tx -= gamepad.leftStickY * 0.0666666f; } //Y-Up
+					if (gamepad.leftStickX < -0.1) { Tz -= gamepad.leftStickX * 0.0666666f; } //X-Left
+					if (gamepad.leftStickX > 00.1) { Tz -= gamepad.leftStickX * 0.0666666f; } //X-Right
+				}
 
 				if (Tx > 00.055f) { Tx = 00.055f; } else if (Tx < -0.055f) { Tx = -0.055f; }
 				if (Tz > 00.055f) { Tz = 00.055f; } else if (Tz < -0.055f) { Tz = -0.055f; }
@@ -1242,7 +1456,7 @@ void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 				Tz = ((Tz*MovementModifier*0.750f));//(Tz*MovementModifier)*(Tz*MovementModifier));
 
 				Players[portNumber].setForceOnObject(glm::vec3(Tx, Ty, Tz));
-				Players[portNumber].setVelocity(glm::vec3(Tx, Ty, Tz));
+				Players[portNumber].setVelocity(glm::vec3(Tx, Ty, Tz)*Players[portNumber].SprintSpeed);
 				Players[portNumber].ForwardDirection = (Players[portNumber].Position() - (Players[portNumber].Position() + Players[portNumber].Velocity()));
 				ShockWaves[portNumber].setPosition(Players[portNumber].Position());
 			}
@@ -1251,16 +1465,29 @@ void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 			if (portNumber >= 0) {
 				float Tmovement = 0.0f; float yaw = 0.0f; float pitch = 0.0f;
 				//checks to see if the sticks are out of the deadzone, then translates them based on how far the stick is pushed.
-				if (gamepad.leftStickY < -0.1) { Tmovement = (MovementModifier * (gamepad.leftStickY * 0.0666666f)); } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
-				if (gamepad.leftStickY > 00.1) { Tmovement = (MovementModifier * (gamepad.leftStickY * 0.0666666f)); } //Y-Up
-				if (gamepad.leftStickX < -0.1) { yaw = (gamepad.leftStickX * -0.0666666f); } //X-Left
-				if (gamepad.leftStickX > 00.1) { yaw = (gamepad.leftStickX * -0.0666666f); } //X-Right
 
-				if (gamepad.rightStickY > 00.1) { pitch = gamepad.rightStickY * 0.0666666f; }
-				if (gamepad.rightStickY < -0.1) { pitch = gamepad.rightStickY * 0.0666666f; }
-				if (gamepad.rightStickX < -0.1) { yaw = (gamepad.rightStickX * -0.0666666f); } //X-Left
-				if (gamepad.rightStickX > 00.1) { yaw = (gamepad.rightStickX * -0.0666666f); } //X-Right
+				if (!FlipedControllers[portNumber]) {
+					if (gamepad.leftStickY < -0.1) { Tmovement = (MovementModifier * (gamepad.leftStickY * 0.0666666f)); } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
+					if (gamepad.leftStickY > 00.1) { Tmovement = (MovementModifier * (gamepad.leftStickY * 0.0666666f)); } //Y-Up
+					if (gamepad.leftStickX < -0.1) { yaw = (gamepad.leftStickX * -0.0666666f); } //X-Left
+					if (gamepad.leftStickX > 00.1) { yaw = (gamepad.leftStickX * -0.0666666f); } //X-Right
 
+					if (gamepad.rightStickY > 00.1) { pitch = gamepad.rightStickY * 0.0666666f; }
+					if (gamepad.rightStickY < -0.1) { pitch = gamepad.rightStickY * 0.0666666f; }
+					if (gamepad.rightStickX < -0.1) { yaw = (gamepad.rightStickX * -0.0666666f); } //X-Left
+					if (gamepad.rightStickX > 00.1) { yaw = (gamepad.rightStickX * -0.0666666f); } //X-Right
+				}
+				else {
+					if (gamepad.leftStickY < -0.1) { Tmovement = -(MovementModifier * (gamepad.leftStickY * 0.0666666f)); } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
+					if (gamepad.leftStickY > 00.1) { Tmovement = -(MovementModifier * (gamepad.leftStickY * 0.0666666f)); } //Y-Up
+					if (gamepad.leftStickX < -0.1) { yaw = -(gamepad.leftStickX * -0.0666666f); } //X-Left
+					if (gamepad.leftStickX > 00.1) { yaw = -(gamepad.leftStickX * -0.0666666f); } //X-Right
+
+					if (gamepad.rightStickY > 00.1) { pitch = -gamepad.rightStickY * 0.0666666f; }
+					if (gamepad.rightStickY < -0.1) { pitch = -gamepad.rightStickY * 0.0666666f; }
+					if (gamepad.rightStickX < -0.1) { yaw = -(gamepad.rightStickX * -0.0666666f); } //X-Left
+					if (gamepad.rightStickX > 00.1) { yaw = -(gamepad.rightStickX * -0.0666666f); } //X-Right
+				}
 
 				//yaw
 				rightVector = glm::cross(forwardVector[portNumber], glm::vec3(0.0f, 1.0f, 0.0f));
@@ -1274,7 +1501,7 @@ void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 				glm::vec3 forwardVectorTemp = glm::vec3(forwardVector[portNumber].x, 0.0f, forwardVector[portNumber].z);
 				Players[portNumber].ForwardDirection = (forwardVectorTemp * -0.001f);
 				Players[portNumber].setForceOnObject((Tmovement * forwardVectorTemp)*0.5f);
-				Players[portNumber].setVelocity((Tmovement * forwardVectorTemp)*0.5f);
+				Players[portNumber].setVelocity((Tmovement * forwardVectorTemp)*0.5f*Players[portNumber].SprintSpeed);
 				//camera position
 				cameraPosition[portNumber] = glm::vec3(Players[portNumber].Position().x - (forwardVector[portNumber].x*6.0f),
 					Players[portNumber].Position().y + (Players[portNumber].Radius().y*2.0f),
@@ -1477,6 +1704,237 @@ void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 	}
 }
 
+/* function KeyBoardDelayButton()
+* Description:
+*   - this is called to get inputs from the keyboard
+*	- only called during the game
+*/
+void KeyBoardDelayButton(float deltaTasSeconds) {
+
+	for (int playerNumberControl = 0; playerNumberControl < NumberOfPlayers; playerNumberControl++) {
+
+		
+
+		if (cameraMode == 0) {
+			float Tx[2]{ 0.0f,0.0f }; float Ty[2]{ 0.0f,0.0f }; float Tz[2]{ 0.0f,0.0f };
+
+			if (MenuSwitchCounter[playerNumberControl] > 0.0f) { MenuSwitchCounter[playerNumberControl] -= deltaTasSeconds; }
+			else {
+				if (playerNumberControl == 0) {
+					//player One
+					if (!FlipedControllers[playerNumberControl]) {
+						if (keyDown['w'] || keyDown['W']) { Tx[playerNumberControl] = -0.20f; }
+						if (keyDown['s'] || keyDown['S']) { Tx[playerNumberControl] = 00.20f; }
+						if (keyDown['a'] || keyDown['A']) { Tz[playerNumberControl] = 00.20f; }
+						if (keyDown['d'] || keyDown['D']) { Tz[playerNumberControl] = -0.20f; }
+					}
+					else {
+						if (keyDown['w'] || keyDown['W']) { Tx[playerNumberControl] = 00.20f; }
+						if (keyDown['s'] || keyDown['S']) { Tx[playerNumberControl] = -0.20f; }
+						if (keyDown['a'] || keyDown['A']) { Tz[playerNumberControl] = -0.20f; }
+						if (keyDown['d'] || keyDown['D']) { Tz[playerNumberControl] = 00.20f; }
+					}
+
+
+					if (keyDown['q'] || keyDown['Q']) {
+						if (Players[playerNumberControl].inAir == false && Players[playerNumberControl].IsJumping == false) {
+							Players[playerNumberControl].inAir = true; Players[playerNumberControl].IsJumping = true;
+							Players[playerNumberControl].onObject = false;
+							Players[playerNumberControl].InAirCounter = 0.25f;
+							Players[playerNumberControl].setPosition(glm::vec3(Players[playerNumberControl].Position().x, Players[playerNumberControl].Position().y + (Players[playerNumberControl].Radius().y * 0.30f), Players[playerNumberControl].Position().z));
+						}
+					}
+					//first press of [RIGHT_TRIGGERED]
+					if ((keyDown['e'] || keyDown['E']) && Right_TRIGGERED[playerNumberControl] == false) { Right_TRIGGERED[playerNumberControl] = true; }
+					//[RIGHT_TRIGGERED] was pressed last tic
+					else if (Right_TRIGGERED[playerNumberControl] == true) {
+						//holding [RIGHT_TRIGGERED]
+						if (keyDown['e'] || keyDown['E']) {
+							PShockWaveChargeUp[playerNumberControl] += deltaTasSeconds;
+							//std::cout << "	[C](" << 0 << ")[" << PShockWaveChargeUp[0] << "]" << std::endl;
+						}
+						//[RIGHT_TRIGGERED] released
+						else {
+							if (PShockWaveChargeUp[playerNumberControl] < 0.50f) { PShockWaveChargeUp[playerNumberControl] = 0.0f; }
+							Right_TRIGGERED[playerNumberControl] = false;
+							PShockWave[playerNumberControl] = true;
+							PShockWaveCounter[playerNumberControl] = 0.250f;
+							MenuSwitchCounter[playerNumberControl] = 0.60f;
+							//std::cout << "[RIGHT_TRIGGERED][+]";
+						}
+						Players[playerNumberControl].setVelocity(Players[playerNumberControl].Velocity()*0.5f);
+					}
+				}
+				else if (playerNumberControl == 1) {
+					//player Two
+					if (!FlipedControllers[playerNumberControl]) {
+						if (keyDown['i'] || keyDown['I']) { Tx[playerNumberControl] = 00.20f; }
+						if (keyDown['k'] || keyDown['K']) { Tx[playerNumberControl] = -0.20f; }
+						if (keyDown['j'] || keyDown['J']) { Tz[playerNumberControl] = -0.20f; }
+						if (keyDown['l'] || keyDown['L']) { Tz[playerNumberControl] = 00.20f; }
+					}
+					else {
+						if (keyDown['i'] || keyDown['I']) { Tx[playerNumberControl] = -0.20f; }
+						if (keyDown['k'] || keyDown['K']) { Tx[playerNumberControl] = 00.20f; }
+						if (keyDown['j'] || keyDown['J']) { Tz[playerNumberControl] = 00.20f; }
+						if (keyDown['l'] || keyDown['L']) { Tz[playerNumberControl] = -0.20f; }
+					}
+					if (keyDown['o'] || keyDown['O']) {
+						if (Players[playerNumberControl].inAir == false && Players[playerNumberControl].IsJumping == false) {
+							Players[playerNumberControl].inAir = true; Players[playerNumberControl].IsJumping = true;
+							Players[playerNumberControl].onObject = false;
+							Players[playerNumberControl].InAirCounter = 0.25f;
+							Players[playerNumberControl].setPosition(glm::vec3(Players[playerNumberControl].Position().x, Players[playerNumberControl].Position().y + (Players[playerNumberControl].Radius().y * 0.30f), Players[playerNumberControl].Position().z));
+						}
+					}
+					//first press of [RIGHT_TRIGGERED]
+					if ((keyDown['U'] || keyDown['u']) && Right_TRIGGERED[playerNumberControl] == false) { Right_TRIGGERED[playerNumberControl] = true; }
+					//[RIGHT_TRIGGERED] was pressed last tic
+					else if (Right_TRIGGERED[playerNumberControl] == true) {
+						//holding [RIGHT_TRIGGERED]
+						if (keyDown['U'] || keyDown['u']) {
+							PShockWaveChargeUp[playerNumberControl] += deltaTasSeconds;
+							//std::cout << "	[C](" << 1 << ")[" << PShockWaveChargeUp[1] << "]" << std::endl;
+						}
+						//[RIGHT_TRIGGERED] released
+						else {
+							if (PShockWaveChargeUp[playerNumberControl] < 0.50f) { PShockWaveChargeUp[playerNumberControl] = 0.0f; }
+							Right_TRIGGERED[playerNumberControl] = false;
+							PShockWave[playerNumberControl] = true;
+							PShockWaveCounter[playerNumberControl] = 0.250f;
+							MenuSwitchCounter[playerNumberControl] = 0.60f;
+							//std::cout << "[RIGHT_TRIGGERED][+]";
+						}
+						Players[playerNumberControl].setVelocity(Players[playerNumberControl].Velocity()*0.5f);
+					}
+				}
+
+
+				Players[playerNumberControl].setForceOnObject(glm::vec3(Tx[playerNumberControl], Ty[playerNumberControl], Tz[playerNumberControl]));
+				Players[playerNumberControl].setVelocity(glm::vec3(Tx[playerNumberControl], Ty[playerNumberControl], Tz[playerNumberControl])*SprintSpeed);
+				Players[playerNumberControl].ForwardDirection = (Players[playerNumberControl].Position() - (Players[playerNumberControl].Position() + Players[playerNumberControl].Velocity()));
+				ShockWaves[playerNumberControl].setPosition(Players[playerNumberControl].Position());
+			}
+		}
+		else if (cameraMode == 1) {
+			float Tmovement[2]{ 0.0f,0.0f }; float yaw[2]{ 0.0f,0.0f }; float pitch[2]{ 0.0f,0.0f };
+
+
+			if (MenuSwitchCounter[playerNumberControl] > 0.0f) { MenuSwitchCounter[playerNumberControl] -= deltaTasSeconds; }
+			else {
+				if (playerNumberControl == 0) {
+					//player One //checks to see if the sticks are out of the deadzone, then translates them based on how far the stick is pushed.
+					if (!FlipedControllers[playerNumberControl]) {
+						if (keyDown['w'] || keyDown['W']) { Tmovement[playerNumberControl] = 00.50f; }
+						if (keyDown['s'] || keyDown['S']) { Tmovement[playerNumberControl] = -0.50f; }
+						if (keyDown['a'] || keyDown['A']) { yaw[playerNumberControl] = 00.05f; }
+						if (keyDown['d'] || keyDown['D']) { yaw[playerNumberControl] = -0.05f; }
+					}
+					else {
+						if (keyDown['w'] || keyDown['W']) { Tmovement[playerNumberControl] = -0.50f; }
+						if (keyDown['s'] || keyDown['S']) { Tmovement[playerNumberControl] = 00.50f; }
+						if (keyDown['a'] || keyDown['A']) { yaw[playerNumberControl] = -0.05f; }
+						if (keyDown['d'] || keyDown['D']) { yaw[playerNumberControl] = 00.05f; }
+					}
+
+					if (keyDown['q'] || keyDown['Q']) {
+						if (Players[playerNumberControl].inAir == false && Players[playerNumberControl].IsJumping == false) {
+							Players[playerNumberControl].inAir = true; Players[playerNumberControl].IsJumping = true;
+							Players[playerNumberControl].onObject = false;
+							Players[playerNumberControl].InAirCounter = 0.25f;
+							Players[playerNumberControl].setPosition(glm::vec3(Players[playerNumberControl].Position().x, Players[playerNumberControl].Position().y + (Players[playerNumberControl].Radius().y * 0.30f), Players[playerNumberControl].Position().z));
+						}
+					}
+					//first press of [RIGHT_TRIGGERED]
+					if ((keyDown['e'] || keyDown['E']) && Right_TRIGGERED[playerNumberControl] == false) { Right_TRIGGERED[playerNumberControl] = true; }
+					//[RIGHT_TRIGGERED] was pressed last tic
+					else if (Right_TRIGGERED[playerNumberControl] == true) {
+						//holding [RIGHT_TRIGGERED]
+						if (keyDown['e'] || keyDown['E']) {
+							PShockWaveChargeUp[playerNumberControl] += deltaTasSeconds;
+							//std::cout << "	[C](" << 0 << ")[" << PShockWaveChargeUp[0] << "]" << std::endl;
+						}
+						//[RIGHT_TRIGGERED] released
+						else {
+							if (PShockWaveChargeUp[playerNumberControl] < 0.50f) { PShockWaveChargeUp[playerNumberControl] = 0.0f; }
+							Right_TRIGGERED[playerNumberControl] = false;
+							PShockWave[playerNumberControl] = true;
+							PShockWaveCounter[playerNumberControl] = 0.250f;
+							MenuSwitchCounter[playerNumberControl] = 0.60f;
+							//std::cout << "[RIGHT_TRIGGERED][+]";
+						}
+						Players[playerNumberControl].setVelocity(Players[playerNumberControl].Velocity()*0.5f);
+					}
+				}
+				if (playerNumberControl == 1) {
+					//player Two
+					if (!FlipedControllers[playerNumberControl]) {
+						if (keyDown['i'] || keyDown['I']) { Tmovement[playerNumberControl] = 00.50f; }
+						if (keyDown['k'] || keyDown['K']) { Tmovement[playerNumberControl] = -0.50f; }
+						if (keyDown['j'] || keyDown['J']) { yaw[playerNumberControl] = 00.05f; }
+						if (keyDown['l'] || keyDown['L']) { yaw[playerNumberControl] = -0.05f; }
+					}
+					else {
+						if (keyDown['i'] || keyDown['I']) { Tmovement[playerNumberControl] = -0.50f; }
+						if (keyDown['k'] || keyDown['K']) { Tmovement[playerNumberControl] = 00.50f; }
+						if (keyDown['j'] || keyDown['J']) { yaw[playerNumberControl] = -0.05f; }
+						if (keyDown['l'] || keyDown['L']) { yaw[playerNumberControl] = 00.05f; }
+					}
+					if (keyDown['o'] || keyDown['O']) {
+						if (Players[playerNumberControl].inAir == false && Players[playerNumberControl].IsJumping == false) {
+							Players[playerNumberControl].inAir = true; Players[playerNumberControl].IsJumping = true;
+							Players[playerNumberControl].onObject = false;
+							Players[playerNumberControl].InAirCounter = 0.25f;
+							Players[playerNumberControl].setPosition(glm::vec3(Players[playerNumberControl].Position().x, Players[playerNumberControl].Position().y + (Players[playerNumberControl].Radius().y * 0.30f), Players[playerNumberControl].Position().z));
+						}
+					}
+					//first press of [RIGHT_TRIGGERED]
+					if ((keyDown['U'] || keyDown['u']) && Right_TRIGGERED[playerNumberControl] == false) { Right_TRIGGERED[playerNumberControl] = true; }
+					//[RIGHT_TRIGGERED] was pressed last tic
+					else if (Right_TRIGGERED[playerNumberControl] == true) {
+						//holding [RIGHT_TRIGGERED]
+						if (keyDown['U'] || keyDown['u']) {
+							PShockWaveChargeUp[playerNumberControl] += deltaTasSeconds;
+							//std::cout << "	[C](" << 1 << ")[" << PShockWaveChargeUp[1] << "]" << std::endl;
+						}
+						//[RIGHT_TRIGGERED] released
+						else {
+							if (PShockWaveChargeUp[playerNumberControl] < 0.50f) { PShockWaveChargeUp[playerNumberControl] = 0.0f; }
+							Right_TRIGGERED[playerNumberControl] = false;
+							PShockWave[playerNumberControl] = true;
+							PShockWaveCounter[playerNumberControl] = 0.250f;
+							MenuSwitchCounter[playerNumberControl] = 0.60f;
+							//std::cout << "[RIGHT_TRIGGERED][+]";
+						}
+						Players[playerNumberControl].setVelocity(Players[playerNumberControl].Velocity()*0.5f);
+					}
+				}
+			}
+
+			//yaw
+			rightVector = glm::cross(forwardVector[playerNumberControl], glm::vec3(0.0f, 1.0f, 0.0f));
+			rightVector = glm::normalize(rightVector);
+			forwardVector[playerNumberControl] = glm::rotate(forwardVector[playerNumberControl], yaw[playerNumberControl], glm::vec3(0.0f, 1.0f, 0.0f));
+			//pitch
+			rightVector = glm::cross(forwardVector[playerNumberControl], glm::vec3(0.0f, 1.0f, 0.0f));
+			rightVector = glm::normalize(rightVector);
+			forwardVector[playerNumberControl] = glm::rotate(forwardVector[playerNumberControl], pitch[playerNumberControl], rightVector);
+			//player position
+			glm::vec3 forwardVectorTemp = glm::vec3(forwardVector[playerNumberControl].x, 0.0f, forwardVector[playerNumberControl].z);
+			Players[playerNumberControl].ForwardDirection = (forwardVectorTemp * -0.001f);
+			Players[playerNumberControl].setForceOnObject((Tmovement[playerNumberControl] * forwardVectorTemp)*0.5f);
+			Players[playerNumberControl].setVelocity((Tmovement[playerNumberControl] * forwardVectorTemp)*0.5f*SprintSpeed);
+			//camera position
+			cameraPosition[playerNumberControl] = glm::vec3(Players[playerNumberControl].Position().x - (forwardVector[playerNumberControl].x*6.0f),
+				Players[playerNumberControl].Position().y + (Players[playerNumberControl].Radius().y*2.0f),
+				Players[playerNumberControl].Position().z - (forwardVector[playerNumberControl].z*6.0f));
+			//shockwace position
+			ShockWaves[playerNumberControl].setPosition(Players[playerNumberControl].Position());
+		}
+	}
+}
+
+
 //////////////////////////////////////////////////////////////////////
 
 /* function DisplayCallbackFunction(void)
@@ -1554,6 +2012,19 @@ void KeyboardCallbackFunction(unsigned char key, int x, int y)
 			break;
 		case 'N':
 		case 'n':
+			/*
+			FMOD_VECTOR positionTemp; positionTemp.x = 0.0f; positionTemp.y = 10.0f; positionTemp.z = 0.0f;
+			drum[0].SetPosition(drumChannel, positionTemp);
+			drumChannel = drum[0].Play();
+
+			//OR
+
+			drum[0].SetPosition(glm::vec3(110.0f));
+			drum[0].Play();
+			*/
+			drum[0].SetPosition(glm::vec3(110.0f));
+			drum[0].Play();
+			
 			break;
 		case 'R':
 		case 'r':
@@ -1647,207 +2118,12 @@ void TimerCallbackFunction(int value)
 	if (gamepad.CheckConnection()) {
 		//player one
 		gamepad.SetActivePort(1); gamepad.Refresh();
-		ControllerDelayButton(gamepad.GetActivePort(), deltaTasSeconds);	
+		ControllerDelayButton(gamepad.GetActivePort(), deltaTasSeconds);
 		//player two
 		gamepad.SetActivePort(2); gamepad.Refresh();
 		ControllerDelayButton(gamepad.GetActivePort(), deltaTasSeconds);
-	} 
-	else {
-		if (cameraMode == 0) {
-			float Tx[2]{ 0.0f,0.0f }; float Ty[2]{ 0.0f,0.0f }; float Tz[2]{ 0.0f,0.0f };
-
-			if (MenuSwitchCounter[0] > 0.0f) { MenuSwitchCounter[0] -= deltaTasSeconds; }
-			else {
-				//player One
-				if (keyDown['w'] || keyDown['W']) { Tx[0] = -0.20f; }
-				if (keyDown['s'] || keyDown['S']) { Tx[0] = 00.20f; }
-				if (keyDown['a'] || keyDown['A']) { Tz[0] = 00.20f; }
-				if (keyDown['d'] || keyDown['D']) { Tz[0] = -0.20f; }
-				if (keyDown['q'] || keyDown['Q']) {
-					if (Players[0].inAir == false && Players[0].IsJumping == false) {
-						Players[0].inAir = true; Players[0].IsJumping = true;
-						Players[0].onObject = false;
-						Players[0].InAirCounter = 0.25f;
-						Players[0].setPosition(glm::vec3(Players[0].Position().x, Players[0].Position().y + (Players[0].Radius().y * 0.30f), Players[0].Position().z));
-					}
-				}
-				//first press of [RIGHT_TRIGGERED]
-				if ((keyDown['e'] || keyDown['E']) && Right_TRIGGERED[0] == false) { Right_TRIGGERED[0] = true; std::cout << "[RIGHT_TRIGGERED][-]"; }
-				//[RIGHT_TRIGGERED] was pressed last tic
-				else if (Right_TRIGGERED[0] == true) {
-					//holding [RIGHT_TRIGGERED]
-					if (keyDown['e'] || keyDown['E']) {
-						PShockWaveChargeUp[0] += deltaTasSeconds;
-						//std::cout << "	[C](" << 0 << ")[" << PShockWaveChargeUp[0] << "]" << std::endl;
-					}
-					//[RIGHT_TRIGGERED] released
-					else {
-						if (PShockWaveChargeUp[0] < 0.50f) { PShockWaveChargeUp[0] = 0.0f; }
-						Right_TRIGGERED[0] = false;
-						PShockWave[0] = true;
-						PShockWaveCounter[0] = 0.250f;
-						MenuSwitchCounter[0] = 0.60f;
-						std::cout << "[RIGHT_TRIGGERED][+]";
-					}
-					Players[0].setVelocity(Players[0].Velocity()*0.5f);
-				}
-
-				Players[0].setForceOnObject(glm::vec3(Tx[0], Ty[0], Tz[0]));
-				Players[0].setVelocity(glm::vec3(Tx[0], Ty[0], Tz[0]));
-				Players[0].ForwardDirection = (Players[0].Position() - (Players[0].Position() + Players[0].Velocity()));
-				ShockWaves[0].setPosition(Players[0].Position());
-			}
-
-			if (MenuSwitchCounter[1] > 0.0f) { MenuSwitchCounter[1] -= deltaTasSeconds; }
-			else {
-				//player Two
-				if (keyDown['i'] || keyDown['I']) { Tx[1] = 00.20f; }
-				if (keyDown['k'] || keyDown['K']) { Tx[1] = -0.20f; }
-				if (keyDown['j'] || keyDown['J']) { Tz[1] = -0.20f; }
-				if (keyDown['l'] || keyDown['L']) { Tz[1] = 00.20f; }
-				if (keyDown['o'] || keyDown['O']) {
-					if (Players[1].inAir == false && Players[1].IsJumping == false) {
-						Players[1].inAir = true; Players[1].IsJumping = true;
-						Players[1].onObject = false;
-						Players[1].InAirCounter = 0.25f;
-						Players[1].setPosition(glm::vec3(Players[1].Position().x, Players[1].Position().y + (Players[1].Radius().y * 0.30f), Players[1].Position().z));
-					}
-				}
-				//first press of [RIGHT_TRIGGERED]
-				if ((keyDown['U'] || keyDown['u']) && Right_TRIGGERED[1] == false) { Right_TRIGGERED[1] = true; std::cout << "[RIGHT_TRIGGERED][-]"; }
-				//[RIGHT_TRIGGERED] was pressed last tic
-				else if (Right_TRIGGERED[1] == true) {
-					//holding [RIGHT_TRIGGERED]
-					if (keyDown['U'] || keyDown['u']) {
-						PShockWaveChargeUp[1] += deltaTasSeconds;
-						//std::cout << "	[C](" << 1 << ")[" << PShockWaveChargeUp[1] << "]" << std::endl;
-					}
-					//[RIGHT_TRIGGERED] released
-					else {
-						if (PShockWaveChargeUp[1] < 0.50f) { PShockWaveChargeUp[1] = 0.0f; }
-						Right_TRIGGERED[1] = false;
-						PShockWave[1] = true;
-						PShockWaveCounter[1] = 0.250f;
-						MenuSwitchCounter[1] = 0.60f;
-						std::cout << "[RIGHT_TRIGGERED][+]";
-					}
-					Players[1].setVelocity(Players[1].Velocity()*0.5f);
-				}
-
-				Players[1].setForceOnObject(glm::vec3(Tx[1], Ty[1], Tz[1]));
-				Players[1].setVelocity(glm::vec3(Tx[1], Ty[1], Tz[1]));
-				Players[1].ForwardDirection = (Players[1].Position() - (Players[1].Position() + Players[1].Velocity()));
-				ShockWaves[1].setPosition(Players[1].Position());
-			}
-		}
-		else if (cameraMode == 1) {
-			for (int playerNumberControl = 0; playerNumberControl < NumberOfPlayers; playerNumberControl++) {
-				float Tmovement[2]{ 0.0f,0.0f }; float yaw[2]{ 0.0f,0.0f }; float pitch[2]{ 0.0f,0.0f };
-				if (MenuSwitchCounter[0] > 0.0f) { MenuSwitchCounter[0] -= deltaTasSeconds; }
-				else {
-					//checks to see if the sticks are out of the deadzone, then translates them based on how far the stick is pushed.
-					if (keyDown['w'] || keyDown['W']) { Tmovement[0] = 00.50f; }
-					if (keyDown['s'] || keyDown['S']) { Tmovement[0] = -0.50f; }
-					if (keyDown['a'] || keyDown['A']) { yaw[0] = 00.05f; }
-					if (keyDown['d'] || keyDown['D']) { yaw[0] = -0.05f; }
-					if (keyDown['q'] || keyDown['Q']) {
-						if (Players[0].inAir == false && Players[0].IsJumping == false) {
-							Players[0].inAir = true; Players[0].IsJumping = true;
-							Players[0].onObject = false;
-							Players[0].InAirCounter = 0.25f;
-							Players[0].setPosition(glm::vec3(Players[0].Position().x, Players[0].Position().y + (Players[0].Radius().y * 0.30f), Players[0].Position().z));
-						}
-					}
-					//first press of [RIGHT_TRIGGERED]
-					if ((keyDown['e'] || keyDown['E']) && Right_TRIGGERED[0] == false) { Right_TRIGGERED[0] = true; std::cout << "[RIGHT_TRIGGERED][-]"; }
-					//[RIGHT_TRIGGERED] was pressed last tic
-					else if (Right_TRIGGERED[0] == true) {
-						//holding [RIGHT_TRIGGERED]
-						if (keyDown['e'] || keyDown['E']) {
-							PShockWaveChargeUp[0] += deltaTasSeconds;
-							//std::cout << "	[C](" << 0 << ")[" << PShockWaveChargeUp[0] << "]" << std::endl;
-						}
-						//[RIGHT_TRIGGERED] released
-						else {
-							if (PShockWaveChargeUp[0] < 0.50f) { PShockWaveChargeUp[0] = 0.0f; }
-							Right_TRIGGERED[0] = false;
-							PShockWave[0] = true;
-							PShockWaveCounter[0] = 0.250f;
-							MenuSwitchCounter[0] = 0.60f;
-							std::cout << "[RIGHT_TRIGGERED][+]";
-						}
-						Players[0].setVelocity(Players[0].Velocity()*0.5f);
-					}
-				}
-
-				if (MenuSwitchCounter[1] > 0.0f) { MenuSwitchCounter[1] -= deltaTasSeconds; }
-				else {
-					//player Two
-					if (keyDown['i'] || keyDown['I']) { Tmovement[1] = 00.50f; }
-					if (keyDown['k'] || keyDown['K']) { Tmovement[1] = -0.50f; }
-					if (keyDown['j'] || keyDown['J']) { yaw[1] = 00.05f; }
-					if (keyDown['l'] || keyDown['L']) { yaw[1] = -0.05f; }
-					if (keyDown['o'] || keyDown['O']) {
-						if (Players[1].inAir == false && Players[1].IsJumping == false) {
-							Players[1].inAir = true; Players[1].IsJumping = true;
-							Players[1].onObject = false;
-							Players[1].InAirCounter = 0.25f;
-							Players[1].setPosition(glm::vec3(Players[1].Position().x, Players[1].Position().y + (Players[1].Radius().y * 0.30f), Players[1].Position().z));
-						}
-					}
-					//first press of [RIGHT_TRIGGERED]
-					if ((keyDown['U'] || keyDown['u']) && Right_TRIGGERED[1] == false) { Right_TRIGGERED[1] = true; std::cout << "[RIGHT_TRIGGERED][-]"; }
-					//[RIGHT_TRIGGERED] was pressed last tic
-					else if (Right_TRIGGERED[1] == true) {
-						//holding [RIGHT_TRIGGERED]
-						if (keyDown['U'] || keyDown['u']) {
-							PShockWaveChargeUp[1] += deltaTasSeconds;
-							//std::cout << "	[C](" << 1 << ")[" << PShockWaveChargeUp[1] << "]" << std::endl;
-						}
-						//[RIGHT_TRIGGERED] released
-						else {
-							if (PShockWaveChargeUp[1] < 0.50f) { PShockWaveChargeUp[1] = 0.0f; }
-							Right_TRIGGERED[1] = false;
-							PShockWave[1] = true;
-							PShockWaveCounter[1] = 0.250f;
-							MenuSwitchCounter[1] = 0.60f;
-							std::cout << "[RIGHT_TRIGGERED][+]";
-						}
-						Players[1].setVelocity(Players[1].Velocity()*0.5f);
-					}
-				}
-
-				//yaw
-				rightVector = glm::cross(forwardVector[playerNumberControl], glm::vec3(0.0f, 1.0f, 0.0f));
-				rightVector = glm::normalize(rightVector);
-				forwardVector[playerNumberControl] = glm::rotate(forwardVector[playerNumberControl], yaw[playerNumberControl], glm::vec3(0.0f, 1.0f, 0.0f));
-				//pitch
-				rightVector = glm::cross(forwardVector[playerNumberControl], glm::vec3(0.0f, 1.0f, 0.0f));
-				rightVector = glm::normalize(rightVector);
-				forwardVector[playerNumberControl] = glm::rotate(forwardVector[playerNumberControl], pitch[playerNumberControl], rightVector);
-				//player position
-				glm::vec3 forwardVectorTemp = glm::vec3(forwardVector[playerNumberControl].x, 0.0f, forwardVector[playerNumberControl].z);
-				Players[playerNumberControl].ForwardDirection = (forwardVectorTemp * -0.001f);
-				Players[playerNumberControl].setForceOnObject((Tmovement[playerNumberControl] * forwardVectorTemp)*0.5f);
-				Players[playerNumberControl].setVelocity((Tmovement[playerNumberControl] * forwardVectorTemp)*0.5f);
-				//camera position
-				cameraPosition[playerNumberControl] = glm::vec3(Players[playerNumberControl].Position().x - (forwardVector[playerNumberControl].x*6.0f),
-					Players[playerNumberControl].Position().y + (Players[playerNumberControl].Radius().y*2.0f),
-					Players[playerNumberControl].Position().z - (forwardVector[playerNumberControl].z*6.0f));
-				//shockwace position
-				ShockWaves[playerNumberControl].setPosition(Players[playerNumberControl].Position());
-			}
-		}
 	}
-
-
-
-	//if (keyDown['-']) { lightPosition_01.y -= 1.0f; }
-	//if (keyDown['=']) { lightPosition_01.y += 1.0f; }
-	//if (keyDown['i']) { lightPosition_01.x += 1.0f; }
-	//if (keyDown['k']) { lightPosition_01.x -= 1.0f; }
-	//if (keyDown['j']) { lightPosition_01.z -= 1.0f; }
-	//if (keyDown['l']) { lightPosition_01.z += 1.0f; }
+	else { KeyBoardDelayButton(deltaTasSeconds); }
 	
 
 	if (inMenu) { MenuScreen(deltaTasSeconds); }
@@ -1932,8 +2208,6 @@ void MousePassiveMotionCallbackFunction(int x, int y) //while a mouse button isn
 	if (inGame) { }
 	else if (inMenu) { }
 	else if (inOptions) {
-
-
 		if (MenuSwitchCounter[0] > 0.0f) { MenuSwitchCounter[0] -= deltaTasSecs; }
 		else {
 			bool pressedA = false;
@@ -1948,40 +2222,6 @@ void MousePassiveMotionCallbackFunction(int x, int y) //while a mouse button isn
 
 //////////////////////////////////////////////////////////////////////
 
-void init()
-{
-	///// INIT OpenGL /////
-	glClearColor(0.0, 0.0, 0.0, 0.0);
-
-	// Turn on the lights
-	//glEnable(GL_LIGHTING);
-	//glEnable(GL_LIGHT0);
-	//glEnable(GL_NORMALIZE);
-	glEnable(GL_COLOR_MATERIAL); // final polygon color will be based on glColor and glMaterial
-	glShadeModel(GL_FLAT); //GL_FLAT //GL_SMOOTH
-
-	// Call some OpenGL parameters
-	glEnable(GL_CULL_FACE); //glDisable(GL_CULL_FACE);
-	glFrontFace(GL_CCW);
-	glCullFace(GL_BACK);
-
-
-	glEnable(GL_DEPTH_TEST);//Enable Z-buffer read and write (for hidden surface removal)
-	glEnable(GL_BLEND); //Enable blending
-	//glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA); //premultiplied alpha
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //non-premultiplied alpha
-
-	//Antialiasing/////////////////
-	//glEnable(GL_POLYGON_SMOOTH);
-	//glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
-
-	//Polygon Display Mode/////////////////
-	glLineWidth(4.0f);
-	glPolygonMode(GL_FRONT,GL_FILL);
-	//glPolygonMode(GL_FRONT, GL_LINE);
-	//glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
-	//glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
-}
 
 /* function LoadAllSounds()
 * Description:
@@ -1998,8 +2238,11 @@ void LoadAllSounds() {
 	}
 	else { std::cout << "[ERROR] Could not find [Media]" << std::endl; }
 
-	systemSound.sys.init();
-	drum[0].load(_strdup((SoundPath + "drumloop.wav").c_str()), true);
+	Sound::Sys.Init();
+	drum[0].Load(_strdup((SoundPath + "drumloop.wav").c_str()), true, false);
+	for (int i = 0; i < 2; i++) {
+		Sound::Sys.listenerPos[i].x = 0.0f; Sound::Sys.listenerPos[i].y = 0.0f; Sound::Sys.listenerPos[i].z = 0.0f;
+	}
 }
 
 /* function LoadAllObjects()
@@ -2078,25 +2321,23 @@ void LoadAllObjects()
 	Specials[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Box.png").c_str())));
 	Specials[0].Viewable = false;
 	Specials[1].objectLoader(&Specials[0]);
-	Specials[1].setPosition(glm::vec3(0.0f, 20.0f, 0.0f));
 	Specials[1].setSpecialAttribute(1);
 	Specials[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Box_RushRift.png").c_str())));
 	Specials[2].objectLoader(&Specials[0]);
-	Specials[2].setPosition(glm::vec3(0.0f, 20.0f, 0.0f));
 	Specials[2].setSpecialAttribute(2);
 	Specials[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Box_InAir.png").c_str())));
 	Specials[3].objectLoader(&Specials[0]);
-	Specials[3].setPosition(glm::vec3(0.0f, 20.0f, 0.0f));
 	Specials[3].setSpecialAttribute(3);
 	Specials[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Box_Health.png").c_str())));
 	Specials[4].objectLoader(&Specials[0]);
-	Specials[4].setPosition(glm::vec3(0.0f, 20.0f, 0.0f));
-	Specials[4].setSpecialAttribute(4);
+	Specials[4].setSpecialAttribute(9);
 	Specials[4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Box.png").c_str())));
 
-	//*degToRad
+	
 
-	//Map
+
+
+	//Ground
 	Objects[0].objectLoader(ObjectPath + "Map002.obj");
 	Objects[0].setColour(glm::vec4(0.5f, 0.5f, 0.5f, 1.0f));
 	Objects[0].setMass(0.0f);
@@ -2104,62 +2345,36 @@ void LoadAllObjects()
 	Objects[0].setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 	Objects[0].setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
 	Objects[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Ground.png").c_str())));
+
 	//Walls Left
-	Objects[1].objectLoader(ObjectPath + "Stands.obj");//Wall_LR
+	Objects[1].objectLoader(ObjectPath + "stadium.obj");//Wall_LR
 	Objects[1].setColour(glm::vec4(0.5f, 0.50f, 0.5f, 1.0f));
 	Objects[1].setMass(0.0f);
-	Objects[1].setScale(glm::vec3(1.0f, 1.0f, 1.0f)); //size //not HitBox
-	//Objects[1].setSizeOfHitBox(glm::vec3(100.0f, 10.0f, 1.0f)); //HitBox
-	Objects[1].setPosition(glm::vec3(0.0f, -1.0f, -50.0f));
-	Objects[1].setRotation(glm::vec3(0.0f, 180.0f, 0.0f));
+	Objects[1].setScale(glm::vec3(1.0f, 1.0f, 1.0f)); //size
+	Objects[1].setPosition(glm::vec3(0.0f, -1.0f, 0.0f));
+	Objects[1].setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
 	Objects[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Walls_LR.png").c_str())));
-	//Walls Right
-	Objects[2].objectLoader(ObjectPath + "Stands.obj");//Wall_LR
-	Objects[2].setColour(glm::vec4(0.5f, 0.50f, 0.5f, 1.0f));
-	Objects[2].setMass(0.0f);
-	Objects[2].setScale(glm::vec3(1.0f, 1.0f, 1.0f)); //size //not HitBox
-	//Objects[2].setSizeOfHitBox(glm::vec3(100.0f, 10.0f, 1.0f)); //HitBox
-	Objects[2].setPosition(glm::vec3(0.0f, -1.0f, 50.0f));
-	Objects[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Walls_LR.png").c_str())));
-	//Walls Front
-	Objects[3].objectLoader(ObjectPath + "Stands.obj"); //Wall_FB
-	Objects[3].setColour(glm::vec4(0.5f, 0.50f, 0.5f, 1.0f));
-	Objects[3].setMass(0.0f);
-	Objects[3].setScale(glm::vec3(1.0f, 1.0f, 1.0f)); //size //not HitBox
-	//Objects[3].setSizeOfHitBox(glm::vec3(1.0f, 10.0f, 100.0f)); //HitBox
-	Objects[3].setPosition(glm::vec3(-50.0f, -1.0f, 0.0f));
-	Objects[3].setRotation(glm::vec3(0.0f, 270.0f, 0.0f));
-	Objects[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Walls_FB.png").c_str())));
-	//Walls Back
-	Objects[4].objectLoader(ObjectPath + "Stands.obj"); //Wall_FB
-	Objects[4].setColour(glm::vec4(0.5f, 0.50f, 0.5f, 1.0f));
-	Objects[4].setMass(0.0f);
-	Objects[4].setScale(glm::vec3(1.0f, 1.0f, 1.0f)); //size //not HitBox
-	//Objects[4].setSizeOfHitBox(glm::vec3(1.0f, 10.0f, 100.0f)); //HitBox
-	Objects[4].setPosition(glm::vec3(50.0f, -1.0f, 0.0f));
-	Objects[4].setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
-	Objects[4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Walls_FB.png").c_str())));
 	//Rift magnets
-	Objects[5].objectLoader(ObjectPath + "Rift//Magnet_Left.obj");
-	Objects[5].setPosition(glm::vec3(47.0f, 0.0f, -20.0f));
-	Objects[5].setMass(0.0f);
-	Objects[5].setScale(glm::vec3(1.0f, 1.50f, 1.50f));
-	Objects[5].setSizeOfHitBox(glm::vec3(2.650f, 7.0f, 3.60f));
-	Objects[5].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Magnet_Rift_01.png").c_str())));
-	Objects[6].objectLoader(ObjectPath + "Rift//Magnet_Right.obj");
-	Objects[6].setPosition(glm::vec3(47.0f, 0.0f, 20.0f));
-	Objects[6].setMass(0.0f);
-	Objects[6].setScale(glm::vec3(1.0f, 1.50f, 1.50f));
-	Objects[6].setSizeOfHitBox(glm::vec3(2.650f, 7.0f, 3.60f));
-	Objects[6].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Magnet_Rift_01.png").c_str())));
-	Objects[7].objectLoader(&Objects[5]);//left
-	Objects[7].setPosition(glm::vec3(-47.0f, 0.0f, 20.0f));
-	Objects[7].setRotation(glm::vec3(0.0f, 180.0f, 0.0f));
-	Objects[7].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Magnet_Rift_02.png").c_str())));
-	Objects[8].objectLoader(&Objects[6]);//right
-	Objects[8].setPosition(glm::vec3(-47.0f, 0.0f, -20.0f));
-	Objects[8].setRotation(glm::vec3(0.0f, 180.0f, 0.0f));
-	Objects[8].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Magnet_Rift_02.png").c_str())));
+	Objects[2].objectLoader(ObjectPath + "Rift//Magnet_Left.obj");
+	Objects[2].setPosition(glm::vec3(47.0f, 0.0f, -20.0f));
+	Objects[2].setMass(0.0f);
+	Objects[2].setScale(glm::vec3(1.0f, 1.50f, 1.50f));
+	Objects[2].setSizeOfHitBox(glm::vec3(2.650f, 7.0f, 3.60f));
+	Objects[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Magnet_Rift_01.png").c_str())));
+	Objects[3].objectLoader(ObjectPath + "Rift//Magnet_Right.obj");
+	Objects[3].setPosition(glm::vec3(47.0f, 0.0f, 20.0f));
+	Objects[3].setMass(0.0f);
+	Objects[3].setScale(glm::vec3(1.0f, 1.50f, 1.50f));
+	Objects[3].setSizeOfHitBox(glm::vec3(2.650f, 7.0f, 3.60f));
+	Objects[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Magnet_Rift_01.png").c_str())));
+	Objects[4].objectLoader(&Objects[2]);//left
+	Objects[4].setPosition(glm::vec3(-47.0f, 0.0f, 20.0f));
+	Objects[4].setRotation(glm::vec3(0.0f, 180.0f, 0.0f));
+	Objects[4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Magnet_Rift_02.png").c_str())));
+	Objects[5].objectLoader(&Objects[3]);//right
+	Objects[5].setPosition(glm::vec3(-47.0f, 0.0f, -20.0f));
+	Objects[5].setRotation(glm::vec3(0.0f, 180.0f, 0.0f));
+	Objects[5].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Magnet_Rift_02.png").c_str())));
 
 	//
 	//Objects[9].objectLoader(ObjectPath + "Square.obj");
@@ -2315,6 +2530,75 @@ void LoadAllTextPlane()
 }
 
 
+void init()
+{
+
+
+	TextLoader loadTextFile;
+	if (DoesFileExists("..//Assets")) { loadTextFile.objectLoader("..//Assets//file.txt"); }
+	else if (DoesFileExists("Assets")) { loadTextFile.objectLoader("Assets//file.txt"); }
+	else { std::cout << "[ERROR] Could not find [Font]" << std::endl; }
+
+
+
+	//Textures & Texture parameters
+	glEnable(GL_TEXTURE_2D);
+	///// INIT OpenGL /////
+	glClearColor(0.0, 0.0, 0.0, 0.0);
+	glEnable(GL_COLOR_MATERIAL); // final polygon color will be based on glColor and glMaterial
+	glShadeModel(GL_FLAT); //GL_FLAT //GL_SMOOTH
+	glEnable(GL_CULL_FACE); //glDisable(GL_CULL_FACE);
+	glFrontFace(GL_CCW);
+	glCullFace(GL_BACK);
+	glEnable(GL_DEPTH_TEST);//Enable Z-buffer read and write (for hidden surface removal)
+	glEnable(GL_BLEND); //Enable blending
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //non-premultiplied alpha
+	glLineWidth(4.0f);
+	glPolygonMode(GL_FRONT, GL_FILL);
+
+	ilInit();
+	iluInit();
+	ilutRenderer(ILUT_OPENGL);
+	//Initialize Shader
+
+	if (DoesFileExists("..//Assets//shaders//")) { shader = new Shader("..//Assets//shaders//passthru_v.glsl", "..//Assets//shaders//passthru_f.glsl"); }
+	else if (DoesFileExists("Assets//shaders//")) { shader = new Shader("Assets//shaders//passthru_v.glsl", "Assets//shaders//passthru_f.glsl"); }
+	else { std::cout << "[ERROR] Could not find [Shaders]" << std::endl; }
+
+	//Initialize Font/Text Shader
+	if (DoesFileExists("..//Assets//shaders//")) { TextShader = new Shader("..//Assets//shaders//text_v.glsl", "..//Assets//shaders//text_f.glsl"); }
+	else if (DoesFileExists("Assets//shaders//")) { TextShader = new Shader("Assets//shaders//text_v.glsl", "Assets//shaders//text_f.glsl"); }
+	else { std::cout << "[ERROR] Could not find [Shaders]" << std::endl; }
+
+
+	if (DoesFileExists("..//Assets//img//win.png")) { textureHandle = ilutGLLoadImage("..//Assets//img//win.png"); }
+	else if (DoesFileExists("Assets//img//win.png")) { textureHandle = ilutGLLoadImage("Assets//img//win.png"); }
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	if (DoesFileExists("..//Assets//Fonts//")) { SystemText.LoadTextFont("..//Assets//Fonts//FreeSerif.ttf", SystemText); }
+	else if (DoesFileExists("Assets//Fonts//")) { SystemText.LoadTextFont("Assets//Fonts//FreeSerif.ttf", SystemText); }
+	else { std::cout << "[ERROR] Could not find [Font]" << std::endl; }
+
+	LoadAllSounds();
+	LoadAllObjects();
+	LoadAllTextPlane();
+
+	for (int i = 0; i < 4; i++) {
+		cameralook = i;
+		WhatCameraIsLookingAt();
+	}
+
+	srand(static_cast <unsigned> (time(NULL)));
+	std::cout << std::endl << "Press [Esc] to exit." << std::endl;
+	std::cout << "_____________________________________" << std::endl;
+	planeForText[0].Viewable = true;
+
+
+	randomSpecialTime = (rand() % 45 + 15) + ((rand() % 100 - 50)*0.01f); //-29.50 to 90.50
+
+
+
+}
 
 /* function main()
 * Description:
@@ -2353,64 +2637,13 @@ int main(int argc, char **argv)
 	glutPassiveMotionFunc(MousePassiveMotionCallbackFunction); // mouseMovedPassive
 	glutTimerFunc(1, TimerCallbackFunction, 0); // timer or tick
 
-	//Textures & Texture parameters
-	glEnable(GL_TEXTURE_2D);
 	init();
-	ilInit();
-	iluInit();
-	ilutRenderer(ILUT_OPENGL);
-	//Initialize Shader
-
-	if (DoesFileExists("..//Assets//shaders//")) { shader = new Shader("..//Assets//shaders//passthru_v.glsl", "..//Assets//shaders//passthru_f.glsl"); }
-	else if (DoesFileExists("Assets//shaders//")) { shader = new Shader("Assets//shaders//passthru_v.glsl", "Assets//shaders//passthru_f.glsl"); }
-	else { std::cout << "[ERROR] Could not find [Shaders]" << std::endl; }
-
-	//if (DoesFileExists("..//Assets//shaders//")) { shader = new Shader("..//Assets//shaders//default_v.glsl", "..//Assets//shaders//default_f.glsl"); }
-	//else if (DoesFileExists("Assets//shaders//")) { shader = new Shader("Assets//shaders//default_v.glsl", "Assets//shaders//default_f.glsl"); }
-	//else { std::cout << "[ERROR] Could not find [Shaders]" << std::endl; }
-
-	//Initialize Font/Text Shader
-	if (DoesFileExists("..//Assets//shaders//")) { TextShader = new Shader("..//Assets//shaders//text_v.glsl", "..//Assets//shaders//text_f.glsl"); }
-	else if (DoesFileExists("Assets//shaders//")) { TextShader = new Shader("Assets//shaders//text_v.glsl", "Assets//shaders//text_f.glsl"); }
-	else { std::cout << "[ERROR] Could not find [Shaders]" << std::endl; }
-
 	
-
 	shader->bind();
 	glEnableVertexAttribArray(0);	glBindAttribLocation(shader->getID(), 0, "vIn_vertex");
 	glEnableVertexAttribArray(1);	glBindAttribLocation(shader->getID(), 1, "vIn_uv");
 	glEnableVertexAttribArray(2);	glBindAttribLocation(shader->getID(), 2, "vIn_normal");
 	glEnableVertexAttribArray(3);	glBindAttribLocation(shader->getID(), 3, "vIn_colour");
-
-	//glEnableVertexAttribArray(4);	glBindAttribLocation(shader->getID(), 4, "vIn_vertex");
-	//glEnableVertexAttribArray(5);	glBindAttribLocation(shader->getID(), 5, "vIn_uv");
-	//glEnableVertexAttribArray(6);	glBindAttribLocation(shader->getID(), 6, "vIn_normal");
-	//glEnableVertexAttribArray(7);	glBindAttribLocation(shader->getID(), 7, "vIn_colour");
-
-	if (DoesFileExists("..//Assets//img//win.png")) { textureHandle = ilutGLLoadImage("..//Assets//img//win.png"); }
-	else if (DoesFileExists("Assets//img//win.png")) { textureHandle = ilutGLLoadImage("Assets//img//win.png"); }
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	if (DoesFileExists("..//Assets//Fonts//")) { SystemText.LoadTextFont("..//Assets//Fonts//FreeSans.ttf", SystemText); }
-	else if (DoesFileExists("Assets//Fonts//")) { SystemText.LoadTextFont("Assets//Fonts//FreeSans.ttf", SystemText); }
-	else { std::cout << "[ERROR] Could not find [Font]" << std::endl; }
-
-	LoadAllSounds();
-	LoadAllObjects();
-	LoadAllTextPlane();
-
-	for (int i = 0; i < 4; i++) {
-		cameralook = i;
-		WhatCameraIsLookingAt();
-	}
-
-	srand(static_cast <unsigned> (time(NULL)));
-	std::cout << std::endl << "Press [Esc] to exit." << std::endl;
-	std::cout << "_____________________________________" << std::endl;
-	planeForText[0].Viewable = true;
-
-
-	randomSpecialTime = (rand() % 45 + 15) + ((rand() % 100 - 50)*0.01f); //-29.50 to 90.50
 
 	// start the event handler
 	glutMainLoop();

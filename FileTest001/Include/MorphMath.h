@@ -104,6 +104,7 @@ public:
 			while (1)// this can't be 0
 			{
 				char lineHeader[64];
+				lineHeader[0] = '\0';
 				// read the first word of the line
 				int res = fscanf_s(file, "%s", lineHeader, _countof(lineHeader));
 				if (res == EOF) { break; } //when it reaches the end of the file, exit the while loop

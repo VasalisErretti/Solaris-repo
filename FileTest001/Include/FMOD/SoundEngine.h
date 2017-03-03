@@ -1,50 +1,59 @@
 //Jacob Rosengren
 #pragma once
-#pragma comment(lib, "Include/FMOD/fmod_vc.lib")
+#pragma comment(lib, "../Include/FMOD/fmod_vc.lib")
 
 #include "fmod.hpp"
 #include "fmod_errors.h"
 #include <Windows.h>
 #include <iostream>
-//using namespace std;
+#include <glm\glm\vec3.hpp>
+using namespace std;
 
 void CheckResult(FMOD_RESULT result);
+
+
 
 class SoundEngine
 {
 private:
-	bool systemInit;
+	//bool systemInit;
 public:
 	SoundEngine();
 	~SoundEngine();
-	void update();
-	bool init(); //
+	void Update();
+	bool Init(); //
 
 	//Sound Engine
 	FMOD::System *system = NULL;
-	void         *driverData = NULL;
+	void *driverData = NULL;
+	bool init;
 
 	//Listener
-	FMOD_VECTOR listenerForward;
-	FMOD_VECTOR listenerUp;
-	FMOD_VECTOR listenerPos;
-	FMOD_VECTOR listenerVel;
+	static const int numberOfListeners = 2;
+	FMOD_VECTOR listenerForward[numberOfListeners];
+	FMOD_VECTOR listenerUp[numberOfListeners];
+	FMOD_VECTOR listenerPos[numberOfListeners];
+	FMOD_VECTOR listenerVel[numberOfListeners];
 };
 
-class Sound 
+class Sound
 {
 public:
 	Sound();
 	~Sound();
 
-	bool load(char* fileName, bool loop);
-	void play();
-	void playUpdate();
-	static void systemUpdate();
-	void setRollOffModelCurve(FMOD_VECTOR, FMOD_VECTOR, FMOD_VECTOR);
+	bool Load(char* fileName, bool is3d, bool isLoop);
+	static void SystemUpdate();
 
 	bool isPlaying;
-	bool RollOff;
+	bool isPlayingF();
+
+	FMOD::Channel* Play();
+	void SetPosition(glm::vec3 position);
+	void SetPosition(FMOD::Channel *channel, FMOD_VECTOR position);
+	void SetPosition(FMOD::Channel *channel, FMOD_VECTOR position, FMOD_VECTOR velocity);
+	void SetRolloff(FMOD::Channel *channel, bool linear, float min, float max);
+	bool is3d;
 
 	//Sound
 	FMOD::Sound   *sound;
@@ -52,7 +61,9 @@ public:
 	FMOD_VECTOR pos;
 	FMOD_VECTOR vel;
 
-	//
+	//Set Roll Off Model Curve
+	void SetRollOffModelCurve(FMOD_VECTOR, FMOD_VECTOR, FMOD_VECTOR);
+	bool RollOff;
 	FMOD_VECTOR RollOffModelCurve[3] =
 	{
 		{ 0.0f, 1.0f, 0.0f },
@@ -60,5 +71,5 @@ public:
 		{ 60.0f, 0.0f, 0.0f }
 	};
 
-	static SoundEngine sys; //all veriables share the same sound engine
+	static SoundEngine Sys; //all veriables share the same sound engine
 };

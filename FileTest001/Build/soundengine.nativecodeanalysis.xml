@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DEFECTS>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\stuff_and_things\github\solaris-repo\filetest001\include\fmod\</FILEPATH>
+      <FILENAME>soundengine.cpp</FILENAME>
+      <LINE>6</LINE>
+      <COLUMN>16</COLUMN>
+    </SFA>
+    <DEFECTCODE>6244</DEFECTCODE>
+    <DESCRIPTION>Local declaration of 'result' hides previous declaration at line '4' of 'c:\stuff_and_things\github\solaris-repo\filetest001\include\fmod\soundengine.cpp'.</DESCRIPTION>
+    <FUNCTION>CheckResult</FUNCTION>
+    <DECORATED>?CheckResult@@YAXW4FMOD_RESULT@@@Z</DECORATED>
+    <FUNCLINE>6</FUNCLINE>
+    <PATH>
+      <SFA>
+        <FILEPATH>c:\stuff_and_things\github\solaris-repo\filetest001\include\fmod\</FILEPATH>
+        <FILENAME>soundengine.cpp</FILENAME>
+        <LINE>4</LINE>
+        <COLUMN>23</COLUMN>
+      </SFA>
+    </PATH>
+  </DEFECT>
+</DEFECTS>

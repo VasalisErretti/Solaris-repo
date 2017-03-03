@@ -84,8 +84,10 @@ static char* readTextFromFile(const char *fileName) {
 			rewind(file);
 			if (count > 0) {
 				text = (char*)malloc(sizeof(char) * (count + 1));
-				count = fread(text, sizeof(char), count, file);
-				text[count] = '\0';
+				if (text) {
+					if (text != 0) { count = fread(text, sizeof(char), count, file); }
+					text[count] = '\0';
+				}
 			}
 			fclose(file);
 		}

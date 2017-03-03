@@ -40,6 +40,9 @@
     <ClInclude Include="Include\FMOD\SoundEngine.h">
       <Filter>Sound Engine</Filter>
     </ClInclude>
+    <ClInclude Include="Include\FileLoader.h">
+      <Filter>Game Object</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Shader">
