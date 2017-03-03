@@ -2207,7 +2207,7 @@ void LoadAllObjects()
 
 	//Enemies
 	Enemies[0].objectLoader(ObjectPath + "obj_03.obj");
-	Enemies[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Enemy.png").c_str())));
+	Enemies[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Enemy0.1.png").c_str())));
 
 	ShadowObject[0].objectLoader(ObjectPath + "PlainForShadow.obj");
 	ShadowObject[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Shadow_01.png").c_str())));
