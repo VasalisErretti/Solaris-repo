@@ -2132,7 +2132,7 @@ void LoadAllObjects()
 	Objects[0].setSizeOfHitBox(glm::vec3(100.0f, 0.01f, 100.0f)); //HitBox
 	Objects[0].setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 	Objects[0].setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-	Objects[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Ground.png").c_str())));
+	Objects[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Ground0.2.png").c_str())));
 	//Walls Left
 	Objects[1].objectLoader(ObjectPath + "Stands.obj");//Wall_LR
 	Objects[1].setColour(glm::vec4(0.5f, 0.50f, 0.5f, 1.0f));
