@@ -141,6 +141,7 @@
   <ItemGroup>
     <ClCompile Include="Include\ExtraFunctions.cpp" />
     <ClCompile Include="Include\FMOD\SoundEngine.cpp" />
+    <ClCompile Include="Include\FrameBufferObject.cpp" />
     <ClCompile Include="Include\GameObject.cpp" />
     <ClCompile Include="Include\HTRLoader.cpp" />
     <ClCompile Include="Include\Shader.cpp" />
@@ -149,6 +150,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\FMOD\SoundEngine.h" />
+    <ClInclude Include="Include\FrameBufferObject.h" />
     <ClInclude Include="Include\GameObject.h" />
     <ClInclude Include="Include\GamePadControls.h" />
     <ClInclude Include="Include\HTRLoader.h" />

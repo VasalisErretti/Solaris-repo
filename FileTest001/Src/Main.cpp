@@ -52,6 +52,7 @@
 #include "FMOD/SoundEngine.h"
 #include "FileLoader.h"
 #include "Material.h"
+#include "FrameBufferObject.h"
 
 //temp
 static float TestFloat = 0.0f; static float TestFloatIncrementAmount = 01.0f;
@@ -83,6 +84,8 @@ float MPosToOPosX; float MPosToOPosY;
 bool keyDown[256];
 bool mouseDown[3];
 //Game Objects//
+std::map<std::string, std::shared_ptr<GameObject>> GameObjects; //working on this
+
 const int NumberOfPlayers = 2; GameObject Players[NumberOfPlayers];
 GameObject ShockWaves[NumberOfPlayers]; GameObject Rifts[NumberOfPlayers];
 const int NumberOfObjects = 6; GameObject Objects[NumberOfObjects];
@@ -99,11 +102,10 @@ const int NumberOfButtons = 7; GameObject ButtonObjects[NumberOfButtons];
 Buttons Button[NumberOfButtons];
 //Boarders
 const int NumberOfBorders = 1; GameObject Borders[NumberOfBorders];
-// Materials
-std::shared_ptr<Material> defaultMaterial;
-std::shared_ptr<Material> passThroughMaterial;
-std::shared_ptr<Material> textMaterial;
-
+//Materials
+std::map<std::string, std::shared_ptr<Material>> materials;
+//Framebuffer objects
+FrameBufferObject fbo;
 
 
 //Random Variables//
@@ -265,6 +267,11 @@ void WhatCameraIsLookingAt()
 */
 void InEditorDraw(int Inum)
 {
+	auto defaultMaterial = materials["default"];
+	auto passThroughMaterial = materials["passThrough"];
+	auto textMaterial = materials["text"];
+
+
 
 	//defaultMaterial->shader->bind();
 	cameralook = Inum; //window
@@ -393,6 +400,12 @@ void EditorScreen(float deltaTasSeconds)
 */
 void InMenuDraw(int Inum)
 {
+	auto defaultMaterial = materials["default"];
+	auto passThroughMaterial = materials["passThrough"];
+	auto textMaterial = materials["text"];
+
+
+
 	//defaultMaterial->shader->bind();
 	Inum = 2;
 	cameralook = Inum; //window
@@ -441,6 +454,11 @@ void MenuScreen(float deltaTasSeconds)
 */
 void InOptionDraw(int Inum)
 {
+	auto defaultMaterial = materials["default"];
+	auto passThroughMaterial = materials["passThrough"];
+	auto textMaterial = materials["text"];
+
+
 	//defaultMaterial->shader->bind();
 	Inum = 2;
 	cameralook = Inum; //window
@@ -548,6 +566,11 @@ void OptionScreen(float deltaTasSeconds)
 */
 void InGameDraw(int Inum)
 {
+	auto defaultMaterial = materials["default"];
+	auto passThroughMaterial = materials["passThrough"];
+	auto textMaterial = materials["text"];
+
+
 	//defaultMaterial->shader->bind();
 	cameralook = Inum; //window
 	WhatCameraIsLookingAt(); //Resising Window
@@ -559,8 +582,6 @@ void InGameDraw(int Inum)
 	defaultMaterial->shader->sendUniformMat4("u_mv", modelViewMatrix[Inum]);
 	defaultMaterial->shader->sendUniformMat4("u_lightPos_01", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
 	defaultMaterial->shader->sendUniformMat4("u_lightPos_02", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
-
-
 
 
 	for (unsigned int i = 0; i < NumberOfPlayers; i++) {
@@ -644,6 +665,9 @@ void InGameDraw(int Inum)
 			}
 		}
 	}
+
+
+
 
 	//defaultMaterial->shader->unbind();
 
@@ -2221,6 +2245,10 @@ void MousePassiveMotionCallbackFunction(int x, int y) //while a mouse button isn
 //////////////////////////////////////////////////////////////////////
 
 
+void initializeFrameBufferObjects()
+{
+	fbo.createFrameBuffer(windowWidth, windowHeight, 1, true);
+}
 
 void InitializeShaders()
 {
@@ -2242,23 +2270,24 @@ void InitializeShaders()
 	f_passThrough.loadShaderFromFile(shaderPath + "passThru_f.glsl", GL_FRAGMENT_SHADER);
 	f_textShader.loadShaderFromFile(shaderPath + "text_f.glsl", GL_FRAGMENT_SHADER);
 
+
 	//Default material that all objects use
-	defaultMaterial = std::make_shared<Material>();
-	defaultMaterial->shader->attachShader(v_default);
-	defaultMaterial->shader->attachShader(f_default);
-	defaultMaterial->shader->linkProgram();
+	materials["default"] = std::make_shared<Material>();
+	materials["default"]->shader->attachShader(v_default);
+	materials["default"]->shader->attachShader(f_default);
+	materials["default"]->shader->linkProgram();
 
 	//passThrough material that all objects use
-	passThroughMaterial = std::make_shared<Material>();
-	passThroughMaterial->shader->attachShader(v_passThrough);
-	passThroughMaterial->shader->attachShader(f_passThrough);
-	passThroughMaterial->shader->linkProgram();
+	materials["passThrough"] = std::make_shared<Material>();
+	materials["passThrough"]->shader->attachShader(v_passThrough);
+	materials["passThrough"]->shader->attachShader(f_passThrough);
+	materials["passThrough"]->shader->linkProgram();
 
 	//text material that all objects use
-	textMaterial = std::make_shared<Material>();
-	textMaterial->shader->attachShader(v_textShader);
-	textMaterial->shader->attachShader(f_textShader);
-	textMaterial->shader->linkProgram();
+	materials["text"] = std::make_shared<Material>();
+	materials["text"]->shader->attachShader(v_textShader);
+	materials["text"]->shader->attachShader(f_textShader);
+	materials["text"]->shader->linkProgram();
 }
 
 
@@ -2287,6 +2316,8 @@ void InitializeSounds() {
 */
 void InitializeObjects()
 {
+	auto defaultMaterial = materials["default"];
+	auto passThroughMaterial = materials["passThrough"];
 	//Load Objects///////////////////////////////////
 	std::string ImagePath;
 	std::string ObjectPath;
@@ -2468,6 +2499,11 @@ void InitializeObjects()
 */
 void InitializeTextPlane()
 {
+	auto defaultMaterial = materials["default"];
+	auto passThroughMaterial = materials["passThrough"];
+
+
+
 	std::string ImagePath;
 	std::string ObjectPath;
 	if (DoesFileExists("..//Assets//Img") && DoesFileExists("..//Assets//Obj")) {
