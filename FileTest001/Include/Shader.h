@@ -1,38 +1,33 @@
 #pragma once
-#include <iostream>
+#include <string>
 #include <GL\glew.h>
-#include <GLM\glm\glm.hpp>
 
 class Shader
 {
+private:
+	unsigned int handle;
+	GLenum shaderType;
+
 public:
-	Shader(const char *, const char *);
-	~Shader(void);
 
-	void init(const char *, const char *);
+	// It's a good idea to use the same attribute location layouts for each shader
+	// Not required, but it makes VBO creation easier
+	enum AttributeLocations
+	{
+		VERTEX = 0,
+		TEXCOORD = 1, //normal
+		NORMAL = 2, //texcord
+		COLOUR = 3
+		// ... any other attributes...
+	};
 
-	void bind();		// use the shader vert and frag
-	void unbind();		// stop using shader vert and frag
+	Shader();
+	~Shader();
 
-	unsigned int getID();
+	// Returns shader handle
+	unsigned int loadShaderFromFile(std::string fileName, GLenum type);
 
-	void uniformVector(const char*, float*);
-	void uniformVector(const char*, float, float, float);
-	void uniformVector(const char*, glm::vec3*);
-	void uniformFloat(const char*, float );
-	void uniformTex(const char*, GLuint , unsigned short);
-	void uniformMat4x4(const char*, glm::mat4x4*);
+	unsigned int getHandle() { return handle; }
 
-	//------------------------------------------------------------------------
-	// Variables
-
-	//glsl program handler
-	unsigned int programID;
-
-	//vert and fag shaders
-	unsigned int vertShader;
-	unsigned int fragShader;
-
-
+	void destroy();
 };
-

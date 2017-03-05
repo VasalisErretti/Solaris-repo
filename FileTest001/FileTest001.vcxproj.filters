@@ -17,6 +17,9 @@
     <ClCompile Include="Include\FMOD\SoundEngine.cpp">
       <Filter>Sound Engine</Filter>
     </ClCompile>
+    <ClCompile Include="Include\ShaderProgram.cpp">
+      <Filter>Shader</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\Shader.h">
@@ -43,6 +46,12 @@
     <ClInclude Include="Include\FileLoader.h">
       <Filter>Game Object</Filter>
     </ClInclude>
+    <ClInclude Include="Include\ShaderProgram.h">
+      <Filter>Shader</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Material.h">
+      <Filter>Shader</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Shader">
@@ -60,25 +69,28 @@
     <Filter Include="Other Functions">
       <UniqueIdentifier>{a8dbd533-60c8-4c34-9a4e-c446b4570aed}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shader\Shaders">
+      <UniqueIdentifier>{15ebb1f1-7a60-4e47-82da-9f88caa5e250}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Assets\Shaders\passThru_f.glsl">
-      <Filter>Shader</Filter>
-    </None>
-    <None Include="Assets\Shaders\passThru_v.glsl">
-      <Filter>Shader</Filter>
-    </None>
-    <None Include="Assets\Shaders\text_f.glsl">
-      <Filter>Shader</Filter>
-    </None>
-    <None Include="Assets\Shaders\text_v.glsl">
-      <Filter>Shader</Filter>
-    </None>
     <None Include="Assets\Shaders\default_f.glsl">
-      <Filter>Shader</Filter>
+      <Filter>Shader\Shaders</Filter>
     </None>
     <None Include="Assets\Shaders\default_v.glsl">
-      <Filter>Shader</Filter>
+      <Filter>Shader\Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\passThru_f.glsl">
+      <Filter>Shader\Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\passThru_v.glsl">
+      <Filter>Shader\Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\text_v.glsl">
+      <Filter>Shader\Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\text_f.glsl">
+      <Filter>Shader\Shaders</Filter>
     </None>
   </ItemGroup>
 </Project>

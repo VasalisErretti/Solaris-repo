@@ -144,6 +144,7 @@
     <ClCompile Include="Include\GameObject.cpp" />
     <ClCompile Include="Include\HTRLoader.cpp" />
     <ClCompile Include="Include\Shader.cpp" />
+    <ClCompile Include="Include\ShaderProgram.cpp" />
     <ClCompile Include="Src\Main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -152,9 +153,11 @@
     <ClInclude Include="Include\GamePadControls.h" />
     <ClInclude Include="Include\HTRLoader.h" />
     <ClInclude Include="Include\JointTypes.h" />
+    <ClInclude Include="Include\Material.h" />
     <ClInclude Include="Include\MorphMath.h" />
     <ClInclude Include="Include\Shader.h" />
     <ClInclude Include="Include\FileLoader.h" />
+    <ClInclude Include="Include\ShaderProgram.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Shaders\default_f.glsl" />

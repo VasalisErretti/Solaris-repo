@@ -24,6 +24,8 @@
 #include <string>
 #include <math.h>
 #include <vector>
+#include <memory> // for std::shared_ptr
+#include <map> // for std::map
 
 // 3rd Party Libraries
 #include <GL\glew.h>
@@ -44,11 +46,12 @@
 #include "MorphMath.h"
 #include "GamePadControls.h"
 #include "Shader.h"
+#include "ShaderProgram.h"
 #include "ExtraFunctions.cpp"
 #include "HTRLoader.h"
 #include "FMOD/SoundEngine.h"
 #include "FileLoader.h"
-
+#include "Material.h"
 
 //temp
 static float TestFloat = 0.0f; static float TestFloatIncrementAmount = 01.0f;
@@ -96,6 +99,12 @@ const int NumberOfButtons = 7; GameObject ButtonObjects[NumberOfButtons];
 Buttons Button[NumberOfButtons];
 //Boarders
 const int NumberOfBorders = 1; GameObject Borders[NumberOfBorders];
+// Materials
+std::shared_ptr<Material> defaultMaterial;
+std::shared_ptr<Material> passThroughMaterial;
+std::shared_ptr<Material> textMaterial;
+
+
 
 //Random Variables//
 
@@ -139,6 +148,7 @@ Sound drum[2];
 FMOD::Channel *drumChannel;
 //Text
 RenderText SystemText;
+Manifold m;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -148,7 +158,6 @@ RenderText SystemText;
 *  - set player health
 */
 void setBoardStart() {
-	Manifold m;
 
 	Players[0].setPosition(glm::vec3(20.0f, 0.0f, 0.0f));
 	Players[0].setVelocity(glm::vec3(0.0f, 0.0f, 0.0f));
@@ -163,8 +172,6 @@ void setBoardStart() {
 		setEnemySpawn(m, i);
 		Enemies[i] = m.B;
 	}
-
-	m.~Manifold();
 }
 
 
@@ -258,23 +265,24 @@ void WhatCameraIsLookingAt()
 */
 void InEditorDraw(int Inum)
 {
-	shader->bind();
+
+	//defaultMaterial->shader->bind();
 	cameralook = Inum; //window
 	WhatCameraIsLookingAt(); //Resising Window
 	 //Draw scene//cameraViewMatrix //modelViewMatrix
-	shader->uniformMat4x4("mvm", &modelViewMatrix[Inum]);
-	shader->uniformMat4x4("prm", &projectionMatrix[Inum]);
-	shader->uniformMat4x4("u_mvp", &(modelViewMatrix[Inum] * projectionMatrix[Inum]));
-	shader->uniformMat4x4("u_mv", &modelViewMatrix[Inum]);
-	shader->uniformMat4x4("u_lightPos_01", &(modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
-	shader->uniformMat4x4("u_lightPos_02", &(modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
+	defaultMaterial->shader->sendUniformMat4("mvm", modelViewMatrix[Inum]);
+	defaultMaterial->shader->sendUniformMat4("prm", projectionMatrix[Inum]);
+	defaultMaterial->shader->sendUniformMat4("u_mvp", (modelViewMatrix[Inum] * projectionMatrix[Inum]));
+	defaultMaterial->shader->sendUniformMat4("u_mv", modelViewMatrix[Inum]);
+	defaultMaterial->shader->sendUniformMat4("u_lightPos_01", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
+	defaultMaterial->shader->sendUniformMat4("u_lightPos_02", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
 
 	for (unsigned int i = 0; i < NumberOfPlayers; i++) {
 		if (Players[i].Viewable) {
 			//Players
 			if (Players[i].textureHandle_hasTransparency == true) { disableCulling(); }
 			else { enableCulling(); }
-			Players[i].drawObject(shader);
+			Players[i].drawObject();
 			//Shadows
 			if (EnableShadows) {
 				if (ShadowObject[0].textureHandle_hasTransparency == true) { disableCulling(); }
@@ -282,18 +290,18 @@ void InEditorDraw(int Inum)
 				ShadowObject[0].setPosition(glm::vec3(Players[i].Position().x, 0.01f, Players[i].Position().z));
 				ShadowObject[0].setScale(Players[i].Scale());
 				ShadowObject[0].setRotation(Players[i].Angle());
-				ShadowObject[0].drawObject(shader);
+				ShadowObject[0].drawObject();
 			}
 			//ShockWaves
 			if (ShockWaveOn) {
 				if (ShockWaves[i].textureHandle_hasTransparency == true) { disableCulling(); }
 				else { enableCulling(); }
-				ShockWaves[i].drawObject(shader);
+				ShockWaves[i].drawObject();
 			}
 			//Rifts
 			if (Rifts[i].textureHandle_hasTransparency == true) { disableCulling(); }
 			else { enableCulling(); }
-			Rifts[i].drawObject(shader);
+			Rifts[i].drawObject();
 
 			//Players[i].drawHTR(shader);
 		}
@@ -302,7 +310,7 @@ void InEditorDraw(int Inum)
 		if (Objects[i].Viewable) {
 			if (Objects[i].textureHandle_hasTransparency == true) { disableCulling(); }
 			else { enableCulling(); }
-			Objects[i].drawObject(shader);
+			Objects[i].drawObject();
 		}
 	}
 	for (unsigned int i = 0; i < NumberOfEnemies; i++) {
@@ -317,7 +325,7 @@ void InEditorDraw(int Inum)
 			//Enemies
 			if (Enemies[i].textureHandle_hasTransparency == true) { disableCulling(); }
 			else { enableCulling(); }
-			Enemies[i].drawObject(shader);
+			Enemies[i].drawObject();
 			//Shadows
 			if (EnableShadows) {
 				if (ShadowObject[0].textureHandle_hasTransparency == true) { disableCulling(); }
@@ -329,7 +337,7 @@ void InEditorDraw(int Inum)
 				else { ShadowObject[0].setScale(Enemies[i].Scale()*(Enemies[i].Position().y*0.05f)); }
 
 				ShadowObject[0].setRotation(Enemies[i].Angle());
-				ShadowObject[0].drawObject(shader);
+				ShadowObject[0].drawObject();
 			}
 		}
 	}
@@ -338,7 +346,7 @@ void InEditorDraw(int Inum)
 			//Specials
 			if (Specials[i].textureHandle_hasTransparency == true) { disableCulling(); }
 			else { enableCulling(); }
-			Specials[i].drawObject(shader);
+			Specials[i].drawObject();
 			//Shadows
 			if (EnableShadows) {
 				if (ShadowObject[1].textureHandle_hasTransparency == true) { disableCulling(); }
@@ -346,20 +354,19 @@ void InEditorDraw(int Inum)
 				ShadowObject[1].setPosition(glm::vec3(Specials[i].Position().x, 0.01f, Specials[i].Position().z));
 				ShadowObject[1].setScale(Specials[i].Scale());
 				ShadowObject[1].setRotation(Specials[i].Angle());
-				ShadowObject[1].drawObject(shader);
+				ShadowObject[1].drawObject();
 			}
 		}
 	}
 
-	shader->unbind();
-
+	//ewdefaultMaterial->shader->unbind();
 
 
 
 	cameralook = 3; //window
 	WhatCameraIsLookingAt(); //Resising Window
 
-	SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]", -(windowWidth / 4), -(windowHeight / 4), 1.0f, glm::vec3(0.3, 0.3f, 0.9f), 1);
+	SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]", -(windowWidth / 4), -(windowHeight / 4), 1.0f, glm::vec3(0.3, 0.3f, 0.9f), 1);
 
 }
 
@@ -370,15 +377,11 @@ void InEditorDraw(int Inum)
 void EditorScreen(float deltaTasSeconds)
 {
 
-	Manifold m;
-
 	//Updating Targets
 	for (int i = 0; i < NumberOfPlayers; i++)	{ Players[i].updateP(deltaTasSeconds); }
 	for (int i = 0; i < NumberOfEnemies; i++)	{ Enemies[i].update(deltaTasSeconds); }
 	for (int i = 0; i < NumberOfSpecials; i++)	{ Specials[i].update(deltaTasSeconds); }
 	for (int i = 0; i < NumberOfObjects; i++)	{ Objects[i].update(deltaTasSeconds); }
-
-	m.~Manifold();
 }
 
 
@@ -390,25 +393,24 @@ void EditorScreen(float deltaTasSeconds)
 */
 void InMenuDraw(int Inum)
 {
-	shader->bind();
+	//defaultMaterial->shader->bind();
 	Inum = 2;
 	cameralook = Inum; //window
 	WhatCameraIsLookingAt(); //Resising Window
+	defaultMaterial->shader->sendUniformMat4("mvm", modelViewMatrix[Inum]);
+	defaultMaterial->shader->sendUniformMat4("prm", projectionMatrix[Inum]);
+	defaultMaterial->shader->sendUniformMat4("u_mvp", (modelViewMatrix[Inum] * projectionMatrix[Inum]));
+	defaultMaterial->shader->sendUniformMat4("u_mv", modelViewMatrix[Inum]);
+	defaultMaterial->shader->sendUniformMat4("u_lightPos_01", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
+	defaultMaterial->shader->sendUniformMat4("u_lightPos_02", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
 
-	shader->uniformMat4x4("mvm", &modelViewMatrix[Inum]);
-	shader->uniformMat4x4("prm", &projectionMatrix[Inum]);
-	shader->uniformMat4x4("u_mvp", &(modelViewMatrix[Inum] * projectionMatrix[Inum]));
-	shader->uniformMat4x4("u_mv", &modelViewMatrix[Inum]);
-	shader->uniformMat4x4("u_lightPos_01", &(modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
-	shader->uniformMat4x4("u_lightPos_02", &(modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
-
-	if (planeForText[0].Viewable) { planeForText[0].drawObject(shader); }
+	if (planeForText[0].Viewable) { planeForText[0].drawObject(); }
 
 	for (unsigned int i = 0; i <= 2; i++) {
-		if (ButtonObjects[i].Viewable) { ButtonObjects[i].drawObject(shader); }
+		if (ButtonObjects[i].Viewable) { ButtonObjects[i].drawObject(); }
 	}
 
-	shader->unbind();
+	//defaultMaterial->shader->unbind();
 }
 
 /* function MenuScreen()
@@ -439,49 +441,47 @@ void MenuScreen(float deltaTasSeconds)
 */
 void InOptionDraw(int Inum)
 {
-	shader->bind();
+	//defaultMaterial->shader->bind();
 	Inum = 2;
 	cameralook = Inum; //window
 	WhatCameraIsLookingAt(); //Resising Window
 
 	// Draw our scene
-	shader->uniformMat4x4("mvm", &modelViewMatrix[Inum]);
-	shader->uniformMat4x4("prm", &projectionMatrix[Inum]);
-	shader->uniformMat4x4("u_mvp", &(modelViewMatrix[Inum] * projectionMatrix[Inum]));
-	shader->uniformMat4x4("u_mv", &modelViewMatrix[Inum]);
-	shader->uniformMat4x4("u_lightPos_01", &(modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
-	shader->uniformMat4x4("u_lightPos_02", &(modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
+	defaultMaterial->shader->sendUniformMat4("mvm", modelViewMatrix[Inum]);
+	defaultMaterial->shader->sendUniformMat4("prm", projectionMatrix[Inum]);
+	defaultMaterial->shader->sendUniformMat4("u_mvp", (modelViewMatrix[Inum] * projectionMatrix[Inum]));
+	defaultMaterial->shader->sendUniformMat4("u_mv", modelViewMatrix[Inum]);
+	defaultMaterial->shader->sendUniformMat4("u_lightPos_01", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
+	defaultMaterial->shader->sendUniformMat4("u_lightPos_02", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
 
 	
 
 
 	if (inOptionsTab == 0) {
-		if (planeForText[inOptionsTab + 1].Viewable) { planeForText[inOptionsTab + 1].drawObject(shader); }
-		if (ButtonObjects[3].Viewable) { ButtonObjects[3].drawObject(shader); }
+		if (planeForText[inOptionsTab + 1].Viewable) { planeForText[inOptionsTab + 1].drawObject(); }
+		if (ButtonObjects[3].Viewable) { ButtonObjects[3].drawObject(); }
 		for (unsigned int i = 4; i <= 6; i++) {
-			if (ButtonObjects[i].Viewable) { ButtonObjects[i].drawObject(shader); }
+			if (ButtonObjects[i].Viewable) { ButtonObjects[i].drawObject(); }
 		}
 	}
 	else if (inOptionsTab == 1) {
-		if (planeForText[inOptionsTab + 1].Viewable) { planeForText[inOptionsTab + 1].drawObject(shader); }
-		if (ButtonObjects[3].Viewable) { ButtonObjects[3].drawObject(shader); }
+		if (planeForText[inOptionsTab + 1].Viewable) { planeForText[inOptionsTab + 1].drawObject(); }
+		if (ButtonObjects[3].Viewable) { ButtonObjects[3].drawObject(); }
 	}
 	else if (inOptionsTab == 2) {
-		if (planeForText[inOptionsTab + 1].Viewable) { planeForText[inOptionsTab + 1].drawObject(shader); }
-		if (ButtonObjects[3].Viewable) { ButtonObjects[3].drawObject(shader); }
+		if (planeForText[inOptionsTab + 1].Viewable) { planeForText[inOptionsTab + 1].drawObject(); }
+		if (ButtonObjects[3].Viewable) { ButtonObjects[3].drawObject(); }
 	}
 	else if (inOptionsTab == 3) {
-		if (planeForText[inOptionsTab + 1].Viewable) { planeForText[inOptionsTab + 1].drawObject(shader); }
-		if (ButtonObjects[3].Viewable) { ButtonObjects[3].drawObject(shader); }
+		if (planeForText[inOptionsTab + 1].Viewable) { planeForText[inOptionsTab + 1].drawObject(); }
+		if (ButtonObjects[3].Viewable) { ButtonObjects[3].drawObject(); }
 		for (unsigned int i = 0; i < NumberOfSliders; i++) {
-			if (ButtonForSliders[i].Viewable) { ButtonForSliders[i].drawObject(shader); }
-			if (planeForSliders[i].Viewable) { planeForSliders[i].drawObject(shader); }
+			if (ButtonForSliders[i].Viewable) { ButtonForSliders[i].drawObject(); }
+			if (planeForSliders[i].Viewable) { planeForSliders[i].drawObject(); }
 		}
 	}
 
-	shader->unbind();
-	//SystemText.TextDraw(*TextShader, &projectionMatrix[3], "Text", X, Y, Size, Colour, Right_Middle_Left alinment);
-	//SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[0,0]", 0.0f, 0.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f), 1);
+	//defaultMaterial->shader->unbind();
 
 }
 
@@ -548,17 +548,17 @@ void OptionScreen(float deltaTasSeconds)
 */
 void InGameDraw(int Inum)
 {
-	shader->bind();
+	//defaultMaterial->shader->bind();
 	cameralook = Inum; //window
 	WhatCameraIsLookingAt(); //Resising Window
 	
-	//Draw scene//cameraViewMatrix //modelViewMatrix
-	shader->uniformMat4x4("mvm", &modelViewMatrix[Inum]);
-	shader->uniformMat4x4("prm", &projectionMatrix[Inum]);
-	shader->uniformMat4x4("u_mvp", &(modelViewMatrix[Inum] * projectionMatrix[Inum]));
-	shader->uniformMat4x4("u_mv", &modelViewMatrix[Inum]);
-	shader->uniformMat4x4("u_lightPos_01", &(modelViewMatrix[Inum]*glm::translate(glm::mat4(1.0f), lightPosition_01)));
-	shader->uniformMat4x4("u_lightPos_02", &(modelViewMatrix[Inum]*glm::translate(glm::mat4(1.0f), lightPosition_02)));
+	//Draw scene//cameraViewMatrix //modelViewMatrix	
+	defaultMaterial->shader->sendUniformMat4("mvm", modelViewMatrix[Inum]);
+	defaultMaterial->shader->sendUniformMat4("prm", projectionMatrix[Inum]);
+	defaultMaterial->shader->sendUniformMat4("u_mvp", (modelViewMatrix[Inum] * projectionMatrix[Inum]));
+	defaultMaterial->shader->sendUniformMat4("u_mv", modelViewMatrix[Inum]);
+	defaultMaterial->shader->sendUniformMat4("u_lightPos_01", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
+	defaultMaterial->shader->sendUniformMat4("u_lightPos_02", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
 
 
 
@@ -568,7 +568,7 @@ void InGameDraw(int Inum)
 			//Players
 			if (Players[i].textureHandle_hasTransparency == true) { disableCulling(); }
 			else { enableCulling(); }
-			Players[i].drawObject(shader);
+			Players[i].drawObject();
 			//Shadows
 			if (EnableShadows) {
 				if (ShadowObject[0].textureHandle_hasTransparency == true) { disableCulling(); }
@@ -576,18 +576,18 @@ void InGameDraw(int Inum)
 				ShadowObject[0].setPosition(glm::vec3(Players[i].Position().x, 0.01f, Players[i].Position().z));
 				ShadowObject[0].setScale(Players[i].Scale());
 				ShadowObject[0].setRotation(Players[i].Angle());
-				ShadowObject[0].drawObject(shader);
+				ShadowObject[0].drawObject();
 			}
 			//ShockWaves
 			if (ShockWaveOn) {
 				if (ShockWaves[i].textureHandle_hasTransparency == true) { disableCulling(); }
 				else { enableCulling(); }
-				ShockWaves[i].drawObject(shader);
+				ShockWaves[i].drawObject();
 			}
 			//Rifts
 			if (Rifts[i].textureHandle_hasTransparency == true) { disableCulling(); }
 			else { enableCulling(); }
-			Rifts[i].drawObject(shader);
+			Rifts[i].drawObject();
 
 			//Players[i].drawHTR(shader);
 		}
@@ -596,7 +596,7 @@ void InGameDraw(int Inum)
 		if (Objects[i].Viewable) {
 			if (Objects[i].textureHandle_hasTransparency == true) { disableCulling(); }
 			else { enableCulling(); }
-			Objects[i].drawObject(shader);
+			Objects[i].drawObject();
 		}
 	}
 	for (unsigned int i = 0; i < NumberOfEnemies; i++) {
@@ -611,7 +611,7 @@ void InGameDraw(int Inum)
 			//Enemies
 			if (Enemies[i].textureHandle_hasTransparency == true) { disableCulling(); }
 			else { enableCulling(); }
-			Enemies[i].drawObject(shader);
+			Enemies[i].drawObject();
 			//Shadows
 			if (EnableShadows) {
 				if (ShadowObject[0].textureHandle_hasTransparency == true) { disableCulling(); }
@@ -623,7 +623,7 @@ void InGameDraw(int Inum)
 				else { ShadowObject[0].setScale(Enemies[i].Scale()*(Enemies[i].Position().y*0.05f)); }
 
 				ShadowObject[0].setRotation(Enemies[i].Angle());
-				ShadowObject[0].drawObject(shader);
+				ShadowObject[0].drawObject();
 			}
 		}
 	}
@@ -632,7 +632,7 @@ void InGameDraw(int Inum)
 			//Specials
 			if (Specials[i].textureHandle_hasTransparency == true) { disableCulling(); }
 			else { enableCulling(); }
-			Specials[i].drawObject(shader);
+			Specials[i].drawObject();
 			//Shadows
 			if (EnableShadows) {
 				if (ShadowObject[1].textureHandle_hasTransparency == true) { disableCulling(); }
@@ -640,24 +640,24 @@ void InGameDraw(int Inum)
 				ShadowObject[1].setPosition(glm::vec3(Specials[i].Position().x, 0.01f, Specials[i].Position().z));
 				ShadowObject[1].setScale(Specials[i].Scale());
 				ShadowObject[1].setRotation(Specials[i].Angle());
-				ShadowObject[1].drawObject(shader);
+				ShadowObject[1].drawObject();
 			}
 		}
 	}
 
-	shader->unbind();
+	//defaultMaterial->shader->unbind();
 
 	cameralook = 3; //window
 	WhatCameraIsLookingAt(); //Resising Window
 
 	
 	if (Inum == 0) {
-		SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]", -(windowWidth / 4), -(windowHeight / 4), 1.0f, glm::vec3(0.3, 0.3f, 0.9f), 1);
-		SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[1]) + "]", -(windowWidth / 4), (windowHeight / 2) - (windowHeight / 4), 1.0f, glm::vec3(0.9, 0.2f, 0.2f), 1);
+		SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]", -(windowWidth / 4), -(windowHeight / 4), 1.0f, glm::vec3(0.3, 0.3f, 0.9f), 1);
+		SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[1]) + "]", -(windowWidth / 4), (windowHeight / 2) - (windowHeight / 4), 1.0f, glm::vec3(0.9, 0.2f, 0.2f), 1);
 	}
 	else if (Inum == 1) {
-		SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]",  (windowWidth / 4), (windowHeight / 2) - (windowHeight / 4), 1.0f, glm::vec3(0.3, 0.3f, 0.9f), 1);
-		SystemText.TextDraw(*TextShader, &projectionMatrix[3], "[" + std::to_string(Health[1]) + "]", (windowWidth / 4), -(windowHeight / 4), 1.0f, glm::vec3(0.9, 0.2f, 0.2f), 1);
+		SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]",  (windowWidth / 4), (windowHeight / 2) - (windowHeight / 4), 1.0f, glm::vec3(0.3, 0.3f, 0.9f), 1);
+		SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[1]) + "]", (windowWidth / 4), -(windowHeight / 4), 1.0f, glm::vec3(0.9, 0.2f, 0.2f), 1);
 	}
 }
 
@@ -673,7 +673,6 @@ void GameField(float deltaTasSeconds)
 		Sound::Sys.listenerPos[i].z = Players[i].Position().z*10.0f;
 	}
 	Sound::SystemUpdate();
-	Manifold m;
 
 
 	//Collision between things
@@ -1379,7 +1378,6 @@ void GameField(float deltaTasSeconds)
 	for (int i = 0; i < NumberOfEnemies; i++) { Enemies[i].update(deltaTasSeconds); }
 	for (int i = 0; i < NumberOfSpecials; i++){Specials[i].update(deltaTasSeconds); }
 
-	m.~Manifold();
 }
 
 
@@ -2223,19 +2221,56 @@ void MousePassiveMotionCallbackFunction(int x, int y) //while a mouse button isn
 //////////////////////////////////////////////////////////////////////
 
 
-/* function LoadAllSounds()
+
+void InitializeShaders()
+{
+	std::string shaderPath;
+
+	//Initialize  Shader
+	if (DoesFileExists("..//Assets//shaders//")) { shaderPath = "..//Assets//shaders//"; }
+	else if (DoesFileExists("Assets//shaders//")) { shaderPath = "Assets//shaders//"; }
+	else { std::cout << "[ERROR] Could not find [Shaders]" << std::endl; }
+
+	//Load vertex shaders
+	Shader v_default, v_passThrough, v_textShader;
+	v_default.loadShaderFromFile(shaderPath + "default_v.glsl", GL_VERTEX_SHADER);
+	v_passThrough.loadShaderFromFile(shaderPath + "passThru_v.glsl", GL_VERTEX_SHADER);
+	v_textShader.loadShaderFromFile(shaderPath + "text_v.glsl", GL_VERTEX_SHADER);
+	//Load fragment shaders
+	Shader f_default, f_passThrough, f_textShader;
+	f_default.loadShaderFromFile(shaderPath + "default_f.glsl", GL_FRAGMENT_SHADER);
+	f_passThrough.loadShaderFromFile(shaderPath + "passThru_f.glsl", GL_FRAGMENT_SHADER);
+	f_textShader.loadShaderFromFile(shaderPath + "text_f.glsl", GL_FRAGMENT_SHADER);
+
+	//Default material that all objects use
+	defaultMaterial = std::make_shared<Material>();
+	defaultMaterial->shader->attachShader(v_default);
+	defaultMaterial->shader->attachShader(f_default);
+	defaultMaterial->shader->linkProgram();
+
+	//passThrough material that all objects use
+	passThroughMaterial = std::make_shared<Material>();
+	passThroughMaterial->shader->attachShader(v_passThrough);
+	passThroughMaterial->shader->attachShader(f_passThrough);
+	passThroughMaterial->shader->linkProgram();
+
+	//text material that all objects use
+	textMaterial = std::make_shared<Material>();
+	textMaterial->shader->attachShader(v_textShader);
+	textMaterial->shader->attachShader(f_textShader);
+	textMaterial->shader->linkProgram();
+}
+
+
+/* function InitializeSounds()
 * Description:
 *   - this is called when the file first loads
 *   - loads all the needed sounds into the game
 */
-void LoadAllSounds() {
+void InitializeSounds() {
 	std::string SoundPath;
-	if (DoesFileExists("..//Assets//Media")) {
-		SoundPath = "..//Assets//Media//";
-	}
-	else if (DoesFileExists("Assets//Media")) {
-		SoundPath = "Assets//Media//";
-	}
+	if (DoesFileExists("..//Assets//Media")) { SoundPath = "..//Assets//Media//"; }
+	else if (DoesFileExists("Assets//Media")) { SoundPath = "Assets//Media//"; }
 	else { std::cout << "[ERROR] Could not find [Media]" << std::endl; }
 
 	Sound::Sys.Init();
@@ -2245,12 +2280,12 @@ void LoadAllSounds() {
 	}
 }
 
-/* function LoadAllObjects()
+/* function InitializeObjects()
 * Description:
 *   - this is called when the file first loads
 *   - loads all the needed objects into the game
 */
-void LoadAllObjects()
+void InitializeObjects()
 {
 	//Load Objects///////////////////////////////////
 	std::string ImagePath;
@@ -2266,6 +2301,7 @@ void LoadAllObjects()
 	else { std::cout << "[ERROR] Could not find [Img] and/or [Obj]" << std::endl; }
 
 	Borders[0].objectLoader(ObjectPath + "Square.obj");
+	Borders[0].setMaterial(passThroughMaterial);
 	Borders[0].setMass(0.0f);
 	Borders[0].setScale(glm::vec3(100.0f, 100.0f, 100.0f));
 	Borders[0].setSizeOfHitBox(glm::vec3(100.0f, 100.0f, 100.0f)); //HitBox
@@ -2277,6 +2313,7 @@ void LoadAllObjects()
 
 	//Player ONE
 	Players[0].objectLoader(ObjectPath + "PlayerModel.obj");
+	Players[0].setMaterial(passThroughMaterial);
 	Players[0].setMass(5.0f);
 	Players[0].setScale(glm::vec3(5.0f, 5.0f, 5.0f)); //displayed size
 	Players[0].setSizeOfHitBox(glm::vec3(10.0f, 2.50f, 10.0f)); //HitBox
@@ -2288,6 +2325,7 @@ void LoadAllObjects()
 	Players[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "PlayerModelTexture_02.png").c_str())));
 	//Player ShockWave
 	ShockWaves[0].objectLoader(ObjectPath + "ShockWave.obj");
+	ShockWaves[0].setMaterial(passThroughMaterial);
 	ShockWaves[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "ShockWave_01.png").c_str())));
 	ShockWaves[0].setMass(10.0f);
 	ShockWaves[0].setSizeOfHitBox(glm::vec3(1.0f, 1.0f, 1.0f)); //HitBox
@@ -2296,6 +2334,7 @@ void LoadAllObjects()
 	ShockWaves[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "ShockWave_02.png").c_str())));
 	//Player ONE Tower
 	Rifts[0].objectLoader(ObjectPath + "Square.obj");
+	Rifts[0].setMaterial(passThroughMaterial);
 	Rifts[0].setColour(glm::vec4(1.5f, 1.5f, 0.0f, 0.10f));
 	Rifts[0].setMass(0.0f);
 	Rifts[0].setScale(glm::vec3(2.0f, 14.0f, 30.0f));
@@ -2312,6 +2351,7 @@ void LoadAllObjects()
 
 	//Specials
 	Specials[0].objectLoader(ObjectPath + "Square.obj");
+	Specials[0].setMaterial(passThroughMaterial);
 	Specials[0].setColour(glm::vec4(1.5f, 1.5f, 1.5f, 1.0f));
 	Specials[0].setMass(1.0f);
 	Specials[0].setScale(glm::vec3(4.0f, 4.0f, 4.0f));
@@ -2339,6 +2379,7 @@ void LoadAllObjects()
 
 	//Ground
 	Objects[0].objectLoader(ObjectPath + "Map002.obj");
+	Objects[0].setMaterial(passThroughMaterial);
 	Objects[0].setColour(glm::vec4(0.5f, 0.5f, 0.5f, 1.0f));
 	Objects[0].setMass(0.0f);
 	Objects[0].setSizeOfHitBox(glm::vec3(100.0f, 0.01f, 100.0f)); //HitBox
@@ -2347,7 +2388,8 @@ void LoadAllObjects()
 	Objects[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Ground.png").c_str())));
 
 	//Walls Left
-	Objects[1].objectLoader(ObjectPath + "stadium.obj");//Wall_LR
+	Objects[1].objectLoader(ObjectPath + "stadium.obj");
+	Objects[1].setMaterial(passThroughMaterial);
 	Objects[1].setColour(glm::vec4(0.5f, 0.50f, 0.5f, 1.0f));
 	Objects[1].setMass(0.0f);
 	Objects[1].setScale(glm::vec3(1.0f, 1.0f, 1.0f)); //size
@@ -2356,12 +2398,14 @@ void LoadAllObjects()
 	Objects[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Walls_LR.png").c_str())));
 	//Rift magnets
 	Objects[2].objectLoader(ObjectPath + "Rift//Magnet_Left.obj");
+	Objects[2].setMaterial(passThroughMaterial);
 	Objects[2].setPosition(glm::vec3(47.0f, 0.0f, -20.0f));
 	Objects[2].setMass(0.0f);
 	Objects[2].setScale(glm::vec3(1.0f, 1.50f, 1.50f));
 	Objects[2].setSizeOfHitBox(glm::vec3(2.650f, 7.0f, 3.60f));
 	Objects[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Magnet_Rift_01.png").c_str())));
 	Objects[3].objectLoader(ObjectPath + "Rift//Magnet_Right.obj");
+	Objects[3].setMaterial(passThroughMaterial);
 	Objects[3].setPosition(glm::vec3(47.0f, 0.0f, 20.0f));
 	Objects[3].setMass(0.0f);
 	Objects[3].setScale(glm::vec3(1.0f, 1.50f, 1.50f));
@@ -2393,9 +2437,11 @@ void LoadAllObjects()
 
 	//Enemies
 	Enemies[0].objectLoader(ObjectPath + "obj_03.obj");
+	Enemies[0].setMaterial(passThroughMaterial);
 	Enemies[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Enemy.png").c_str())));
 
 	ShadowObject[0].objectLoader(ObjectPath + "PlainForShadow.obj");
+	ShadowObject[0].setMaterial(passThroughMaterial);
 	ShadowObject[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Shadow_01.png").c_str())));
 	ShadowObject[0].textureHandle_hasTransparency = true;
 	ShadowObject[1].objectLoader(&ShadowObject[0]);
@@ -2415,12 +2461,12 @@ void LoadAllObjects()
 	//Players[0].addChild(skeleton.getRootGameObject());
 }
 
-/* function LoadAllTextPlane()
+/* function InitializeTextPlane()
 * Description:
 *   - this is called when the file first loads
 *   - loads all the menu pages into the game
 */
-void LoadAllTextPlane()
+void InitializeTextPlane()
 {
 	std::string ImagePath;
 	std::string ObjectPath;
@@ -2436,6 +2482,7 @@ void LoadAllTextPlane()
 
 
 	planeForText[0].objectLoader(ObjectPath + "PlainForText.obj");
+	planeForText[0].setMaterial(passThroughMaterial);
 	planeForText[0].setMass(0.0f);
 	planeForText[0].Viewable = true;
 	planeForText[0].setScale(glm::vec3(39.0f*0.9f, 1.0f, 39.0f*1.6f));
@@ -2459,6 +2506,7 @@ void LoadAllTextPlane()
 
 	//Start Button
 	ButtonObjects[0].objectLoader(ObjectPath + "PlainForText.obj");
+	ButtonObjects[0].setMaterial(passThroughMaterial);
 	ButtonObjects[0].setScale(glm::vec3(9.0f*0.9f, 1.0f, 7.0f*1.6f));
 	ButtonObjects[0].setSizeOfHitBox(glm::vec3(9.0f*1.45f, 1.0f, 7.0f*1.58f));
 	ButtonObjects[0].setPosition(glm::vec3(0.0f, 0.01f, -3.0f));
@@ -2492,6 +2540,7 @@ void LoadAllTextPlane()
 
 	//Slider bar
 	planeForSliders[0].objectLoader(ObjectPath + "PlainForText.obj");
+	planeForSliders[0].setMaterial(passThroughMaterial);
 	planeForSliders[0].setScale(glm::vec3(5.0f, 1.0f, 3.50f));
 	planeForSliders[0].setSizeOfHitBox(glm::vec3(5.0f*1.6f, 1.0f, 3.50f*0.9f));
 	planeForSliders[0].setPosition(glm::vec3(20.0f, 0.01f, -10.0f));
@@ -2559,29 +2608,16 @@ void init()
 	ilInit();
 	iluInit();
 	ilutRenderer(ILUT_OPENGL);
-	//Initialize Shader
-
-	if (DoesFileExists("..//Assets//shaders//")) { shader = new Shader("..//Assets//shaders//passthru_v.glsl", "..//Assets//shaders//passthru_f.glsl"); }
-	else if (DoesFileExists("Assets//shaders//")) { shader = new Shader("Assets//shaders//passthru_v.glsl", "Assets//shaders//passthru_f.glsl"); }
-	else { std::cout << "[ERROR] Could not find [Shaders]" << std::endl; }
-
-	//Initialize Font/Text Shader
-	if (DoesFileExists("..//Assets//shaders//")) { TextShader = new Shader("..//Assets//shaders//text_v.glsl", "..//Assets//shaders//text_f.glsl"); }
-	else if (DoesFileExists("Assets//shaders//")) { TextShader = new Shader("Assets//shaders//text_v.glsl", "Assets//shaders//text_f.glsl"); }
-	else { std::cout << "[ERROR] Could not find [Shaders]" << std::endl; }
-
-
-	if (DoesFileExists("..//Assets//img//win.png")) { textureHandle = ilutGLLoadImage("..//Assets//img//win.png"); }
-	else if (DoesFileExists("Assets//img//win.png")) { textureHandle = ilutGLLoadImage("Assets//img//win.png"); }
-	glBindTexture(GL_TEXTURE_2D, 0);
 
 	if (DoesFileExists("..//Assets//Fonts//")) { SystemText.LoadTextFont("..//Assets//Fonts//FreeSerif.ttf", SystemText); }
 	else if (DoesFileExists("Assets//Fonts//")) { SystemText.LoadTextFont("Assets//Fonts//FreeSerif.ttf", SystemText); }
 	else { std::cout << "[ERROR] Could not find [Font]" << std::endl; }
 
-	LoadAllSounds();
-	LoadAllObjects();
-	LoadAllTextPlane();
+
+	InitializeShaders();
+	InitializeSounds();
+	InitializeObjects();
+	InitializeTextPlane();
 
 	for (int i = 0; i < 4; i++) {
 		cameralook = i;
@@ -2639,16 +2675,17 @@ int main(int argc, char **argv)
 
 	init();
 	
-	shader->bind();
-	glEnableVertexAttribArray(0);	glBindAttribLocation(shader->getID(), 0, "vIn_vertex");
-	glEnableVertexAttribArray(1);	glBindAttribLocation(shader->getID(), 1, "vIn_uv");
-	glEnableVertexAttribArray(2);	glBindAttribLocation(shader->getID(), 2, "vIn_normal");
-	glEnableVertexAttribArray(3);	glBindAttribLocation(shader->getID(), 3, "vIn_colour");
+	//shader->bind();
+	//glEnableVertexAttribArray(0);	glBindAttribLocation(shader->getID(), 0, "vIn_vertex");
+	//glEnableVertexAttribArray(1);	glBindAttribLocation(shader->getID(), 1, "vIn_uv");
+	//glEnableVertexAttribArray(2);	glBindAttribLocation(shader->getID(), 2, "vIn_normal");
+	//glEnableVertexAttribArray(3);	glBindAttribLocation(shader->getID(), 3, "vIn_colour");
+	//shader->unbind();
 
 	// start the event handler
 	glutMainLoop();
 
-	shader->unbind();
+
 	delete shader; shader = NULL;
 
 	return 0;

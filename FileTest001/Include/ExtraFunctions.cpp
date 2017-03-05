@@ -235,14 +235,14 @@ public:
 	}
 
 	//draw text to the screen
-	void TextDraw(Shader &s, glm::mat4x4 *pvm, std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color, int orientation)
+	void TextDraw(Material &s, glm::mat4x4 *pvm, std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color, int orientation)
 	{
 		//binds shader
-		s.bind();
+		//s.shader->bind();
 		//set the colour of the text
-		s.uniformVector("textColor", &color);
+		s.shader->sendUniformVec4("textColor", glm::vec4(color,1.0f));
 		//set the progection matrix the will be used for the text
-		s.uniformMat4x4("projection", pvm);
+		s.shader->sendUniformMat4("projection", *pvm);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindVertexArray(VAO);
@@ -301,7 +301,7 @@ public:
 		//unbind texture
 		glBindTexture(GL_TEXTURE_2D, 0);
 		//unbind shader
-		s.unbind();
+		//s.shader->unbind();
 	}
 
 	//load in a font

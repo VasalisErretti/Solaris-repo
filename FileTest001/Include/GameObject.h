@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <memory>
 
 // 3rd Party Libraries
 #include <glm\glm\glm.hpp>
@@ -14,6 +15,7 @@
 // User Libraries
 #include "Shader.h"
 #include "JointTypes.h"
+#include "Material.h"
 
 struct Face
 {
@@ -86,6 +88,7 @@ public:
 	float FaceYRotation = 0.0f;
 
 	GameObject();
+	GameObject(glm::vec3 position, std::shared_ptr<Material> _material);
 	~GameObject();
 
 	void setTexture(GLuint _textureHandle) { textureHandle = _textureHandle; }
@@ -123,6 +126,8 @@ public:
 	void setRestitution(float newRestitution) { m_Restitution = newRestitution; }
 
 	void setSpecialAttribute(int newSpecialAttribute) { m_SpecialAttribute = newSpecialAttribute; }
+	void setMaterial(std::shared_ptr<Material> newMaterial) { material = newMaterial; }
+
 
 	glm::vec3 Position() { return m_Position; }
 	glm::vec3 Angle() { return m_Angle; }
@@ -176,7 +181,7 @@ public:
 
 	virtual void GameObject::update(float deltaT);
 	virtual void GameObject::updateP(float deltaT);
-	virtual void GameObject::drawObject(Shader *s);
+	virtual void GameObject::drawObject();
 
 	bool GameObject::objectLoader(const char* filename);
 	bool GameObject::objectLoader(std::string filename);
@@ -185,6 +190,10 @@ public:
 	void GameObject::objectLoaderHTR(GameObject * objPath);
 	void GameObject::morphTarget(GameObject * objPath, float dt);
 
+
+
+
+	std::shared_ptr<Material> material;
 };
 
 

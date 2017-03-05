@@ -4,18 +4,34 @@
 
 
 
-GameObject::GameObject() {
-	m_Mass = 1.0f;
-	m_InvertedMass = (1.0f / m_Mass);;
-	m_Restitution = 1.0f; //not currently using 
-	m_Drag = 0.010f;
-	m_Scale = glm::vec3(1.0f, 1.0f, 1.0f);
-	m_Size = glm::vec3(1.0f, 1.0f, 1.0f);
-	m_Position = glm::vec3(0.0f, 0.0f, 0.0f);
-	m_ForceOnObject = glm::vec3(0.0f, 0.0f, 0.0f);
-	m_Velocity = glm::vec3(0.0f, 0.0f, 0.0f);
-	m_Acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
-	Viewable = true;
+GameObject::GameObject() :
+	m_Mass(1.0f),
+	m_InvertedMass(1.0f / m_Mass),
+	m_Restitution(1.0f), //not currently using 
+	m_Drag(0.010f),
+	m_Scale(glm::vec3(1.0f, 1.0f, 1.0f)),
+	m_Size(glm::vec3(1.0f, 1.0f, 1.0f)),
+	m_Position(glm::vec3(0.0f, 0.0f, 0.0f)),
+	m_ForceOnObject(glm::vec3(0.0f, 0.0f, 0.0f)),
+	m_Velocity(glm::vec3(0.0f, 0.0f, 0.0f)),
+	m_Acceleration(glm::vec3(0.0f, 0.0f, 0.0f)),
+	Viewable(true)
+{
+}
+GameObject::GameObject(glm::vec3 position, std::shared_ptr<Material> _material) :
+	m_Mass(1.0f),
+	m_InvertedMass(1.0f / m_Mass),
+	m_Restitution(1.0f), //not currently using 
+	m_Drag(0.010f),
+	m_Scale(glm::vec3(1.0f, 1.0f, 1.0f)),
+	m_Size(glm::vec3(1.0f, 1.0f, 1.0f)),
+	m_Position(position),
+	m_ForceOnObject(glm::vec3(0.0f, 0.0f, 0.0f)),
+	m_Velocity(glm::vec3(0.0f, 0.0f, 0.0f)),
+	m_Acceleration(glm::vec3(0.0f, 0.0f, 0.0f)),
+	material(_material),
+	Viewable(true)
+{
 }
 GameObject::~GameObject() {
 	glDeleteBuffers(1, &vertbo);
@@ -148,9 +164,10 @@ void GameObject::updateP(float deltaT)
 * Description:
 *   - this is called when drawing an .obj file into the program
 */
-void GameObject::drawObject(Shader *s)
+void GameObject::drawObject()
 {
 	if (Viewable) {
+		material->shader->bind();
 		// bind tex here if you had one
 		glBindTexture(GL_TEXTURE_2D, textureHandle);
 		
@@ -166,11 +183,12 @@ void GameObject::drawObject(Shader *s)
 
 		//first [scale] then [rotate] then [translate]
 		glm::mat4x4 transform = (translationMatrix * rotationMatrix * scaleMatrix);
-		s->uniformMat4x4("localTransform", &transform);
+		material->shader->sendUniformMat4("localTransform", transform);
 
 		glBindVertexArray(vao);
 		glDrawArrays(GL_TRIANGLES, 0, numtris);
 		glBindVertexArray(0);
+
 	}
 }
 /* function objectLoader()
@@ -572,6 +590,8 @@ void GameObject::objectLoader(GameObject * objPath)
 	m_ForceOnObject = objPath->m_ForceOnObject;
 	m_Restitution = objPath->m_Restitution;
 	m_Drag = objPath->m_Drag;
+
+	material = objPath->material;
 }
 void GameObject::objectHitBox(GameObject * objPath) {
 
@@ -589,6 +609,8 @@ void GameObject::objectLoaderHTR(GameObject * objPath)
 	Viewable = objPath->Viewable;
 	textureHandle = objPath->textureHandle;
 	textureHandle_hasTransparency = objPath->textureHandle_hasTransparency;
+
+	material = objPath->material;
 }
 
 void GameObject::morphTarget(GameObject * objPath, float dt) {
@@ -670,7 +692,7 @@ void GameObject::drawHTR(Shader *s)
 
 
 		glm::mat4x4 transform = translationMatrix * rotationMatrix * scaleMatrix;
-		s->uniformMat4x4("localTransform", &transform);
+		material->shader->sendUniformMat4("localTransform", transform);
 
 		glBindVertexArray(vao);
 		glDrawArrays(GL_TRIANGLES, 0, numtris);

@@ -1,75 +1,86 @@
 #include "Shader.h"
-#include <glm\glm\gtc\type_ptr.hpp>
+#include <iostream>
+#include <GL\glew.h>
 
-// Forward definition of a utility function
 static char* readTextFromFile(const char *fileName);
 
-Shader::Shader(const char *vsFile, const char *fsFile){
-	init (vsFile, fsFile);
+Shader::Shader()
+{
+	handle = 0;
 }
 
-Shader::~Shader(void){
-	 glDetachShader(programID, vertShader);
-     glDetachShader(programID, fragShader);
-     
-     glDeleteShader(vertShader);
-     glDeleteShader(fragShader);
-     glDeleteProgram(programID);
+Shader::~Shader()
+{
+	destroy();
 }
 
-void Shader::init(const char *vsFile, const char *fsFile){
-	
-	GLint result = 0;
-	GLchar error[1024] = { 0 };
+unsigned int Shader::loadShaderFromFile(std::string fileName, GLenum type)
+{
+	// Load shader file into memory
+	std::string shaderCode = readTextFromFile(_strdup((fileName).c_str()));
 
-	vertShader = glCreateShader(GL_VERTEX_SHADER);
-	const char *vsText = readTextFromFile(vsFile);
-	glShaderSource(vertShader, 1, &vsText, 0);
-	glCompileShader(vertShader);	
-	glGetShaderiv(vertShader, GL_COMPILE_STATUS, &result);
-	if (result == GL_FALSE)
+	// Could not load file
+	if (shaderCode.length() == 0) { return 0; }
+
+	// Create shader
+	// Makes an empty shader program with nothing in it
+	handle = glCreateShader(type);
+
+	// Load shader code into shader program
+	// [0] - which shader program to load code into
+	// [1] - number of source files for the shader
+	// [2] - pointer to an array of strings (pointer to pointer)
+	// [3] - terminating character for source files
+	const char* cstr = shaderCode.c_str();
+	glShaderSource(handle, 1, &cstr, 0);
+
+	// Compile the shader program
+	glCompileShader(handle);
+
+	// Check to see if shader compiled
+	// Returns 1 if success
+	int compileStatus;
+	glGetShaderiv(handle, GL_COMPILE_STATUS, &compileStatus);
+
+	if (compileStatus)
 	{
-		glGetShaderInfoLog(vertShader, sizeof(error), NULL, error);
-		std::cerr << "[ERROR.2] Compiling Vertex Shader: ["<< vsFile << "] " << error << std::endl;
+		//std::cout << "Shader Compiled Successfully: " << fileName << std::endl;
+		return handle;
 	}
-	//else printf("Compiled!\n");
+	std::cout << "[ERROR.2] Compiling Shader: [" << fileName << "]" << std::endl;
 
-	fragShader = glCreateShader(GL_FRAGMENT_SHADER);
-	const char *fsText = readTextFromFile(fsFile);
-	glShaderSource(fragShader, 1, &fsText, 0);
-	glCompileShader(fragShader);
-	glGetShaderiv(fragShader, GL_COMPILE_STATUS, &result);
-	if (result == GL_FALSE)
+	// If shader failed to compile, output the errors
+	// First need to get length of error message
+	int logLength;
+	glGetShaderiv(handle, GL_INFO_LOG_LENGTH, &logLength);
+
+	// Make string for log
+	// Note: type of quotes is important
+	std::string log(logLength, ' ');
+
+	// Get error log from OpenGL and store into string
+	// Remember string is an array of characters internally
+	glGetShaderInfoLog(handle, logLength, &logLength, &log[0]);
+
+	// Output log to screen
+	std::cout << log << std::endl;
+
+	return 0;
+}
+
+void Shader::destroy()
+{
+	// If handle is zero it means the shader does not exist
+	if (handle)
 	{
-		glGetShaderInfoLog(vertShader, sizeof(error), NULL, error);
-		std::cerr << "[ERROR.3] Compiling Fragment Shader: [" << fsFile << "] " << error << std::endl;
+		// Frees memory occupied by this shader
+		glDeleteShader(handle);
+		handle = 0;
 	}
-	//else printf("Compiled!\n");
-	
-	programID = glCreateProgram();
-
-	// attaching the vertex and fragment shaders to the program id
-	glAttachShader(programID, vertShader);
-	glAttachShader(programID, fragShader);
-
-	// linking the programs
-	glLinkProgram(programID);
-}
-
-void Shader::bind(){
-	glUseProgram(programID);
-}
-
-void Shader::unbind(){
-	glUseProgram(0);
-}
-
-unsigned int Shader::getID(){
-	return programID;
 }
 
 static char* readTextFromFile(const char *fileName) {
-	
+
 	std::cout << "[FO.2] File opened. [" << fileName << "]" << std::endl;
 
 	static char* text;
@@ -90,68 +101,12 @@ static char* readTextFromFile(const char *fileName) {
 				}
 			}
 			fclose(file);
+			return text;
 		}
-		 else {
+		else {
 			std::cout << "[FO.1] File not opened. [" << fileName << "]" << std::endl;
-			//printf("ERROR: Could not find file. %s", fileName);
+			return nullptr;
 		}
 	}
-
-	return text;
-}
-
-void Shader::uniformVector(const char* varName, float *data){
-	GLint loc = glGetUniformLocation(programID, varName);
-	glUniform3fv(loc,1,data);
-}
-
-void Shader::uniformVector(const char* varName, float x, float y, float z){
-	float temp[3] = {x, y, z};
-	GLint loc = glGetUniformLocation(programID, varName);
-	glUniform3fv(loc,1,temp);
-}
-
-void Shader::uniformVector(const char* varName, glm::vec3* v){
-	float temp[3] = { v->x, v->y, v->z };
-	GLint loc = glGetUniformLocation(programID, varName);
-	glUniform3fv(loc, 1, temp);
-}
-
-void Shader::uniformFloat(const char* varName, float data){
-	GLint loc = glGetUniformLocation(programID, varName);
-	glUniform1f(loc,data);
-}
-
-void Shader::uniformMat4x4(const char* matName, glm::mat4x4* m){
-	GLint loc = glGetUniformLocation(programID, matName);
-	glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(*m));
-}
-
-void Shader::uniformTex(const char* varName, GLuint data, unsigned short activeTexture){
-	
-	switch (activeTexture)
-	{
-	case 0:
-		glActiveTexture(GL_TEXTURE0);
-		break;
-	case 1:
-		glActiveTexture(GL_TEXTURE1);
-		break;
-	case 2:
-		glActiveTexture(GL_TEXTURE2);
-		break;
-	case 3:
-		glActiveTexture(GL_TEXTURE3);
-		break;
-	case 4:
-		glActiveTexture(GL_TEXTURE4);
-		break;
-	default:
-		glActiveTexture(GL_TEXTURE0);
-		break;
-	}
-
-	glBindTexture(GL_TEXTURE_2D, data);
-	GLuint loc = glGetUniformLocation(getID(), varName);
-	glUniform1i(loc, activeTexture);
+	else { return nullptr; }
 }
