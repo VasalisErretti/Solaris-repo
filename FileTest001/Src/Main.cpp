@@ -273,16 +273,16 @@ void InEditorDraw(int Inum)
 
 
 
-	//defaultMaterial->shader->bind();
+	passThroughMaterial->shader->bind();
 	cameralook = Inum; //window
 	WhatCameraIsLookingAt(); //Resising Window
 	 //Draw scene//cameraViewMatrix //modelViewMatrix
-	defaultMaterial->shader->sendUniformMat4("mvm", modelViewMatrix[Inum]);
-	defaultMaterial->shader->sendUniformMat4("prm", projectionMatrix[Inum]);
-	defaultMaterial->shader->sendUniformMat4("u_mvp", (modelViewMatrix[Inum] * projectionMatrix[Inum]));
-	defaultMaterial->shader->sendUniformMat4("u_mv", modelViewMatrix[Inum]);
-	defaultMaterial->shader->sendUniformMat4("u_lightPos_01", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
-	defaultMaterial->shader->sendUniformMat4("u_lightPos_02", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
+	passThroughMaterial->shader->sendUniformMat4("mvm", modelViewMatrix[Inum]);
+	passThroughMaterial->shader->sendUniformMat4("prm", projectionMatrix[Inum]);
+	passThroughMaterial->shader->sendUniformMat4("u_mvp", (modelViewMatrix[Inum] * projectionMatrix[Inum]));
+	passThroughMaterial->shader->sendUniformMat4("u_mv", modelViewMatrix[Inum]);
+	passThroughMaterial->shader->sendUniformMat4("u_lightPos_01", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
+	passThroughMaterial->shader->sendUniformMat4("u_lightPos_02", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
 
 	for (unsigned int i = 0; i < NumberOfPlayers; i++) {
 		if (Players[i].Viewable) {
@@ -366,7 +366,7 @@ void InEditorDraw(int Inum)
 		}
 	}
 
-	//ewdefaultMaterial->shader->unbind();
+	//passThroughMaterial->shader->unbind();
 
 
 
@@ -406,16 +406,16 @@ void InMenuDraw(int Inum)
 
 
 
-	//defaultMaterial->shader->bind();
+	passThroughMaterial->shader->bind();
 	Inum = 2;
 	cameralook = Inum; //window
 	WhatCameraIsLookingAt(); //Resising Window
-	defaultMaterial->shader->sendUniformMat4("mvm", modelViewMatrix[Inum]);
-	defaultMaterial->shader->sendUniformMat4("prm", projectionMatrix[Inum]);
-	defaultMaterial->shader->sendUniformMat4("u_mvp", (modelViewMatrix[Inum] * projectionMatrix[Inum]));
-	defaultMaterial->shader->sendUniformMat4("u_mv", modelViewMatrix[Inum]);
-	defaultMaterial->shader->sendUniformMat4("u_lightPos_01", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
-	defaultMaterial->shader->sendUniformMat4("u_lightPos_02", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
+	passThroughMaterial->shader->sendUniformMat4("mvm", modelViewMatrix[Inum]);
+	passThroughMaterial->shader->sendUniformMat4("prm", projectionMatrix[Inum]);
+	passThroughMaterial->shader->sendUniformMat4("u_mvp", (modelViewMatrix[Inum] * projectionMatrix[Inum]));
+	passThroughMaterial->shader->sendUniformMat4("u_mv", modelViewMatrix[Inum]);
+	passThroughMaterial->shader->sendUniformMat4("u_lightPos_01", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
+	passThroughMaterial->shader->sendUniformMat4("u_lightPos_02", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
 
 	if (planeForText[0].Viewable) { planeForText[0].drawObject(); }
 
@@ -423,7 +423,7 @@ void InMenuDraw(int Inum)
 		if (ButtonObjects[i].Viewable) { ButtonObjects[i].drawObject(); }
 	}
 
-	//defaultMaterial->shader->unbind();
+	//passThroughMaterial->shader->unbind();
 }
 
 /* function MenuScreen()
@@ -459,18 +459,18 @@ void InOptionDraw(int Inum)
 	auto textMaterial = materials["text"];
 
 
-	//defaultMaterial->shader->bind();
+	passThroughMaterial->shader->bind();
 	Inum = 2;
 	cameralook = Inum; //window
 	WhatCameraIsLookingAt(); //Resising Window
 
 	// Draw our scene
-	defaultMaterial->shader->sendUniformMat4("mvm", modelViewMatrix[Inum]);
-	defaultMaterial->shader->sendUniformMat4("prm", projectionMatrix[Inum]);
-	defaultMaterial->shader->sendUniformMat4("u_mvp", (modelViewMatrix[Inum] * projectionMatrix[Inum]));
-	defaultMaterial->shader->sendUniformMat4("u_mv", modelViewMatrix[Inum]);
-	defaultMaterial->shader->sendUniformMat4("u_lightPos_01", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
-	defaultMaterial->shader->sendUniformMat4("u_lightPos_02", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
+	passThroughMaterial->shader->sendUniformMat4("mvm", modelViewMatrix[Inum]);
+	passThroughMaterial->shader->sendUniformMat4("prm", projectionMatrix[Inum]);
+	passThroughMaterial->shader->sendUniformMat4("u_mvp", (modelViewMatrix[Inum] * projectionMatrix[Inum]));
+	passThroughMaterial->shader->sendUniformMat4("u_mv", modelViewMatrix[Inum]);
+	passThroughMaterial->shader->sendUniformMat4("u_lightPos_01", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
+	passThroughMaterial->shader->sendUniformMat4("u_lightPos_02", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
 
 	
 
@@ -499,7 +499,7 @@ void InOptionDraw(int Inum)
 		}
 	}
 
-	//defaultMaterial->shader->unbind();
+	//passThroughMaterial->shader->unbind();
 
 }
 
@@ -571,17 +571,17 @@ void InGameDraw(int Inum)
 	auto textMaterial = materials["text"];
 
 
-	//defaultMaterial->shader->bind();
+	passThroughMaterial->shader->bind();
 	cameralook = Inum; //window
 	WhatCameraIsLookingAt(); //Resising Window
 	
 	//Draw scene//cameraViewMatrix //modelViewMatrix	
-	defaultMaterial->shader->sendUniformMat4("mvm", modelViewMatrix[Inum]);
-	defaultMaterial->shader->sendUniformMat4("prm", projectionMatrix[Inum]);
-	defaultMaterial->shader->sendUniformMat4("u_mvp", (modelViewMatrix[Inum] * projectionMatrix[Inum]));
-	defaultMaterial->shader->sendUniformMat4("u_mv", modelViewMatrix[Inum]);
-	defaultMaterial->shader->sendUniformMat4("u_lightPos_01", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
-	defaultMaterial->shader->sendUniformMat4("u_lightPos_02", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
+	passThroughMaterial->shader->sendUniformMat4("mvm", modelViewMatrix[Inum]);
+	passThroughMaterial->shader->sendUniformMat4("prm", projectionMatrix[Inum]);
+	passThroughMaterial->shader->sendUniformMat4("u_mvp", (modelViewMatrix[Inum] * projectionMatrix[Inum]));
+	passThroughMaterial->shader->sendUniformMat4("u_mv", modelViewMatrix[Inum]);
+	passThroughMaterial->shader->sendUniformMat4("u_lightPos_01", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
+	passThroughMaterial->shader->sendUniformMat4("u_lightPos_02", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
 
 
 	for (unsigned int i = 0; i < NumberOfPlayers; i++) {
@@ -669,7 +669,7 @@ void InGameDraw(int Inum)
 
 
 
-	//defaultMaterial->shader->unbind();
+	//passThroughMaterial->shader->unbind();
 
 	cameralook = 3; //window
 	WhatCameraIsLookingAt(); //Resising Window
@@ -689,7 +689,7 @@ void InGameDraw(int Inum)
 * Description:
 *  - does all the functions/calculations for the game screen
 */
-void GameField(float deltaTasSeconds) 
+void GameScreen(float deltaTasSeconds) 
 {
 	for (int i = 0; i < 2; i++) {
 		Sound::Sys.listenerPos[i].x = Players[i].Position().x*10.0f;
@@ -2149,7 +2149,7 @@ void TimerCallbackFunction(int value)
 	
 
 	if (inMenu) { MenuScreen(deltaTasSeconds); }
-	else if (inGame) { GameField(deltaTasSeconds); }
+	else if (inGame) { GameScreen(deltaTasSeconds); }
 	else if (inOptions) { OptionScreen(deltaTasSeconds); }
 	else {}
 	//this call makes it actually show up on screen
@@ -2386,17 +2386,27 @@ void InitializeObjects()
 	Specials[0].setColour(glm::vec4(1.5f, 1.5f, 1.5f, 1.0f));
 	Specials[0].setMass(1.0f);
 	Specials[0].setScale(glm::vec3(4.0f, 4.0f, 4.0f));
-	Specials[0].setSizeOfHitBox(glm::vec3(4.0f, 2.0f, 4.0f)); //HitBox
+	Specials[0].setSizeOfHitBox(glm::vec3(4.0f, 2.0f, 4.0f));
 	Specials[0].setPosition(glm::vec3(0.0f, 10.0f, 0.0f));
 	Specials[0].setSpecialAttribute(0);
 	Specials[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Box.png").c_str())));
 	Specials[0].Viewable = false;
-	Specials[1].objectLoader(&Specials[0]);
+	//Specials[1].objectLoader(&Specials[0]);
+	Specials[1].objectLoader(ObjectPath + "PowerUp_Icons//Seeker Swarm Icon.obj");
+	Specials[1].setMaterial(passThroughMaterial);
+	Specials[1].setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
+	Specials[1].setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
 	Specials[1].setSpecialAttribute(1);
 	Specials[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Box_RushRift.png").c_str())));
-	Specials[2].objectLoader(&Specials[0]);
+	Specials[1].Viewable = false;
+	//Specials[2].objectLoader(&Specials[0]);
+	Specials[2].objectLoader(ObjectPath + "PowerUp_Icons//Toss-Up Icon.obj");
+	Specials[2].setMaterial(passThroughMaterial);
+	Specials[2].setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
+	Specials[2].setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
 	Specials[2].setSpecialAttribute(2);
 	Specials[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Box_InAir.png").c_str())));
+	Specials[2].Viewable = false;
 	Specials[3].objectLoader(&Specials[0]);
 	Specials[3].setSpecialAttribute(3);
 	Specials[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Box_Health.png").c_str())));

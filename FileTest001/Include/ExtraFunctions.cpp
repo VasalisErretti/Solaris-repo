@@ -238,7 +238,7 @@ public:
 	void TextDraw(Material &s, glm::mat4x4 *pvm, std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color, int orientation)
 	{
 		//binds shader
-		//s.shader->bind();
+		s.shader->bind();
 		//set the colour of the text
 		s.shader->sendUniformVec4("textColor", glm::vec4(color,1.0f));
 		//set the progection matrix the will be used for the text
