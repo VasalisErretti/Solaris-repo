@@ -123,7 +123,7 @@ void GameObject::updateP(float deltaT)
 					&& ((m_Velocity.x > -TopSpeed) && (m_Velocity.y > -TopSpeed) && (m_Velocity.z > -TopSpeed)))
 				{
 					m_Acceleration = (m_ForceOnObject / m_Mass);//update acceleration based on external force
-					//if a force is applyed to the object //update velocity based on acceleration
+					//if a force is applyed to the object  //update velocity based on acceleration
 					if (m_Acceleration != glm::vec3(0.0f)) { m_Velocity += ((m_Acceleration * deltaT)*0.5f); }
 					//if no force is applyed to the object
 					else { m_Velocity -= (m_Velocity * m_Drag); }
@@ -312,7 +312,7 @@ bool GameObject::objectLoader(const char* filePath)
 	glEnableVertexAttribArray(0); // position/vertices
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	// textures tho(poopybutt)
+	// textures tho
 	glGenBuffers(1, &texbo);
 	glBindBuffer(GL_ARRAY_BUFFER, texbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*numtris * 2, this->texs, GL_STATIC_DRAW);
@@ -614,8 +614,8 @@ void GameObject::objectLoaderHTR(GameObject * objPath)
 }
 
 void GameObject::morphTarget(GameObject * objPath, float dt) {
-	//MorphMath hello;
-	////this once worked but now that it is in [Modern openGL] it broke.
+	MorphMath hello;
+	//this once worked but now that it is in [Modern openGL] it broke.
 	//for (int i = 0; i < sizeof(verts); i++) {
 	//	this->verts = hello.Lerp(this->verts, objPath->verts, dt);
 	//}
@@ -625,6 +625,23 @@ void GameObject::morphTarget(GameObject * objPath, float dt) {
 	//for (int i = 0; i < sizeof(texs); i++) {
 	//	this->texs = hello.Lerp(this->texs, objPath->texs, dt);
 	//}
+
+
+	for (int i = 0; i < sizeof(vao); i++) {
+		this->vao = hello.Lerp(this->vao, objPath->vao, dt);
+	}
+	for (int i = 0; i < sizeof(vertbo); i++) {
+		this->vertbo = hello.Lerp(this->vertbo, objPath->vertbo, dt);
+	}
+	for (int i = 0; i < sizeof(normbo); i++) {
+		this->normbo = hello.Lerp(this->normbo, objPath->normbo, dt);
+	}
+	for (int i = 0; i < sizeof(texbo); i++) {
+		this->texbo = hello.Lerp(this->texbo, objPath->texbo, dt);
+	}
+	for (int i = 0; i < sizeof(colorbo); i++) {
+		this->colorbo = hello.Lerp(this->colorbo, objPath->colorbo, dt);
+	}
 }
 
 

@@ -88,8 +88,8 @@ std::map<std::string, std::shared_ptr<GameObject>> GameObjects; //working on thi
 
 const int NumberOfPlayers = 2; GameObject Players[NumberOfPlayers];
 GameObject ShockWaves[NumberOfPlayers]; GameObject Rifts[NumberOfPlayers];
-const int NumberOfObjects = 6; GameObject Objects[NumberOfObjects];
-const int NumberOfSpecials = 5; GameObject Specials[NumberOfSpecials];
+const int NumberOfObjects = 7; GameObject Objects[NumberOfObjects];
+const int NumberOfSpecials = 10; GameObject Specials[NumberOfSpecials];
 const int NumberOfEnemies = 12; GameObject Enemies[12];
 GameObject ShadowObject[2];
 //Menu Screens
@@ -147,6 +147,7 @@ Gamepad gamepad;
 MorphMath morphmath;
 //Sounds
 Sound drum[2];
+Sound powerup[10];
 FMOD::Channel *drumChannel;
 //Text
 RenderText SystemText;
@@ -676,12 +677,12 @@ void InGameDraw(int Inum)
 
 	
 	if (Inum == 0) {
-		SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]", -(windowWidth / 4), -(windowHeight / 4), 1.0f, glm::vec3(0.3, 0.3f, 0.9f), 1);
-		SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[1]) + "]", -(windowWidth / 4), (windowHeight / 2) - (windowHeight / 4), 1.0f, glm::vec3(0.9, 0.2f, 0.2f), 1);
+		SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]", -(windowWidth / 4), -3.0f * (windowHeight / 8), 1.0f, glm::vec3(0.3, 0.3f, 0.9f), 1);
+		SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[1]) + "]", -(windowWidth / 4), (windowHeight / 2) - (windowHeight / 8), 1.0f, glm::vec3(0.9, 0.2f, 0.2f), 1);
 	}
 	else if (Inum == 1) {
-		SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]",  (windowWidth / 4), (windowHeight / 2) - (windowHeight / 4), 1.0f, glm::vec3(0.3, 0.3f, 0.9f), 1);
-		SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[1]) + "]", (windowWidth / 4), -(windowHeight / 4), 1.0f, glm::vec3(0.9, 0.2f, 0.2f), 1);
+		SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]",  (windowWidth / 4), (windowHeight / 2) - (windowHeight / 8), 1.0f, glm::vec3(0.3, 0.3f, 0.9f), 1);
+		SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[1]) + "]",  (windowWidth / 4), -3.0f * (windowHeight / 8), 1.0f, glm::vec3(0.9, 0.2f, 0.2f), 1);
 	}
 }
 
@@ -892,6 +893,7 @@ void GameScreen(float deltaTasSeconds)
 					if (m.B.SpecialAttribute() == 0) {}
 					//Seeker Swarm
 					else if (m.B.SpecialAttribute() == 1) {
+						powerup[1].Play();
 						m.B.Viewable = false;
 						if (i == 0) { AbilityAffected[1] = 1; }
 						else if (i == 1) { AbilityAffected[1] = 0; }
@@ -900,6 +902,7 @@ void GameScreen(float deltaTasSeconds)
 					}
 					//Toss-Up
 					else if (m.B.SpecialAttribute() == 2) {
+						powerup[2].Play();
 						m.B.Viewable = false;
 						for (int ij = 0; ij < NumberOfEnemies; ij++) {
 							float ranPosY = (rand() % 1000 + 100); //100 to 1100
@@ -908,11 +911,13 @@ void GameScreen(float deltaTasSeconds)
 					}
 					//Health Up
 					else if (m.B.SpecialAttribute() == 3) {
+						powerup[3].Play();
 						m.B.Viewable = false;
 						Health[i] += 10; 
 					}
 					//Boost
 					else if (m.B.SpecialAttribute() == 4) {
+						powerup[4].Play();
 						m.B.Viewable = false;
 						if (i == 0) { AbilityAffected[4] = 0; }
 						else if (i == 1) { AbilityAffected[4] = 1; }
@@ -920,9 +925,17 @@ void GameScreen(float deltaTasSeconds)
 						AbilityCounter[4] = 0.0f;
 					}
 					//Flee
-					else if (m.B.SpecialAttribute() == 5) {}
+					else if (m.B.SpecialAttribute() == 5) {
+						powerup[5].Play();
+						m.B.Viewable = false;
+						if (i == 0) { AbilityAffected[5] = 0; }
+						else if (i == 1) { AbilityAffected[5] = 1; }
+						else { AbilityAffected[5] = -1; }
+						AbilityCounter[5] = 0.0f;
+					}
 					//Short Circuit
 					else if (m.B.SpecialAttribute() == 6) {
+						powerup[6].Play();
 						m.B.Viewable = false;
 						if (i == 0) { AbilityAffected[6] = 0; }
 						else if (i == 1) { AbilityAffected[6] = 1; }
@@ -930,11 +943,26 @@ void GameScreen(float deltaTasSeconds)
 						AbilityCounter[6] = 0.0f;
 					}
 					//Super Shockwave
-					else if (m.B.SpecialAttribute() == 7) {}
+					else if (m.B.SpecialAttribute() == 7) {
+						powerup[7].Play();
+						m.B.Viewable = false;
+						if (i == 0) { AbilityAffected[7] = 0; }
+						else if (i == 1) { AbilityAffected[7] = 1; }
+						else { AbilityAffected[7] = -1; }
+						AbilityCounter[7] = 0.0f;
+					}
 					//Invincibility
-					else if (m.B.SpecialAttribute() == 8) {}
+					else if (m.B.SpecialAttribute() == 8) {
+						powerup[8].Play();
+						m.B.Viewable = false;
+						if (i == 0) { AbilityAffected[8] = 0; }
+						else if (i == 1) { AbilityAffected[8] = 1; }
+						else { AbilityAffected[8] = -1; }
+						AbilityCounter[8] = 0.0f;
+					}
 					//Flipped
 					else if (m.B.SpecialAttribute() == 9) {
+						powerup[9].Play();
 						m.B.Viewable = false;
 						if (i == 0) { AbilityAffected[9] = 1; }
 						else if (i == 1) { AbilityAffected[9] = 0; }
@@ -1057,12 +1085,12 @@ void GameScreen(float deltaTasSeconds)
 					//Tower One
 					if (j == 0) {
 						setEnemySpawn(m,i);
-						Health[0] -= 1;
+						if (AbilityAffected[8] != 0) { Health[0] -= 1; }
 					}
 					//Tower Two
 					else if (j == 1) {
 						setEnemySpawn(m,i);
-						Health[1] -= 1;
+						if (AbilityAffected[8] != 1) { Health[1] -= 1; }
 					}
 				}//end if
 			}//end for
@@ -1197,9 +1225,9 @@ void GameScreen(float deltaTasSeconds)
 	if (ApplyingGravity) {
 		m.A = Objects[0];
 		//apply gravity relative to object[0]
-		for (int i = 0; i < NumberOfPlayers; i++) { m.B = Players[i]; applyGravitationalForces(m, 0.0f); Players[i] = m.B; }
+		for (int i = 0; i < NumberOfPlayers; i++) { m.B = Players[i]; applyGravitationalForces(m, -01.0f); Players[i] = m.B; }
 		for (int i = 0; i < NumberOfEnemies; i++) { m.B = Enemies[i]; applyGravitationalForces(m, -5.0f); Enemies[i] = m.B; }
-		for (int i = 0; i < NumberOfSpecials; i++) { m.B = Specials[i]; applyGravitationalForces(m, -2.0f); Specials[i] = m.B; }
+		for (int i = 0; i < NumberOfSpecials; i++) { m.B = Specials[i]; applyGravitationalForces(m, -3.0f); Specials[i] = m.B; }
 	}
 
 	
@@ -1207,7 +1235,7 @@ void GameScreen(float deltaTasSeconds)
 	//Applys all over-time abilitys
 	if (enableAbilitys) {
 
-		//Enemies seek towers
+		//Enemies seek towers [1]
 		if (EnemiesSeekTowers && AbilityAffected[1] >= 0 && AbilityCounter[1] < AbilityLength[1]) {
 			AbilityCounter[1] += deltaTasSeconds;
 			//std::cout << "	[S]("<< EnemiesSeekingTower<<")[" << EnemiesSeekTowerCounter << "]" << std::endl;
@@ -1231,7 +1259,7 @@ void GameScreen(float deltaTasSeconds)
 			}
 		}
 
-		//Boost
+		//Boost [4]
 		if (AbilityAffected[4] >= 0 && AbilityCounter[4] < AbilityLength[4]) {
 			AbilityCounter[4] += deltaTasSeconds;
 			if (AbilityAffected[4] == 0) {
@@ -1243,16 +1271,29 @@ void GameScreen(float deltaTasSeconds)
 		}
 		else { Players[0].SprintSpeed = 1.0f; Players[1].SprintSpeed = 1.0f; }
 
-		//not in yet
-		//Flee 
+		//Flee [5]
 		if (AbilityAffected[5] >= 0 && AbilityCounter[5] < AbilityLength[5]) {
 			AbilityCounter[5] += deltaTasSeconds;
-			if (AbilityAffected[5] == 0) {}
-			else if (AbilityAffected[5] == 1) {}
+			if (AbilityAffected[5] == 0) { 
+				m.A = Players[0];
+				for (int i = 0; i < NumberOfEnemies; i++) {
+					m.B = Enemies[i];
+					applyRadialFleeingSystem(m, 20.0f, 10.0f);
+					Enemies[i] = m.B;
+				}
+			}
+			else if (AbilityAffected[5] == 1) {
+				m.A = Players[1];
+				for (int i = 0; i < NumberOfEnemies; i++) {
+					m.B = Enemies[i];
+					applyRadialFleeingSystem(m, 20.0f, 10.0f);
+					Enemies[i] = m.B;
+				}
+			}
 		}
 		else { }
 
-		//Short Circuit
+		//Short Circuit [6]
 		if (AbilityAffected[6] >= 0 && AbilityCounter[6] < AbilityLength[6]) {
 			AbilityCounter[6] += deltaTasSeconds;
 			if (AbilityAffected[6] == 0) {
@@ -1264,9 +1305,21 @@ void GameScreen(float deltaTasSeconds)
 		}
 		else { Players[0].inShock = false; Players[1].inShock = false; }
 
+		//Super Shockwave [7] //not done yet
+		if (AbilityAffected[7] >= 0 && AbilityCounter[7] < AbilityLength[7]) {
+			AbilityCounter[7] += deltaTasSeconds;
+			if (AbilityAffected[7] == 0) { }
+			else if (AbilityAffected[7] == 1) { }
+		}
+		else { }
 
+		//Invincibility [8] 
+		if (AbilityAffected[8] >= 0 && AbilityCounter[8] < AbilityLength[8]) {
+			AbilityCounter[8] += deltaTasSeconds;
+		}
+		else { AbilityAffected[8] = -1; }
 
-		//Short Circuit
+		//Short Circuit [9]
 		if (AbilityAffected[9] >= 0 && AbilityCounter[9] < AbilityLength[9]) {
 			AbilityCounter[9] += deltaTasSeconds;
 			if (AbilityAffected[9] == 0) { FlipedControllers[0] = true; }
@@ -1388,7 +1441,7 @@ void GameScreen(float deltaTasSeconds)
 		float ranPosZ = (rand() % 80 - 40) + ((rand() % 100 - 50)*0.01f); //-39.50 to 40.50
 		float ranPosY = (rand() % 20 + 10) + ((rand() % 100 - 50)*0.01f); //  9.50 to 30.50
 		float ranPosX = (rand() % 80 - 40) + ((rand() % 100 - 50)*0.01f); //-39.50 to 40.50
-		int ranSpec = (rand() % 3 + 1); //1 to 4
+		int ranSpec = (rand() % 9 + 1); //1 to 9
 
 		Specials[ranSpec].setPosition(glm::vec3(ranPosX, ranPosY, ranPosZ));
 		Specials[ranSpec].Viewable = true;
@@ -2054,29 +2107,28 @@ void KeyboardCallbackFunction(unsigned char key, int x, int y)
 		case '+':
 		case '=':
 			TestFloat += TestFloatIncrementAmount;
-			std::cout << "[[" << TestFloat << "]]" << std::endl; 
+			std::cout << "[ [ " << TestFloat << " ] ]" << std::endl; 
 			break;
 		case '_':
 		case '-':
 			TestFloat -= TestFloatIncrementAmount;
-			std::cout << "[[" << TestFloat << "]]" << std::endl; 
+			std::cout << "[ [ " << TestFloat << " ] ]" << std::endl; 
 			break;
 		case 'V':
 		case 'v':
 			if (cameraMode == 0) { cameraMode = 1; }
 			else if (cameraMode == 1) { cameraMode = 0; }
 			break;
-		case '1': 
-			Specials[1].Viewable = true; Specials[1].setPosition(glm::vec3(0.0f, 20.0f, 0.0f));
-				  break;
+		case '0':
+			Specials[static_cast<int>(TestFloat)].Viewable = true; Specials[static_cast<int>(TestFloat)].setPosition(glm::vec3(0.0f, 20.0f, 0.0f));
+			break;
+		case '1':
+			break;
 		case '2': 
-			Specials[2].Viewable = true; Specials[2].setPosition(glm::vec3(0.0f, 20.0f, 0.0f));
-				  break;
+			break;
 		case '3': 
-			Specials[3].Viewable = true; Specials[3].setPosition(glm::vec3(0.0f, 20.0f, 0.0f));
-				  break;
+			break;
 		case '4': 
-			Specials[4].Viewable = true; Specials[4].setPosition(glm::vec3(0.0f, 20.0f, 0.0f));
 			break;
 		}
 	}
@@ -2166,7 +2218,7 @@ void TimerCallbackFunction(int value)
 */
 void WindowReshapeCallbackFunction(int w, int h)
 {
-	for (int i = 20; i < 100; i++) {
+	for (int i = 20; i < 120; i++) {
 		for (int j = 1; j <= 9; j++) {
 			if ((w + j) == (i * 16)) { windowWidth = i * 16; windowHeight = i * 9; }
 			else if ((w - j) == (i * 16)) { windowWidth = i * 16; windowHeight = i * 9; }
@@ -2307,6 +2359,30 @@ void InitializeSounds() {
 	for (int i = 0; i < 2; i++) {
 		Sound::Sys.listenerPos[i].x = 0.0f; Sound::Sys.listenerPos[i].y = 0.0f; Sound::Sys.listenerPos[i].z = 0.0f;
 	}
+
+
+
+	//Power up sound effects
+	powerup[0].Load(_strdup((SoundPath + "drumloop.wav").c_str()), TRUE, FALSE);
+	//Seeker Swarm = 1
+	powerup[1].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_seeker.wav").c_str()), TRUE, FALSE);
+	//Toss-Up = 2
+	powerup[2].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_toss.wav").c_str()), TRUE, FALSE);
+	//Health Up = 3
+	powerup[3].Load(_strdup((SoundPath + "drumloop.wav").c_str()), TRUE, FALSE);
+	//Boost = 4
+	powerup[4].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_boost.wav").c_str()), TRUE, FALSE);
+	//Flee = 5
+	powerup[5].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_flee.wav").c_str()), TRUE, FALSE);
+	//Short Circuit = 6
+	powerup[6].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_sc.wav").c_str()), TRUE, FALSE);
+	//Super Shockwave = 7
+	powerup[7].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_ss.wav").c_str()), TRUE, FALSE);
+	//Invincibility = 8
+	powerup[8].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_invincible.wav").c_str()), TRUE, FALSE);
+	//Flipped = 9
+	powerup[9].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_flipped.wav").c_str()), TRUE, FALSE);
+
 }
 
 /* function InitializeObjects()
@@ -2334,8 +2410,8 @@ void InitializeObjects()
 	Borders[0].objectLoader(ObjectPath + "Square.obj");
 	Borders[0].setMaterial(passThroughMaterial);
 	Borders[0].setMass(0.0f);
-	Borders[0].setScale(glm::vec3(100.0f, 100.0f, 100.0f));
-	Borders[0].setSizeOfHitBox(glm::vec3(100.0f, 100.0f, 100.0f)); //HitBox
+	Borders[0].setScale(glm::vec3(98.0f, 100.0f, 98.0f));
+	Borders[0].setSizeOfHitBox(glm::vec3(98.0f, 100.0f, 98.0f)); //HitBox
 	Borders[0].setPosition(glm::vec3(0.0f, 50.0f, 0.0f));
 	Borders[0].setColour(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
 	//Borders[1].objectLoader(&Borders[0]);
@@ -2343,17 +2419,17 @@ void InitializeObjects()
 	//Borders[1].setPosition(glm::vec3(0.0f, 50.0f, -60.0f));
 
 	//Player ONE
-	Players[0].objectLoader(ObjectPath + "PlayerModel.obj");
+	Players[0].objectLoader(ObjectPath + "blitzbot.obj");
 	Players[0].setMaterial(passThroughMaterial);
 	Players[0].setMass(5.0f);
 	Players[0].setScale(glm::vec3(5.0f, 5.0f, 5.0f)); //displayed size
 	Players[0].setSizeOfHitBox(glm::vec3(10.0f, 2.50f, 10.0f)); //HitBox
 	Players[0].setPosition(glm::vec3(10.0f, -1.0f, 0.0f)); //Position of Object
-	Players[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "PlayerModelTexture_01.png").c_str())));
+	Players[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "blitzbot//B_blitzbot_diff.png").c_str())));
 	//Player TWO
 	Players[1].objectLoader(&Players[0]);
 	Players[1].setPosition(glm::vec3(-10.0f, -1.0f, 0.0f)); //Position of Object
-	Players[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "PlayerModelTexture_02.png").c_str())));
+	Players[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "blitzbot//R_blitzbot_diff.png").c_str())));
 	//Player ShockWave
 	ShockWaves[0].objectLoader(ObjectPath + "ShockWave.obj");
 	ShockWaves[0].setMaterial(passThroughMaterial);
@@ -2387,34 +2463,77 @@ void InitializeObjects()
 	Specials[0].setMass(1.0f);
 	Specials[0].setScale(glm::vec3(4.0f, 4.0f, 4.0f));
 	Specials[0].setSizeOfHitBox(glm::vec3(4.0f, 2.0f, 4.0f));
-	Specials[0].setPosition(glm::vec3(0.0f, 10.0f, 0.0f));
 	Specials[0].setSpecialAttribute(0);
 	Specials[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Box.png").c_str())));
 	Specials[0].Viewable = false;
 	//Specials[1].objectLoader(&Specials[0]);
-	Specials[1].objectLoader(ObjectPath + "PowerUp_Icons//Seeker Swarm Icon.obj");
+	Specials[1].objectLoader(ObjectPath + "PowerUp_Icons//Seeker_Swarm_Icon.obj");
 	Specials[1].setMaterial(passThroughMaterial);
 	Specials[1].setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
-	Specials[1].setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
+	Specials[1].setMass(1.0f);
 	Specials[1].setSpecialAttribute(1);
-	Specials[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Box_RushRift.png").c_str())));
+	Specials[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Blue_background.png").c_str())));
 	Specials[1].Viewable = false;
 	//Specials[2].objectLoader(&Specials[0]);
-	Specials[2].objectLoader(ObjectPath + "PowerUp_Icons//Toss-Up Icon.obj");
+	Specials[2].objectLoader(ObjectPath + "PowerUp_Icons//Toss-Up_Icon.obj");
 	Specials[2].setMaterial(passThroughMaterial);
 	Specials[2].setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
-	Specials[2].setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
+	Specials[2].setMass(1.0f);
 	Specials[2].setSpecialAttribute(2);
-	Specials[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Box_InAir.png").c_str())));
+	Specials[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Blue_background.png").c_str())));
 	Specials[2].Viewable = false;
+	//
 	Specials[3].objectLoader(&Specials[0]);
 	Specials[3].setSpecialAttribute(3);
 	Specials[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Box_Health.png").c_str())));
-	Specials[4].objectLoader(&Specials[0]);
-	Specials[4].setSpecialAttribute(9);
-	Specials[4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Box.png").c_str())));
-
-	
+	//Specials[4].objectLoader(&Specials[0]);
+	Specials[4].objectLoader(ObjectPath + "PowerUp_Icons//Boost_Icon.obj");
+	Specials[4].setMaterial(passThroughMaterial);
+	Specials[4].setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
+	Specials[4].setMass(1.0f);
+	Specials[4].setSpecialAttribute(4);
+	Specials[4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Blue_background.png").c_str())));
+	Specials[4].Viewable = false;
+	//Specials[5].objectLoader(&Specials[0]);
+	Specials[5].objectLoader(ObjectPath + "PowerUp_Icons//Flee_Icon.obj");
+	Specials[5].setMaterial(passThroughMaterial);
+	Specials[5].setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
+	Specials[5].setMass(1.0f);
+	Specials[5].setSpecialAttribute(5);
+	Specials[5].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Blue_background.png").c_str())));
+	Specials[5].Viewable = false;
+	//Specials[6].objectLoader(&Specials[0]);
+	Specials[6].objectLoader(ObjectPath + "PowerUp_Icons//Short_Circuit_Icon.obj");
+	Specials[6].setMaterial(passThroughMaterial);
+	Specials[6].setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
+	Specials[6].setMass(1.0f);
+	Specials[6].setSpecialAttribute(6);
+	Specials[6].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Blue_background.png").c_str())));
+	Specials[6].Viewable = false;
+	//Specials[7].objectLoader(&Specials[0]);
+	Specials[7].objectLoader(ObjectPath + "PowerUp_Icons//Super_Shockwave_Icon.obj");
+	Specials[7].setMaterial(passThroughMaterial);
+	Specials[7].setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
+	Specials[7].setMass(1.0f);
+	Specials[7].setSpecialAttribute(7);
+	Specials[7].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Blue_background.png").c_str())));
+	Specials[7].Viewable = false;
+	//Specials[8].objectLoader(&Specials[0]);
+	Specials[8].objectLoader(ObjectPath + "PowerUp_Icons//Invincibility_Icon.obj");
+	Specials[8].setMaterial(passThroughMaterial);
+	Specials[8].setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
+	Specials[8].setMass(1.0f);
+	Specials[8].setSpecialAttribute(8);
+	Specials[8].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Blue_background.png").c_str())));
+	Specials[8].Viewable = false;
+	//Specials[9].objectLoader(&Specials[0]);
+	Specials[9].objectLoader(ObjectPath + "PowerUp_Icons//Flipped_Icon.obj");
+	Specials[9].setMaterial(passThroughMaterial);
+	Specials[9].setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
+	Specials[9].setMass(1.0f);
+	Specials[9].setSpecialAttribute(9);
+	Specials[9].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Blue_background.png").c_str())));
+	Specials[9].Viewable = false;
 
 
 
@@ -2426,7 +2545,7 @@ void InitializeObjects()
 	Objects[0].setSizeOfHitBox(glm::vec3(100.0f, 0.01f, 100.0f)); //HitBox
 	Objects[0].setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 	Objects[0].setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-	Objects[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Ground.png").c_str())));
+	Objects[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Ground_3.png").c_str())));
 
 	//Walls Left
 	Objects[1].objectLoader(ObjectPath + "stadium.obj");
@@ -2436,7 +2555,7 @@ void InitializeObjects()
 	Objects[1].setScale(glm::vec3(1.0f, 1.0f, 1.0f)); //size
 	Objects[1].setPosition(glm::vec3(0.0f, -1.0f, 0.0f));
 	Objects[1].setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
-	Objects[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Walls_LR.png").c_str())));
+	Objects[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "bitchtits.png").c_str())));
 	//Rift magnets
 	Objects[2].objectLoader(ObjectPath + "Rift//Magnet_Left.obj");
 	Objects[2].setMaterial(passThroughMaterial);
@@ -2461,25 +2580,22 @@ void InitializeObjects()
 	Objects[5].setRotation(glm::vec3(0.0f, 180.0f, 0.0f));
 	Objects[5].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Magnet_Rift_02.png").c_str())));
 
-	//
-	//Objects[9].objectLoader(ObjectPath + "Square.obj");
-	//Objects[9].setMass(0.0f);
-	//Objects[9].setScale(glm::vec3(4.0f, 4.0f, 4.0f));
-	//Objects[9].setSizeOfHitBox(glm::vec3(4.0f, 2.0f, 4.0f)); //HitBox
-	//Objects[9].setPosition(glm::vec3(-15.0f, 2.0f, 10.0f));
-	//Objects[9].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Box.png").c_str())));
-	//Objects[10].objectLoader(&Objects[9]);
-	//Objects[10].setPosition(glm::vec3(10.0f, 2.0f, 20.0f));
-	//Objects[11].objectLoader(&Objects[9]);
-	//Objects[11].setPosition(glm::vec3(6.0f, 2.0f, -15.0f));
-	//Objects[12].objectLoader(&Objects[9]);
-	//Objects[12].setPosition(glm::vec3(-30.0f, 2.0f, -20.0f));
+	Objects[6].objectLoader(ObjectPath + "crowd.obj");
+	Objects[6].setMaterial(passThroughMaterial);
+	Objects[6].setColour(glm::vec4(0.5f, 0.50f, 0.5f, 1.0f));
+	Objects[6].setMass(0.0f);
+	Objects[6].setScale(glm::vec3(1.0f, 1.0f, 1.0f)); //size
+	Objects[6].setPosition(glm::vec3(0.0f, -1.0f, 0.0f));
+	Objects[6].setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
+	Objects[6].setTexture(ilutGLLoadImage(_strdup((ImagePath + "crowd.png").c_str())));
 
 
 	//Enemies
 	Enemies[0].objectLoader(ObjectPath + "obj_03.obj");
 	Enemies[0].setMaterial(passThroughMaterial);
-	Enemies[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Enemy.png").c_str())));
+	Enemies[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Enemy_2.png").c_str())));
+	Enemies[1].objectLoader(&Enemies[0]);
+	Enemies[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Enemy_3.png").c_str())));
 
 	ShadowObject[0].objectLoader(ObjectPath + "PlainForShadow.obj");
 	ShadowObject[0].setMaterial(passThroughMaterial);
@@ -2488,8 +2604,14 @@ void InitializeObjects()
 	ShadowObject[1].objectLoader(&ShadowObject[0]);
 	ShadowObject[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Shadow_01.png").c_str())));
 
-	for (unsigned int i = 1; i < NumberOfEnemies; i++) {
-		Enemies[i].objectLoader(&Enemies[0]);
+	for (unsigned int i = 2; i < NumberOfEnemies; i++) {
+		
+		if (i % 2 == 0) {
+			Enemies[i].objectLoader(&Enemies[0]);
+		}
+		else {
+			Enemies[i].objectLoader(&Enemies[1]);
+		}
 
 	}
 

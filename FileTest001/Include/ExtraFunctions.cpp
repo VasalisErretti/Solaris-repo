@@ -652,6 +652,28 @@ static bool applyRadialAvoidingSystem(Manifold &m, float areaAvoidence, float in
 
 	return true;
 }
+static bool applyRadialFleeingSystem(Manifold &m, float areaAvoidence, float infunce)
+{
+	float minimumSeparationX = ((m.A.Radius().x + m.B.Radius().x));
+	float minimumSeparationY = ((m.A.Radius().y + m.B.Radius().y));
+	float minimumSeparationZ = ((m.A.Radius().z + m.B.Radius().z));
+	float dist = glm::distance(m.A.Position(), m.B.Position());
+
+	if (dist > (minimumSeparationX + areaAvoidence)) { return false; }
+	else if (dist > (minimumSeparationY + areaAvoidence)) { return false; }
+	else if (dist > (minimumSeparationZ + areaAvoidence)) { return false; }
+	else {
+		glm::vec3 avoid = m.A.Position() - m.B.Position();
+		if (glm::length(avoid) > 0.0f) { avoid = glm::normalize(avoid); }
+		else { avoid = glm::vec3(0.0f); }
+		if (avoid.y > 0.5) { avoid.x = avoid.x*3.0f; avoid.z = avoid.z*3.0f; }
+		else if (avoid.y < -0.5) { avoid.x = avoid.x*3.0f; avoid.z = avoid.z*3.0f; }
+		avoid *= infunce; //how much infunce 
+		m.B.setForceOnObject(m.B.ForceOnObject() - avoid);
+	}
+
+	return true;
+}
 
 /* function CheckIfOnObject()
 * Description:
@@ -766,8 +788,8 @@ static void applyGravitationalForces(Manifold &m, float gv)
 		if (m.B.inAir) {
 			//Jumping
 			if (m.B.IsJumping && m.B.InAirCounter > 0.0f) {
-				glm::vec3 gravity = glm::vec3(0.0f, ((0.980f * (m.B.Mass())*0.031) + gv), 0.0f);
-				glm::vec3 JumpDirectionForce = glm::vec3((radToDeg*m.B.ForwardDirection.x)*-0.001f, 0.50f, (radToDeg*m.B.ForwardDirection.z)*-0.001f);
+				glm::vec3 gravity = glm::vec3(0.0f, (((-0.980f - gv) * (m.B.Mass())*0.15 + m.B.InAirCounter)), 0.0f);
+				glm::vec3 JumpDirectionForce = glm::vec3((radToDeg*m.B.ForwardDirection.x)*-0.001f, 0.0f, (radToDeg*m.B.ForwardDirection.z)*-0.001f);
 
 				m.B.setForceOnObject(m.B.ForceOnObject() + gravity + JumpDirectionForce);
 			}
