@@ -18,8 +18,12 @@ private:
 	float deadzoneX;
 	float deadzoneY;
 	WORD lastpressed;
+	XINPUT_VIBRATION g;
+
 
 public:
+
+
 	Gamepad() : deadzoneX(0.05f), deadzoneY(0.02f) {}
 	Gamepad(float dzX, float dzY) : deadzoneX(dzX), deadzoneY(dzY) {}
 
@@ -41,11 +45,12 @@ public:
 
 int Gamepad::GetActivePort()
 {
-	return cId + 1;
+	return cId;
 }
 void Gamepad::SetActivePort(int newcId)
 {
-	cId = newcId - 1;
+	cId = newcId;
+	XInputSetState(cId, &g);
 }
 
 XINPUT_GAMEPAD *Gamepad::GetState()
@@ -57,7 +62,7 @@ bool Gamepad::CheckConnection()
 {
 	int controllerId = -1;
 
-	for (DWORD i = 0; i < XUSER_MAX_COUNT && controllerId == -1; i++) {
+	for (DWORD i = 0; i < XUSER_MAX_COUNT; i++) {
 		XINPUT_STATE state;
 		ZeroMemory(&state, sizeof(XINPUT_STATE)); 
 		if (XInputGetState(i, &state) == ERROR_SUCCESS) { controllerId = i; }

@@ -166,7 +166,7 @@ void GameObject::updateP(float deltaT)
 */
 void GameObject::drawObject()
 {
-	if (Viewable) {
+	if (Viewable && material != nullptr) {
 		material->shader->bind();
 		// bind tex here if you had one
 		glBindTexture(GL_TEXTURE_2D, textureHandle);
@@ -175,10 +175,6 @@ void GameObject::drawObject()
 		glm::mat4x4 scaleMatrix = glm::scale(m_Scale);
 		glm::mat4x4 rotationMatrix = m_Rotation;
 		glm::mat4x4 translationMatrix = glm::translate(m_Position);
-		//glm::mat4x4 rotationX = glm::rotate(m_Angle.x, glm::vec3(1.0, 0.0, 0.0));
-		//glm::mat4x4 rotationY = glm::rotate(m_Angle.y, glm::vec3(0.0, 1.0, 0.0));
-		//glm::mat4x4 rotationZ = glm::rotate(m_Angle.z, glm::vec3(0.0, 0.0, 1.0));
-		//glm::mat4x4 rotationMatrix = (rotationZ * rotationY * rotationX);
 
 
 		//first [scale] then [rotate] then [translate]

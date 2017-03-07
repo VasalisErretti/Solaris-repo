@@ -805,13 +805,13 @@ static void applyGravitationalForces(Manifold &m, float gv)
 			//if object is lower then the ground
 			if ((m.A.Position().y + (m.B.Radius().y - (m.B.Radius().y*0.1f))) > m.B.Position().y) {
 				m.B.setPosition(glm::vec3(m.B.Position().x, (m.A.Position().y + m.B.Radius().y), m.B.Position().z));
-				if (m.B.Velocity().y < 0.0f) { m.B.setVelocity(glm::vec3(m.B.Velocity().x, m.B.Velocity().y*-0.50f, m.B.Velocity().z)); }
+				if (m.B.Velocity().y < 0.0f) { m.B.setVelocity(glm::vec3(m.B.Velocity().x, m.B.Velocity().y*-0.450f, m.B.Velocity().z)); }
 				m.B.inAir = false;
 			}
 			//if the object is above the ground
 			else if (m.B.Position().y > (m.A.Position().y + (m.B.Radius().y + (m.B.Radius().y*0.2f)))) { m.B.inAir = true; }
 			//if the object is on the ground
-			else if (m.B.Position().y < (m.A.Position().y + (m.B.Radius().y + (m.B.Radius().y*0.2f))) && m.B.Velocity().y < 0.05f) {
+			else if (m.B.Position().y < (m.A.Position().y + (m.B.Radius().y + (m.B.Radius().y*0.2f))) && m.B.Velocity().y < 0.1f) {
 				m.B.setPosition(glm::vec3(m.B.Position().x, (m.A.Position().y + m.B.Radius().y), m.B.Position().z));
 				m.B.inAir = false;
 			}

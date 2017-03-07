@@ -86,8 +86,8 @@ bool mouseDown[3];
 //Game Objects//
 std::map<std::string, std::shared_ptr<GameObject>> GameObjects; //working on this
 
-const int NumberOfPlayers = 2; GameObject Players[NumberOfPlayers];
-GameObject ShockWaves[NumberOfPlayers]; GameObject Rifts[NumberOfPlayers];
+const int NumberOfPlayers = 2; GameObject Players[NumberOfPlayers]; GameObject ShockWaves[NumberOfPlayers]; 
+const int NumberOfRifts = 2; GameObject Rifts[NumberOfRifts];
 const int NumberOfObjects = 7; GameObject Objects[NumberOfObjects];
 const int NumberOfSpecials = 10; GameObject Specials[NumberOfSpecials];
 const int NumberOfEnemies = 12; GameObject Enemies[12];
@@ -113,34 +113,34 @@ FrameBufferObject fbo;
 float randomSpecialTime;
 //camera viewport
 int cameralook = 0; int cameraMode = 0;
-glm::vec3 cameraPosition[2];
-glm::vec3 forwardVector[2]{ glm::vec3(-1.0f, 0.0f, 0.0f) , glm::vec3(1.0f, 0.0f, 0.0f) };
+glm::vec3 cameraPosition[NumberOfRifts];
+glm::vec3 forwardVector[NumberOfRifts]{ glm::vec3(-1.0f, 0.0f, 0.0f) , glm::vec3(1.0f, 0.0f, 0.0f) };
 glm::vec3 rightVector;
 //player health
-int Health[2]{40,40};
+int Health[NumberOfRifts]{40,40};
 //Bool's for the game///////////////////////////
 bool inMenu = true; bool inGame = false;
 bool inOptions = false; int inOptionsTab = 0;
-std::string lastMenu = "inMenu"; float MenuSwitchCounter[2] = { 0.0f, 0.0f };
+std::string lastMenu = "inMenu"; float MenuSwitchCounter[NumberOfPlayers] = { 0.0f, 0.0f };
 const bool ApplyingGravity = true;
 const bool CollisionBetweenObjects = true;
 const bool IdleEnemiesRespawn = true;
 const bool EnableShadows = true;
 //Shock wave attributes
-bool Right_TRIGGERED[2]; bool Left_TRIGGERED[2]; bool speedControlSW = false;
+bool Right_TRIGGERED[NumberOfPlayers]; bool Left_TRIGGERED[NumberOfPlayers]; bool speedControlSW = false;
 bool AButtonDown = false; bool ShockWaveOn = true;
-bool PShockWave[2] = { false }; float PShockWaveCounter[2] = { 0.0f }; float PShockWaveChargeUp[2] = { 0.0f };
+bool PShockWave[NumberOfPlayers] = { false }; float PShockWaveCounter[NumberOfPlayers] = { 0.0f }; float PShockWaveChargeUp[NumberOfPlayers] = { 0.0f };
 //Sprint attributes
-float PSprintCounter[2] = { 0.0f }; float PSprintCoolDown = 2.0f; 
+float PSprintCounter[NumberOfPlayers] = { 0.0f }; float PSprintCoolDown = 2.0f;
 glm::vec3 speedToWallDegradation(0.80f, 0.50f, 0.80f);
 
-bool FlipedControllers[2];
-float SprintSpeed = 1.5f;
-const bool EnemiesSeekTowers = true;
-int PlayerAffected[2];
-int AbilityAffected[10];
-float AbilityCounter[10]	{ 6.0f,6.0f,6.0f,6.0f,6.0f, 6.0f,6.0f,6.0f,6.0f,6.0f };//{ 0.0f,0.0f,0.0f,0.0f,0.0f, 0.0f,0.0f,0.0f,0.0f,0.0f }; 
-float AbilityLength[10]		{ 6.0f,6.0f,6.0f,6.0f,6.0f, 6.0f,6.0f,6.0f,6.0f,6.0f };
+//Abilitys
+int PlayerTeam[NumberOfPlayers];
+bool AbilityAffected[NumberOfPlayers][NumberOfSpecials];
+float AbilityCounter[NumberOfPlayers][NumberOfSpecials];
+float AbilityLength[NumberOfPlayers][NumberOfSpecials];
+bool FlipedControllers[NumberOfPlayers];
+float SprintSpeed = 1.5f; float abilityRotation[NumberOfSpecials]{ 0.0f };
 
 //Gamepad controls
 Gamepad gamepad;
@@ -162,18 +162,35 @@ Manifold m;
 */
 void setBoardStart() {
 
-	Players[0].setPosition(glm::vec3(20.0f, 0.0f, 0.0f));
-	Players[0].setVelocity(glm::vec3(0.0f, 0.0f, 0.0f));
-	Players[1].setPosition(glm::vec3(-20.0f, 0.0f, 0.0f));
-	Players[1].setVelocity(glm::vec3(0.0f, 0.0f, 0.0f));
+	
 	Health[0] = (Slider[2].SNob_Precent.x);
 	Health[1] = (Slider[2].SNob_Precent.x);
+
+	for (int i = 0; i < NumberOfPlayers; i++)
+	{
+		float multipliyer002 = 0.0f;
+		if (i > 1) { multipliyer002 += 20.0f; }
+		if (PlayerTeam[i] == 0) { Players[i].setPosition(glm::vec3(20.0f, 0.0f, -10.0f + multipliyer002)); }
+		else if (PlayerTeam[i] == 1) { Players[i].setPosition(glm::vec3(-20.0f, 0.0f, -10.0f + multipliyer002)); }
+
+		Players[i].setVelocity(glm::vec3(0.0f));
+		Players[i].setForceOnObject(glm::vec3(0.0f));
+	}
+
 	m.A = Enemies[0];
 	for (int i = 0; i < NumberOfEnemies; i++)
 	{
 		m.B = Enemies[i];
 		setEnemySpawn(m, i);
 		Enemies[i] = m.B;
+	}
+
+	for (int i = 0; i < NumberOfSpecials; i++) 
+	{
+		Specials[i].Viewable = false;
+		Specials[i].setVelocity(glm::vec3(0.0f));
+		Specials[i].setForceOnObject(glm::vec3(0.0f));
+		Specials[i].setRotation(glm::vec3(0.0f));
 	}
 }
 
@@ -306,12 +323,16 @@ void InEditorDraw(int Inum)
 				else { enableCulling(); }
 				ShockWaves[i].drawObject();
 			}
+
+			//Players[i].drawHTR(shader);
+		}
+	}
+	for (unsigned int i = 0; i < NumberOfRifts; i++) {
+		if (Rifts[i].Viewable) {
 			//Rifts
 			if (Rifts[i].textureHandle_hasTransparency == true) { disableCulling(); }
 			else { enableCulling(); }
 			Rifts[i].drawObject();
-
-			//Players[i].drawHTR(shader);
 		}
 	}
 	for (unsigned int i = 0; i < NumberOfObjects; i++) {
@@ -576,13 +597,13 @@ void InGameDraw(int Inum)
 	cameralook = Inum; //window
 	WhatCameraIsLookingAt(); //Resising Window
 	
-	//Draw scene//cameraViewMatrix //modelViewMatrix	
-	passThroughMaterial->shader->sendUniformMat4("mvm", modelViewMatrix[Inum]);
-	passThroughMaterial->shader->sendUniformMat4("prm", projectionMatrix[Inum]);
-	passThroughMaterial->shader->sendUniformMat4("u_mvp", (modelViewMatrix[Inum] * projectionMatrix[Inum]));
-	passThroughMaterial->shader->sendUniformMat4("u_mv", modelViewMatrix[Inum]);
-	passThroughMaterial->shader->sendUniformMat4("u_lightPos_01", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
-	passThroughMaterial->shader->sendUniformMat4("u_lightPos_02", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
+	//Draw scene //cameraViewMatrix //modelViewMatrix	
+	passThroughMaterial->shader->sendUniformMat4("mvm", modelViewMatrix[PlayerTeam[Inum]]);
+	passThroughMaterial->shader->sendUniformMat4("prm", projectionMatrix[PlayerTeam[Inum]]);
+	passThroughMaterial->shader->sendUniformMat4("u_mvp", (modelViewMatrix[PlayerTeam[Inum]] * projectionMatrix[PlayerTeam[Inum]]));
+	passThroughMaterial->shader->sendUniformMat4("u_mv", modelViewMatrix[PlayerTeam[Inum]]);
+	passThroughMaterial->shader->sendUniformMat4("u_lightPos_01", (modelViewMatrix[PlayerTeam[Inum]] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
+	passThroughMaterial->shader->sendUniformMat4("u_lightPos_02", (modelViewMatrix[PlayerTeam[Inum]] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
 
 
 	for (unsigned int i = 0; i < NumberOfPlayers; i++) {
@@ -604,14 +625,19 @@ void InGameDraw(int Inum)
 			if (ShockWaveOn) {
 				if (ShockWaves[i].textureHandle_hasTransparency == true) { disableCulling(); }
 				else { enableCulling(); }
+				ShockWaves[i].setPosition(Players[i].Position());
 				ShockWaves[i].drawObject();
 			}
+
+			//Players[i].drawHTR(shader);
+		}
+	}
+	for (unsigned int i = 0; i < NumberOfRifts; i++) {
+		if (Rifts[i].Viewable) {
 			//Rifts
 			if (Rifts[i].textureHandle_hasTransparency == true) { disableCulling(); }
 			else { enableCulling(); }
 			Rifts[i].drawObject();
-
-			//Players[i].drawHTR(shader);
 		}
 	}
 	for (unsigned int i = 0; i < NumberOfObjects; i++) {
@@ -895,10 +921,8 @@ void GameScreen(float deltaTasSeconds)
 					else if (m.B.SpecialAttribute() == 1) {
 						powerup[1].Play();
 						m.B.Viewable = false;
-						if (i == 0) { AbilityAffected[1] = 1; }
-						else if (i == 1) { AbilityAffected[1] = 0; }
-						else { AbilityAffected[1] = -1; }
-						AbilityCounter[1] = 0.0f;
+						AbilityAffected[i][1] = true;
+						AbilityCounter[i][1] = 0.0f;
 					}
 					//Toss-Up
 					else if (m.B.SpecialAttribute() == 2) {
@@ -919,55 +943,43 @@ void GameScreen(float deltaTasSeconds)
 					else if (m.B.SpecialAttribute() == 4) {
 						powerup[4].Play();
 						m.B.Viewable = false;
-						if (i == 0) { AbilityAffected[4] = 0; }
-						else if (i == 1) { AbilityAffected[4] = 1; }
-						else { AbilityAffected[4] = -1; }
-						AbilityCounter[4] = 0.0f;
+						AbilityAffected[i][4] = true;
+						AbilityCounter[i][4] = 0.0f;
 					}
 					//Flee
 					else if (m.B.SpecialAttribute() == 5) {
 						powerup[5].Play();
 						m.B.Viewable = false;
-						if (i == 0) { AbilityAffected[5] = 0; }
-						else if (i == 1) { AbilityAffected[5] = 1; }
-						else { AbilityAffected[5] = -1; }
-						AbilityCounter[5] = 0.0f;
+						AbilityAffected[i][5] = true;
+						AbilityCounter[i][5] = 0.0f;
 					}
 					//Short Circuit
 					else if (m.B.SpecialAttribute() == 6) {
 						powerup[6].Play();
 						m.B.Viewable = false;
-						if (i == 0) { AbilityAffected[6] = 0; }
-						else if (i == 1) { AbilityAffected[6] = 1; }
-						else { AbilityAffected[6] = -1; }
-						AbilityCounter[6] = 0.0f;
+						AbilityAffected[i][6] = true;
+						AbilityCounter[i][6] = 0.0f;
 					}
 					//Super Shockwave
 					else if (m.B.SpecialAttribute() == 7) {
 						powerup[7].Play();
 						m.B.Viewable = false;
-						if (i == 0) { AbilityAffected[7] = 0; }
-						else if (i == 1) { AbilityAffected[7] = 1; }
-						else { AbilityAffected[7] = -1; }
-						AbilityCounter[7] = 0.0f;
+						AbilityAffected[i][7] = true;
+						AbilityCounter[i][7] = 0.0f;
 					}
 					//Invincibility
 					else if (m.B.SpecialAttribute() == 8) {
 						powerup[8].Play();
 						m.B.Viewable = false;
-						if (i == 0) { AbilityAffected[8] = 0; }
-						else if (i == 1) { AbilityAffected[8] = 1; }
-						else { AbilityAffected[8] = -1; }
-						AbilityCounter[8] = 0.0f;
+						AbilityAffected[i][8] = true;
+						AbilityCounter[i][8] = 0.0f;
 					}
 					//Flipped
 					else if (m.B.SpecialAttribute() == 9) {
 						powerup[9].Play();
 						m.B.Viewable = false;
-						if (i == 0) { AbilityAffected[9] = 1; }
-						else if (i == 1) { AbilityAffected[9] = 0; }
-						else { AbilityAffected[9] = -1; }
-						AbilityCounter[9] = 0.0f;
+						AbilityAffected[i][9] = true;
+						AbilityCounter[i][9] = 0.0f;
 					}
 				}
 				if (checkRadialCollision(m)) { ResolveCollision(m, 0.01f); }
@@ -1079,19 +1091,11 @@ void GameScreen(float deltaTasSeconds)
 		for (int i = 0; i < NumberOfEnemies; i++) {
 			m.B = Enemies[i];
 			for (int j = 0; j < NumberOfPlayers; j++) {
-				m.A = Rifts[j];
+				m.A = Rifts[PlayerTeam[j]];
 				if (ObjectsWithinRange(m, 15.0f)) { applySeekSystem(m, 2.0f); }
 				if (CheckCollision(m)) {
-					//Tower One
-					if (j == 0) {
-						setEnemySpawn(m,i);
-						if (AbilityAffected[8] != 0) { Health[0] -= 1; }
-					}
-					//Tower Two
-					else if (j == 1) {
-						setEnemySpawn(m,i);
-						if (AbilityAffected[8] != 1) { Health[1] -= 1; }
-					}
+					setEnemySpawn(m, i);
+					if (!AbilityAffected[j][8]) { Health[PlayerTeam[j]] -= 1; }
 				}//end if
 			}//end for
 			Enemies[i] = m.B;
@@ -1234,99 +1238,105 @@ void GameScreen(float deltaTasSeconds)
 	bool enableAbilitys = true;
 	//Applys all over-time abilitys
 	if (enableAbilitys) {
+		for (int ijp = 0; ijp < NumberOfPlayers; ijp++) {
 
-		//Enemies seek towers [1]
-		if (EnemiesSeekTowers && AbilityAffected[1] >= 0 && AbilityCounter[1] < AbilityLength[1]) {
-			AbilityCounter[1] += deltaTasSeconds;
-			//std::cout << "	[S]("<< EnemiesSeekingTower<<")[" << EnemiesSeekTowerCounter << "]" << std::endl;
-			for (int j = 0; j < NumberOfEnemies; j++) {
-				//Seek towards Player Ones tower
-				if (AbilityAffected[1] == 0) {
-					m.A = Rifts[0];
+			//Enemies seek towers [1]
+			if (AbilityAffected[ijp][1] && AbilityCounter[ijp][1] < AbilityLength[ijp][1]) {
+				AbilityCounter[ijp][1] += deltaTasSeconds;
+				if (PlayerTeam[ijp] == 0) { m.A = Rifts[1]; }
+				else if (PlayerTeam[ijp] == 1) { m.A = Rifts[0]; }
+				for (int j = 0; j < NumberOfEnemies; j++) {
 					m.B = Enemies[j];
 					applySeekSystem(m, 3.0f);
-					m.B.setColour(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-					Enemies[j] = m.B;
-				}
-				//Seek towards Player Twos tower
-				else if (AbilityAffected[1] == 1) {
-					m.A = Rifts[1];
-					m.B = Enemies[j];
-					applySeekSystem(m, 3.0f);
-					m.B.setColour(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
 					Enemies[j] = m.B;
 				}
 			}
-		}
+			else { AbilityAffected[ijp][1] = false; }
 
-		//Boost [4]
-		if (AbilityAffected[4] >= 0 && AbilityCounter[4] < AbilityLength[4]) {
-			AbilityCounter[4] += deltaTasSeconds;
-			if (AbilityAffected[4] == 0) {
-				Players[0].SprintSpeed = SprintSpeed;
+			//Boost [4]
+			if (AbilityAffected[ijp][4] && AbilityCounter[ijp][4] < AbilityLength[ijp][4]) {
+				AbilityCounter[ijp][4] += deltaTasSeconds;
+				Players[ijp].SprintSpeed = SprintSpeed;
 			}
-			else if (AbilityAffected[4] == 1) {
-				Players[1].SprintSpeed = SprintSpeed;
+			else {
+				Players[ijp].SprintSpeed = 1.0f;
+				AbilityAffected[ijp][4] = false;
 			}
-		}
-		else { Players[0].SprintSpeed = 1.0f; Players[1].SprintSpeed = 1.0f; }
 
-		//Flee [5]
-		if (AbilityAffected[5] >= 0 && AbilityCounter[5] < AbilityLength[5]) {
-			AbilityCounter[5] += deltaTasSeconds;
-			if (AbilityAffected[5] == 0) { 
-				m.A = Players[0];
+			//Flee [5]
+			if (AbilityAffected[ijp][5] && AbilityCounter[ijp][5] < AbilityLength[ijp][5]) {
+				AbilityCounter[ijp][5] += deltaTasSeconds;
+				m.A = Players[ijp];
 				for (int i = 0; i < NumberOfEnemies; i++) {
 					m.B = Enemies[i];
 					applyRadialFleeingSystem(m, 20.0f, 10.0f);
 					Enemies[i] = m.B;
 				}
 			}
-			else if (AbilityAffected[5] == 1) {
-				m.A = Players[1];
-				for (int i = 0; i < NumberOfEnemies; i++) {
-					m.B = Enemies[i];
-					applyRadialFleeingSystem(m, 20.0f, 10.0f);
-					Enemies[i] = m.B;
+			else { AbilityAffected[ijp][5] = false; }
+
+			//Short Circuit [6]
+			if (AbilityAffected[ijp][6] && AbilityCounter[ijp][6] < AbilityLength[ijp][6]) {
+				AbilityCounter[ijp][6] += deltaTasSeconds;
+
+				if (PlayerTeam[ijp] == 0) {
+					for (int ijp2 = 0; ijp2 < NumberOfPlayers; ijp2++) {
+						if (PlayerTeam[ijp2] == 1) {
+							Players[ijp2].inShock = true;
+						}
+					}
+				}
+				else if (PlayerTeam[ijp] == 1) {
+					for (int ijp2 = 0; ijp2 < NumberOfPlayers; ijp2++) {
+						if (PlayerTeam[ijp2] == 0) {
+							Players[ijp2].inShock = true;
+						}
+					}
+				}
+				
+			}
+			else { AbilityAffected[ijp][6] = false; }
+
+			//Super Shockwave [7] //not done yet
+			if (AbilityAffected[ijp][7] && AbilityCounter[ijp][7] < AbilityLength[ijp][7]) {
+				AbilityCounter[ijp][7] += deltaTasSeconds;
+			}
+			else { AbilityAffected[ijp][7] = false; }
+
+			//Invincibility [8] 
+			if (AbilityAffected[ijp][8] && AbilityCounter[ijp][8] < AbilityLength[ijp][8]) {
+				AbilityCounter[ijp][8] += deltaTasSeconds;
+			}
+			else { AbilityAffected[ijp][8] = false; }
+
+			//Flipped [9]
+			if (AbilityAffected[ijp][9] && AbilityCounter[ijp][9] < AbilityLength[ijp][9]) {
+				AbilityCounter[ijp][9] += deltaTasSeconds;
+				if (PlayerTeam[ijp] == 0) {
+					for (int ijp2 = 0; ijp2 < NumberOfPlayers; ijp2++) {
+						if (PlayerTeam[ijp2] == 1) {
+							FlipedControllers[ijp2] = true;
+						}
+					}
+				}
+				else if (PlayerTeam[ijp] == 1) {
+					for (int ijp2 = 0; ijp2 < NumberOfPlayers; ijp2++) {
+						if (PlayerTeam[ijp2] == 0) {
+							FlipedControllers[ijp2] = true;
+						}
+					}
 				}
 			}
-		}
-		else { }
-
-		//Short Circuit [6]
-		if (AbilityAffected[6] >= 0 && AbilityCounter[6] < AbilityLength[6]) {
-			AbilityCounter[6] += deltaTasSeconds;
-			if (AbilityAffected[6] == 0) {
-				Players[1].inShock = true;
-			}
-			else if (AbilityAffected[6] == 1) {
-				Players[0].inShock = true;
+			else {
+				if (PlayerTeam[ijp] == 0) {
+					for (int ijp2 = 0; ijp2 < NumberOfPlayers; ijp2++) {
+						if (PlayerTeam[ijp2] == 1 && FlipedControllers[ijp2]) { }
+						else { FlipedControllers[ijp] = false; }
+					}
+				}
+				AbilityAffected[ijp][9] = false; 
 			}
 		}
-		else { Players[0].inShock = false; Players[1].inShock = false; }
-
-		//Super Shockwave [7] //not done yet
-		if (AbilityAffected[7] >= 0 && AbilityCounter[7] < AbilityLength[7]) {
-			AbilityCounter[7] += deltaTasSeconds;
-			if (AbilityAffected[7] == 0) { }
-			else if (AbilityAffected[7] == 1) { }
-		}
-		else { }
-
-		//Invincibility [8] 
-		if (AbilityAffected[8] >= 0 && AbilityCounter[8] < AbilityLength[8]) {
-			AbilityCounter[8] += deltaTasSeconds;
-		}
-		else { AbilityAffected[8] = -1; }
-
-		//Short Circuit [9]
-		if (AbilityAffected[9] >= 0 && AbilityCounter[9] < AbilityLength[9]) {
-			AbilityCounter[9] += deltaTasSeconds;
-			if (AbilityAffected[9] == 0) { FlipedControllers[0] = true; }
-			else if (AbilityAffected[9] == 1) { FlipedControllers[1] = true; }
-		}
-		else { FlipedControllers[0] = false; FlipedControllers[1] = false; }
-
 	}
 
 	//Can the users use the shock wave ability
@@ -1443,6 +1453,7 @@ void GameScreen(float deltaTasSeconds)
 		float ranPosX = (rand() % 80 - 40) + ((rand() % 100 - 50)*0.01f); //-39.50 to 40.50
 		int ranSpec = (rand() % 9 + 1); //1 to 9
 
+		Specials[ranSpec].setVelocity(glm::vec3(0.0f, 0.0f, 0.0f));
 		Specials[ranSpec].setPosition(glm::vec3(ranPosX, ranPosY, ranPosZ));
 		Specials[ranSpec].Viewable = true;
 
@@ -1450,10 +1461,16 @@ void GameScreen(float deltaTasSeconds)
 	}
 	else { randomSpecialTime -= deltaTasSeconds; }
 
+
+	
 	//Updating Targets
-	for (int i = 0; i < NumberOfPlayers; i++) { Players[i].updateP(deltaTasSeconds); }
-	for (int i = 0; i < NumberOfEnemies; i++) { Enemies[i].update(deltaTasSeconds); }
-	for (int i = 0; i < NumberOfSpecials; i++){Specials[i].update(deltaTasSeconds); }
+	for (int i = 0; i < NumberOfPlayers; i++) { if (Players[i].Viewable) { Players[i].updateP(deltaTasSeconds); } }
+	for (int i = 0; i < NumberOfEnemies; i++) { if (Enemies[i].Viewable) { Enemies[i].update(deltaTasSeconds); } }
+	
+	for (int i = 0; i < NumberOfSpecials; i++){ if (Specials[i].Viewable) {
+		 Specials[i].setRotation(glm::vec3(0.0f, abilityRotation[i],0.0f));
+		 Specials[i].update(deltaTasSeconds); 
+		 abilityRotation[i] += (deltaTasSeconds*73.0f); } }
 
 }
 
@@ -1465,13 +1482,12 @@ void GameScreen(float deltaTasSeconds)
 void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 {
 	float MovementModifier = 12.0f;
-	portNumber = portNumber - 1;
 
 
 	if (inGame) {
 		if (cameraMode == 0) {
 			//JoySticks
-			if (portNumber == 0) {
+			if (PlayerTeam[portNumber] == 0) {
 				float Tx = 0.0f; float Ty = 0.0f; float Tz = 0.0f; float rotY = 0.0f;
 				//checks to see if the sticks are out of the deadzone, then translates them based on how far the stick is pushed.
 				if (!FlipedControllers[portNumber]) {
@@ -1501,9 +1517,8 @@ void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 				Players[portNumber].setForceOnObject(glm::vec3(Tx, Ty, Tz));
 				Players[portNumber].setVelocity(glm::vec3(Tx, Ty, Tz)*Players[portNumber].SprintSpeed);
 				Players[portNumber].ForwardDirection = (Players[portNumber].Position() - (Players[portNumber].Position() + Players[portNumber].Velocity()));
-				ShockWaves[portNumber].setPosition(Players[portNumber].Position());
 			}
-			if (portNumber == 1) {
+			if (PlayerTeam[portNumber] == 1) {
 				float Tx = 0.0f; float Ty = 0.0f; float Tz = 0.0f; float rotY = 0.0f;
 				//checks to see if the sticks are out of the deadzone, then translates them based on how far the stick is pushed.
 				if (!FlipedControllers[portNumber]) {
@@ -1533,7 +1548,6 @@ void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 				Players[portNumber].setForceOnObject(glm::vec3(Tx, Ty, Tz));
 				Players[portNumber].setVelocity(glm::vec3(Tx, Ty, Tz)*Players[portNumber].SprintSpeed);
 				Players[portNumber].ForwardDirection = (Players[portNumber].Position() - (Players[portNumber].Position() + Players[portNumber].Velocity()));
-				ShockWaves[portNumber].setPosition(Players[portNumber].Position());
 			}
 		}
 		else if (cameraMode == 1) {
@@ -1582,7 +1596,6 @@ void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 					Players[portNumber].Position().y + (Players[portNumber].Radius().y*2.0f),
 					Players[portNumber].Position().z - (forwardVector[portNumber].z*6.0f));
 				//shockwace position
-				ShockWaves[portNumber].setPosition(Players[portNumber].Position());
 			}
 		}
 		//Buttons
@@ -1691,7 +1704,6 @@ void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 				}
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_LEFT_SHOULDER)) { std::cout << "[LEFT_SHOULDER][-]"; }
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_RIGHT_SHOULDER)) { std::cout << "[RIGHT_SHOULDER][-]"; }
-				//Players[portNumber].update(deltaTasSeconds);
 			}
 		}
 	}
@@ -1737,12 +1749,12 @@ void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 					input.mi.time = 0;
 					SendInput(1, &input, sizeof(INPUT));
 
-					bool pressedA = false;
+					bool pressedASlider = false;
 					for (unsigned int i = 0; i < NumberOfSliders; i++) {
 						//move nob along the slider
-						if (Slider[i].moveNob(MPosToOPosX, MPosToOPosY)) { ButtonForSliders[i].setPosition(glm::vec3(MPosToOPosX, 0.02f, Slider[i].SBar_Pos.z)); pressedA = true; }
+						if (Slider[i].moveNob(MPosToOPosX, MPosToOPosY)) { ButtonForSliders[i].setPosition(glm::vec3(MPosToOPosX, 0.02f, Slider[i].SBar_Pos.z)); pressedASlider = true;}
 					}
-					if (pressedA) { MenuSwitchCounter[portNumber] = 0.50f; }
+					if (!pressedASlider) { MenuSwitchCounter[portNumber] = 0.40f; }
 				}
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_B)) {
 					std::cout << "[B]";
@@ -1770,7 +1782,12 @@ void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 				}
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_BACK)) {
 					std::cout << "[BACK]";
-					exit(0);
+					if (inOptions) {
+						if (inOptionsTab != 0) { inOptionsTab = 0; }
+						else { inOptions = false; inMenu = true; }
+						MenuSwitchCounter[portNumber] = 1.0f;
+					}
+					else { exit(0); }
 				}
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_LEFT_SHOULDER)) { std::cout << "[LEFT_SHOULDER]"; }
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_RIGHT_SHOULDER)) { std::cout << "[RIGHT_SHOULDER]"; }
@@ -1787,9 +1804,6 @@ void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 void KeyBoardDelayButton(float deltaTasSeconds) {
 
 	for (int playerNumberControl = 0; playerNumberControl < NumberOfPlayers; playerNumberControl++) {
-
-		
-
 		if (cameraMode == 0) {
 			float Tx[2]{ 0.0f,0.0f }; float Ty[2]{ 0.0f,0.0f }; float Tz[2]{ 0.0f,0.0f };
 
@@ -1888,7 +1902,6 @@ void KeyBoardDelayButton(float deltaTasSeconds) {
 				Players[playerNumberControl].setForceOnObject(glm::vec3(Tx[playerNumberControl], Ty[playerNumberControl], Tz[playerNumberControl]));
 				Players[playerNumberControl].setVelocity(glm::vec3(Tx[playerNumberControl], Ty[playerNumberControl], Tz[playerNumberControl])*SprintSpeed);
 				Players[playerNumberControl].ForwardDirection = (Players[playerNumberControl].Position() - (Players[playerNumberControl].Position() + Players[playerNumberControl].Velocity()));
-				ShockWaves[playerNumberControl].setPosition(Players[playerNumberControl].Position());
 			}
 		}
 		else if (cameraMode == 1) {
@@ -2004,7 +2017,6 @@ void KeyBoardDelayButton(float deltaTasSeconds) {
 				Players[playerNumberControl].Position().y + (Players[playerNumberControl].Radius().y*2.0f),
 				Players[playerNumberControl].Position().z - (forwardVector[playerNumberControl].z*6.0f));
 			//shockwace position
-			ShockWaves[playerNumberControl].setPosition(Players[playerNumberControl].Position());
 		}
 	}
 }
@@ -2189,13 +2201,17 @@ void TimerCallbackFunction(int value)
 	float deltaTasSeconds = (deltaT / 1000.0f);
 	deltaTasSecs = deltaTasSeconds;
 
+
+
 	if (gamepad.CheckConnection()) {
-		//player one
-		gamepad.SetActivePort(1); gamepad.Refresh();
-		ControllerDelayButton(gamepad.GetActivePort(), deltaTasSeconds);
-		//player two
-		gamepad.SetActivePort(2); gamepad.Refresh();
-		ControllerDelayButton(gamepad.GetActivePort(), deltaTasSeconds);
+		for (int i = 0; i < NumberOfPlayers; i++) {
+			gamepad.SetActivePort(i);
+
+			if (gamepad.GetActivePort() == i) {
+				gamepad.Refresh();
+				ControllerDelayButton(i, deltaTasSeconds);
+			}
+		}
 	}
 	else { KeyBoardDelayButton(deltaTasSeconds); }
 	
@@ -2418,6 +2434,7 @@ void InitializeObjects()
 	//Borders[1].setSizeOfHitBox(glm::vec3(50.0f, 100.0f, 50.0f)); //HitBox
 	//Borders[1].setPosition(glm::vec3(0.0f, 50.0f, -60.0f));
 
+
 	//Player ONE
 	Players[0].objectLoader(ObjectPath + "blitzbot.obj");
 	Players[0].setMaterial(passThroughMaterial);
@@ -2426,10 +2443,15 @@ void InitializeObjects()
 	Players[0].setSizeOfHitBox(glm::vec3(10.0f, 2.50f, 10.0f)); //HitBox
 	Players[0].setPosition(glm::vec3(10.0f, -1.0f, 0.0f)); //Position of Object
 	Players[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "blitzbot//B_blitzbot_diff.png").c_str())));
-	//Player TWO
 	Players[1].objectLoader(&Players[0]);
 	Players[1].setPosition(glm::vec3(-10.0f, -1.0f, 0.0f)); //Position of Object
-	Players[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "blitzbot//R_blitzbot_diff.png").c_str())));
+	if (NumberOfPlayers >= 2) {
+		Players[2].objectLoader(&Players[0]);
+		Players[2].setPosition(glm::vec3(15.0f, -1.0f, 0.0f)); //Position of Object
+		Players[3].objectLoader(&Players[0]);
+		Players[3].setPosition(glm::vec3(-15.0f, -1.0f, 0.0f)); //Position of Object
+	}
+
 	//Player ShockWave
 	ShockWaves[0].objectLoader(ObjectPath + "ShockWave.obj");
 	ShockWaves[0].setMaterial(passThroughMaterial);
@@ -2438,7 +2460,24 @@ void InitializeObjects()
 	ShockWaves[0].setSizeOfHitBox(glm::vec3(1.0f, 1.0f, 1.0f)); //HitBox
 	ShockWaves[0].textureHandle_hasTransparency = true;
 	ShockWaves[1].objectLoader(&ShockWaves[0]);
-	ShockWaves[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "ShockWave_02.png").c_str())));
+	if (NumberOfPlayers >= 2) {
+		ShockWaves[2].objectLoader(&ShockWaves[0]);
+		ShockWaves[3].objectLoader(&ShockWaves[0]);
+	}
+
+
+	for (int i = 0; i < NumberOfPlayers; i++) {
+		if (PlayerTeam[i] == 0) {
+			Players[i].setTexture(ilutGLLoadImage(_strdup((ImagePath + "blitzbot//B_blitzbot_diff.png").c_str())));
+			ShockWaves[i].setTexture(ilutGLLoadImage(_strdup((ImagePath + "ShockWave_01.png").c_str())));
+		}
+		else if (PlayerTeam[i] == 1) { 
+			Players[i].setTexture(ilutGLLoadImage(_strdup((ImagePath + "blitzbot//R_blitzbot_diff.png").c_str())));
+			ShockWaves[i].setTexture(ilutGLLoadImage(_strdup((ImagePath + "ShockWave_02.png").c_str())));
+		}
+	}
+
+
 	//Player ONE Tower
 	Rifts[0].objectLoader(ObjectPath + "Square.obj");
 	Rifts[0].setMaterial(passThroughMaterial);
@@ -2482,10 +2521,14 @@ void InitializeObjects()
 	Specials[2].setSpecialAttribute(2);
 	Specials[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Blue_background.png").c_str())));
 	Specials[2].Viewable = false;
-	//
-	Specials[3].objectLoader(&Specials[0]);
+	//Specials[3].objectLoader(&Specials[0]);
+	Specials[3].objectLoader(ObjectPath + "PowerUp_Icons//Health_Icon.obj");
+	Specials[3].setMaterial(passThroughMaterial);
+	Specials[3].setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
+	Specials[3].setMass(1.0f);
 	Specials[3].setSpecialAttribute(3);
-	Specials[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Box_Health.png").c_str())));
+	Specials[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Blue_background.png").c_str())));
+	Specials[3].Viewable = false;
 	//Specials[4].objectLoader(&Specials[0]);
 	Specials[4].objectLoader(ObjectPath + "PowerUp_Icons//Boost_Icon.obj");
 	Specials[4].setMaterial(passThroughMaterial);
@@ -2495,7 +2538,7 @@ void InitializeObjects()
 	Specials[4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Blue_background.png").c_str())));
 	Specials[4].Viewable = false;
 	//Specials[5].objectLoader(&Specials[0]);
-	Specials[5].objectLoader(ObjectPath + "PowerUp_Icons//Flee_Icon.obj");
+	Specials[5].objectLoader(ObjectPath + "PowerUp_Icons//Repulsor_Icon.obj");
 	Specials[5].setMaterial(passThroughMaterial);
 	Specials[5].setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
 	Specials[5].setMass(1.0f);
@@ -2760,6 +2803,9 @@ void init()
 
 	//Textures & Texture parameters
 	glEnable(GL_TEXTURE_2D);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	///// INIT OpenGL /////
 	glClearColor(0.0, 0.0, 0.0, 0.0);
 	glEnable(GL_COLOR_MATERIAL); // final polygon color will be based on glColor and glMaterial
@@ -2773,6 +2819,10 @@ void init()
 	glLineWidth(4.0f);
 	glPolygonMode(GL_FRONT, GL_FILL);
 
+
+
+
+
 	ilInit();
 	iluInit();
 	ilutRenderer(ILUT_OPENGL);
@@ -2781,11 +2831,35 @@ void init()
 	else if (DoesFileExists("Assets//Fonts//")) { SystemText.LoadTextFont("Assets//Fonts//FreeSerif.ttf", SystemText); }
 	else { std::cout << "[ERROR] Could not find [Font]" << std::endl; }
 
+	if (true) {
+		PlayerTeam[0] = 0;
+		PlayerTeam[1] = 1;
+		PlayerTeam[2] = 0;
+		PlayerTeam[3] = 1;
+	}
+	else {
+		PlayerTeam[0] = 1;
+		PlayerTeam[1] = 0;
+		PlayerTeam[2] = 1;
+		PlayerTeam[3] = 0;
+	}
 
 	InitializeShaders();
 	InitializeSounds();
 	InitializeObjects();
 	InitializeTextPlane();
+
+
+
+	for (int i = 0; i < NumberOfPlayers; i++) {
+		//PlayerTeam[i] = i;
+		for (int j = 0; j < NumberOfSpecials; j++) {
+			AbilityAffected[i][j] = false;
+			AbilityCounter[i][j] = 6.0f;
+			AbilityLength[i][j] = 6.0f;
+		}
+	}
+
 
 	for (int i = 0; i < 4; i++) {
 		cameralook = i;
@@ -2842,13 +2916,6 @@ int main(int argc, char **argv)
 	glutTimerFunc(1, TimerCallbackFunction, 0); // timer or tick
 
 	init();
-	
-	//shader->bind();
-	//glEnableVertexAttribArray(0);	glBindAttribLocation(shader->getID(), 0, "vIn_vertex");
-	//glEnableVertexAttribArray(1);	glBindAttribLocation(shader->getID(), 1, "vIn_uv");
-	//glEnableVertexAttribArray(2);	glBindAttribLocation(shader->getID(), 2, "vIn_normal");
-	//glEnableVertexAttribArray(3);	glBindAttribLocation(shader->getID(), 3, "vIn_colour");
-	//shader->unbind();
 
 	// start the event handler
 	glutMainLoop();
