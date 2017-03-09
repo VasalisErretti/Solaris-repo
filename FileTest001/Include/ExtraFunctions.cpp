@@ -547,10 +547,10 @@ static void setEnemySpawn(Manifold &m, int Inum) {
 	m.B.setScale(glm::vec3(3.0f, 3.0f, 3.0f)); //displayed size
 	m.B.setSizeOfHitBox(glm::vec3(3.0f, 2.0f, 3.0f)); //HitBox
 	m.B.setSizeOfHitBox(glm::vec3(1.3f)); //HitBox
-	float ranPosZ = (rand() % 80 - 40) + ((rand() % 100 - 50)*0.01f); //-39.50 to 40.50
-	float ranPosY = (rand() % 20 + 10) + ((rand() % 100 - 50)*0.01f); //9.50 to 30.50
-	float ranPosX = (rand() % 2) + 1.0 + ((rand() % 100 - 50)*0.01f);
-	float ranFall = ((rand() % 28) + 1.0f)*0.01;
+	float ranPosZ = ((rand() % 80 - 40) + ((rand() % 100 - 50)*0.01f))*1.0f; //-39.50 to 40.50
+	float ranPosY = ((rand() % 20 + 10) + ((rand() % 100 - 50)*0.01f))*1.0f; //9.50 to 30.50
+	float ranPosX = ((rand() % 2) + 1.0f + ((rand() % 100 - 50)*0.01f))*1.0f;
+	float ranFall = (((rand() % 28) + 1.0f)*0.01f)*1.0f;
 	if (Inum % 2 == 0) { m.B.setPosition(glm::vec3(-ranPosX, ranPosY, ranPosZ)); }
 	else { m.B.setPosition(glm::vec3(ranPosX, ranPosY, ranPosZ)); }
 	m.B.setVelocity(glm::vec3(0.0f, (-0.15f - ranFall), 0.0f));

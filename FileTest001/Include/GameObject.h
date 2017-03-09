@@ -8,7 +8,8 @@
 // 3rd Party Libraries
 #include <glm\glm\glm.hpp>
 #include <GL\glew.h>
-#include <GLUT\glut.h>
+//#include <GL\glut.h>
+#include <GL\freeglut.h>
 #include <glm\glm\gtx\transform.hpp>
 #include <glm\glm\gtc\type_ptr.hpp>
 

@@ -39,6 +39,8 @@ GameObject::~GameObject() {
 	glDeleteBuffers(1, &texbo);
 	glDeleteBuffers(1, &colorbo);
 	glDeleteBuffers(1, &vao);
+	if (&textureHandle != NULL) { glDeleteTextures(1, &textureHandle); }
+	if (&material != nullptr) { material.reset(); }
 }
 
 
@@ -79,12 +81,12 @@ void GameObject::update(float deltaT)
 				//update position based on velocity
 				m_Position += m_Velocity;
 			}
-			else if (m_Velocity.x >  TopSpeed) { m_Velocity.x =  (TopSpeed*0.95); }
-			else if (m_Velocity.x < -TopSpeed) { m_Velocity.x = -(TopSpeed*0.95); }
-			else if (m_Velocity.y >  TopSpeed) { m_Velocity.y =  (TopSpeed*0.95); }
-			else if (m_Velocity.y < -TopSpeed) { m_Velocity.y = -(TopSpeed*0.95); }
-			else if (m_Velocity.z >  TopSpeed) { m_Velocity.z =  (TopSpeed*0.95); }
-			else if (m_Velocity.z < -TopSpeed) { m_Velocity.z = -(TopSpeed*0.95); }
+			else if (m_Velocity.x >  TopSpeed) { m_Velocity.x =  (TopSpeed*0.95f); }
+			else if (m_Velocity.x < -TopSpeed) { m_Velocity.x = -(TopSpeed*0.95f); }
+			else if (m_Velocity.y >  TopSpeed) { m_Velocity.y =  (TopSpeed*0.95f); }
+			else if (m_Velocity.y < -TopSpeed) { m_Velocity.y = -(TopSpeed*0.95f); }
+			else if (m_Velocity.z >  TopSpeed) { m_Velocity.z =  (TopSpeed*0.95f); }
+			else if (m_Velocity.z < -TopSpeed) { m_Velocity.z = -(TopSpeed*0.95f); }
 
 			else if (m_Velocity.x == NULL) { m_Velocity.x = 0.0f; }
 			else if (m_Velocity.y == NULL) { m_Velocity.y = 0.0f; }
@@ -137,12 +139,12 @@ void GameObject::updateP(float deltaT)
 					//update position based on velocity
 					m_Position += (m_Velocity + (((m_ForceOnObject / m_Mass))*1.5f));
 				}
-				else if (m_Velocity.x > TopSpeed) { m_Velocity.x = (TopSpeed*0.95); }
-				else if (m_Velocity.x < -TopSpeed) { m_Velocity.x = -(TopSpeed*0.95); }
-				else if (m_Velocity.y > TopSpeed) { m_Velocity.y = (TopSpeed*0.95); }
-				else if (m_Velocity.y < -TopSpeed) { m_Velocity.y = -(TopSpeed*0.95); }
-				else if (m_Velocity.z > TopSpeed) { m_Velocity.z = (TopSpeed*0.95); }
-				else if (m_Velocity.z < -TopSpeed) { m_Velocity.z = -(TopSpeed*0.95); }
+				else if (m_Velocity.x > TopSpeed)  { m_Velocity.x =  (TopSpeed*0.95f); }
+				else if (m_Velocity.x < -TopSpeed) { m_Velocity.x = -(TopSpeed*0.95f); }
+				else if (m_Velocity.y > TopSpeed)  { m_Velocity.y =  (TopSpeed*0.95f); }
+				else if (m_Velocity.y < -TopSpeed) { m_Velocity.y = -(TopSpeed*0.95f); }
+				else if (m_Velocity.z > TopSpeed)  { m_Velocity.z =  (TopSpeed*0.95f); }
+				else if (m_Velocity.z < -TopSpeed) { m_Velocity.z = -(TopSpeed*0.95f); }
 
 				else if (m_Velocity.x == NULL) { m_Velocity.x = 0.0f; }
 				else if (m_Velocity.y == NULL) { m_Velocity.y = 0.0f; }
@@ -295,7 +297,7 @@ bool GameObject::objectLoader(const char* filePath)
 	this->colors = new float[numtris * 3];
 	for (unsigned int i = 0; i < numtris * 3; i++)
 	{
-		colors[i] = norms[i] + 1.0 / 2.0;
+		colors[i] = norms[i] + 1.0f / 2.0f;
 	}
 
 	glGenVertexArrays(1, &vao);
@@ -480,7 +482,7 @@ bool GameObject::objectLoader(std::string filePath1)
 	this->colors = new float[numtris * 3];
 	for (unsigned int i = 0; i < numtris * 3; i++)
 	{
-		colors[i] = norms[i] + 1.0 / 2.0;
+		colors[i] = norms[i] + 1.0f / 2.0f;
 	}
 
 	glGenVertexArrays(1, &vao);

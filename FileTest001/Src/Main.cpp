@@ -1,21 +1,12 @@
-// Memory Leak Detection
-//#define _CRTDBG_MAP_ALLOC
-//#ifdef _DEBUG
-//	#ifndef DBG_NEW
-//		#define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
-//		#define new DBG_NEW
-//		#pragma comment(lib, "DevIL.lib")
-//		#pragma comment(lib, "glew32.lib")
-//		#pragma comment(lib, "glut32.lib")
-//		#pragma comment(lib, "ILU.lib")
-//		#pragma comment(lib, "ILUT.lib")
-//		#pragma comment(lib, "XInput.lib")
-//		#pragma comment(lib, "Include/FMOD/fmod_vc.lib")
-//	#endif
-//#endif  
-//// _DEBUG
-//#include <stdlib.h>
-//#include <crtdbg.h>
+
+//	#pragma comment(lib, "DevIL.lib")
+//	#pragma comment(lib, "glew32.lib")
+//	#pragma comment(lib, "glut32.lib")
+//	#pragma comment(lib, "ILU.lib")
+//	#pragma comment(lib, "ILUT.lib")
+//	#pragma comment(lib, "XInput.lib")
+//	#pragma comment(lib, "../Include/FMOD/fmod_vc.lib")
+
 
 // Core Libraries
 #define WIN32_LEAN_AND_MEAN //cmd
@@ -29,7 +20,8 @@
 
 // 3rd Party Libraries
 #include <GL\glew.h>
-#include <GLUT\glut.h>
+#include <GL\glut.h>
+#include <GL\freeglut.h>
 #include <IL\il.h>
 #include <IL\ilu.h>
 #include <IL\ilut.h>
@@ -162,36 +154,67 @@ Manifold m;
 */
 void setBoardStart() {
 
-	
-	Health[0] = (Slider[2].SNob_Precent.x);
-	Health[1] = (Slider[2].SNob_Precent.x);
+	if (&Slider[2] != NULL) {
+		Health[0] = static_cast<int>(Slider[2].SNob_Precent.x);
+		Health[1] = static_cast<int>(Slider[2].SNob_Precent.x);
+	}
 
 	for (int i = 0; i < NumberOfPlayers; i++)
 	{
-		float multipliyer002 = 0.0f;
-		if (i > 1) { multipliyer002 += 20.0f; }
-		if (PlayerTeam[i] == 0) { Players[i].setPosition(glm::vec3(20.0f, 0.0f, -10.0f + multipliyer002)); }
-		else if (PlayerTeam[i] == 1) { Players[i].setPosition(glm::vec3(-20.0f, 0.0f, -10.0f + multipliyer002)); }
+		if (&Players[i] != NULL) {
+			float multipliyer002 = 0.0f;
+			if (i > 1) { multipliyer002 += 20.0f; }
+			if (PlayerTeam[i] == 0) { Players[i].setPosition(glm::vec3(20.0f, 0.0f, -10.0f + multipliyer002)); }
+			else if (PlayerTeam[i] == 1) { Players[i].setPosition(glm::vec3(-20.0f, 0.0f, -10.0f + multipliyer002)); }
 
-		Players[i].setVelocity(glm::vec3(0.0f));
-		Players[i].setForceOnObject(glm::vec3(0.0f));
+			Players[i].setVelocity(glm::vec3(0.0f));
+			Players[i].setForceOnObject(glm::vec3(0.0f));
+		}
 	}
 
-	m.A = Enemies[0];
+	if (&Enemies[0] != NULL) { m.A = Enemies[0]; }
 	for (int i = 0; i < NumberOfEnemies; i++)
 	{
-		m.B = Enemies[i];
-		setEnemySpawn(m, i);
-		Enemies[i] = m.B;
+		if (&Enemies[i] != NULL) {
+			m.B = Enemies[i];
+			setEnemySpawn(m, i);
+			Enemies[i] = m.B;
+		}
 	}
 
 	for (int i = 0; i < NumberOfSpecials; i++) 
 	{
-		Specials[i].Viewable = false;
-		Specials[i].setVelocity(glm::vec3(0.0f));
-		Specials[i].setForceOnObject(glm::vec3(0.0f));
-		Specials[i].setRotation(glm::vec3(0.0f));
+		if (&Specials[i] != NULL) {
+			Specials[i].Viewable = false;
+			Specials[i].setVelocity(glm::vec3(0.0f));
+			Specials[i].setForceOnObject(glm::vec3(0.0f));
+			Specials[i].setRotation(glm::vec3(0.0f));
+		}
 	}
+}
+
+void exitProgram() {
+
+	if (&ShadowObject[0] != NULL) { ShadowObject[0].~GameObject(); }
+	for (unsigned int i = 0; i < NumberOfPlayers; i++) {
+		if (&Players[i] != NULL) { Players[i].~GameObject(); }
+		if (&ShockWaves[i] != NULL) { ShockWaves[i].~GameObject(); }
+	}
+	for (unsigned int i = 0; i < NumberOfRifts; i++) { if (&Rifts[i] != NULL) { Rifts[i].~GameObject(); } }
+	for (unsigned int i = 0; i < NumberOfObjects; i++) { if (&Objects[i] != NULL) { Objects[i].~GameObject(); } }
+	for (unsigned int i = 0; i < NumberOfEnemies; i++) { if (&Enemies[i] != NULL) { Enemies[i].~GameObject(); } }
+	for (unsigned int i = 0; i < NumberOfSpecials; i++) { if (&Specials[i] != NULL) { Specials[i].~GameObject(); } }
+	for (unsigned int i = 0; i < NumberOfPlaneForText; i++) { if (&planeForText[i] != NULL) { planeForText[i].~GameObject(); } }
+	for (unsigned int i = 0; i < NumberOfSliders; i++) { 
+		if (&planeForSliders[i] != NULL) { planeForSliders[i].~GameObject(); }
+		if (&ButtonForSliders[i] != NULL) { ButtonForSliders[i].~GameObject(); }
+	}
+	for (unsigned int i = 0; i < NumberOfButtons; i++) { if (&ButtonObjects[i] != NULL) { ButtonObjects[i].~GameObject(); } }
+	for (unsigned int i = 0; i < NumberOfBorders; i++) { if (&Borders[i] != NULL) { Borders[i].~GameObject(); } }
+
+	for (std::map<std::string, std::shared_ptr<Material>>::iterator itr = materials.begin(); itr != materials.end(); itr++) { materials.erase(itr); }
+
+	glutLeaveMainLoop();
 }
 
 
@@ -460,7 +483,7 @@ void MenuScreen(float deltaTasSeconds)
 		mouseDown[0] = false;
 		if (Button[0].button(MPosToOPosX, MPosToOPosY)) { setBoardStart(); inGame = true; inMenu = false; }
 		if (Button[1].button(MPosToOPosX, MPosToOPosY)) { inOptions = true; inMenu = false; }
-		if (Button[2].button(MPosToOPosX, MPosToOPosY)) { exit(0); }
+		if (Button[2].button(MPosToOPosX, MPosToOPosY)) { exitProgram(); }
 	}
 	if (mouseDown[1]) {
 		mouseDown[1] = false;
@@ -648,13 +671,6 @@ void InGameDraw(int Inum)
 		}
 	}
 	for (unsigned int i = 0; i < NumberOfEnemies; i++) {
-		//if (NumberOfEnemies > (sizeof(Enemies) / sizeof(Enemies[0]))) {
-		//	for (unsigned int i = (sizeof(Enemies) / sizeof(Enemies[0])); i < NumberOfEnemies; i++) {
-		//		Enemies[i].objectLoader(&Enemies[0]);
-		//		std::cout << "[" << i << "] [created more enemies]" << std::endl;
-		//	}
-		//	NumberOfEnemies = (sizeof(Enemies) / sizeof(Enemies[0]));
-		//}
 		if (Enemies[i].Viewable) {
 			//Enemies
 			if (Enemies[i].textureHandle_hasTransparency == true) { disableCulling(); }
@@ -929,7 +945,7 @@ void GameScreen(float deltaTasSeconds)
 						powerup[2].Play();
 						m.B.Viewable = false;
 						for (int ij = 0; ij < NumberOfEnemies; ij++) {
-							float ranPosY = (rand() % 1000 + 100); //100 to 1100
+							float ranPosY = static_cast<float>(rand() % 1000 + 100); //100 to 1100
 							Enemies[ij].setForceOnObject(Enemies[ij].ForceOnObject() + glm::vec3(0.0f, ranPosY, 0.0f));
 						}
 					}
@@ -1354,7 +1370,7 @@ void GameScreen(float deltaTasSeconds)
 				if (1000.0f <= ForceWeight_Addition - (ForceWeight_Addition / 2)) { ForceWeight = 1000.0f; }
 				else if (ForceWeight_Minius < (ForceWeight_Addition / 2)) { ForceWeight = ForceWeight_Addition - ForceWeight_Minius; }
 
-				float ForceModifier = -(40.0f + 1.5*ForceWeight);
+				float ForceModifier = -(40.0f + 1.5f*ForceWeight);
 
 				glm::vec3 sizeofShockWave;
 				if (speedControlSW) { sizeofShockWave = morphmath.Lerp(glm::vec3(5.0f, 5.0f, 5.0f), glm::vec3(5.0f + (ForceWeight*0.1f), 5.0f + (ForceWeight*0.1f), 5.0f + (ForceWeight*0.1f)), 100.0f, PShockWaveCounter[i]); }
@@ -1405,7 +1421,7 @@ void GameScreen(float deltaTasSeconds)
 		for (int j = 0; j < NumberOfEnemies; j++)
 		{
 			m.B = Enemies[j];
-			float ranPosj = rand() % 80 - 40;
+			float ranPosj = static_cast<float>(rand() % 80 - 40);
 			//object is [NOT idle]
 			if (!m.B.AreIdle) {
 				if (!m.B.inAir &&
@@ -1732,7 +1748,7 @@ void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 			Ty = (Ty*MovementModifier);
 			Tz = (Tz*MovementModifier);
 			
-			mousepositionX -= Tx; mousepositionY += Ty;
+			mousepositionX -= static_cast<int>(Tx); mousepositionY += static_cast<int>(Ty);
 			//
 			//std::cout << "[" << screen_pos_x << "] [" << screen_pos_y << "]" << std::endl;
 			if (Tx != 0.0f || Ty != 0.0f || Tz != 0.0f) { SetCursorPos(glutGet((GLenum)GLUT_WINDOW_X)+mousepositionX, glutGet((GLenum)GLUT_WINDOW_Y)+mousepositionY); }
@@ -1787,7 +1803,7 @@ void ControllerDelayButton(int portNumber,float deltaTasSeconds)
 						else { inOptions = false; inMenu = true; }
 						MenuSwitchCounter[portNumber] = 1.0f;
 					}
-					else { exit(0); }
+					else { exitProgram(); }
 				}
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_LEFT_SHOULDER)) { std::cout << "[LEFT_SHOULDER]"; }
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_RIGHT_SHOULDER)) { std::cout << "[RIGHT_SHOULDER]"; }
@@ -2051,14 +2067,12 @@ void KeyboardCallbackFunction(unsigned char key, int x, int y)
 	if (inMenu) {
 		switch (key)
 		{
-		case 27: 
-			{ exit(0); }// the escape key
-			 break;
+		case 27: // the escape key
+			exitProgram();
+			break;
 		case ' ':
-			{
-				setBoardStart();
-				inMenu = false; inGame = true;
-			}
+			setBoardStart();
+			inMenu = false; inGame = true;
 			break;
 		case '+':
 		case '=':
@@ -2274,8 +2288,8 @@ void MouseClickCallbackFunction(int button, int state, int x, int y)
 */
 void MouseMotionCallbackFunction(int x, int y) //while a mouse button is pressed
 {
-	float changex = x - mousepositionX;
-	float changey = y - mousepositionY;
+	float changex = static_cast<float>(x - mousepositionX);
+	float changey = static_cast<float>(y - mousepositionY);
 	mousepositionX = x;
 	mousepositionY = y;
 	MPosToOPosX = ((((float)mousepositionX / (float)windowWidth) * 56) - 28);
@@ -2887,7 +2901,7 @@ int main(int argc, char **argv)
 {
 	//Command Screen
 	HWND consoleWindow1 = GetConsoleWindow();
-	SetConsoleTitle("Rift Ball");
+	SetConsoleTitle("Rift Ball : Console");
 	SetWindowPos(consoleWindow1, NULL, 10, 10, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 	//Initialize the window and OpenGL properly
 	glutInit(&argc, argv);
@@ -2920,8 +2934,6 @@ int main(int argc, char **argv)
 	// start the event handler
 	glutMainLoop();
 
-
-	delete shader; shader = NULL;
 
 	return 0;
 }

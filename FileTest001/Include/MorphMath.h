@@ -2,9 +2,6 @@
 
 #include <iostream>
 #include <math.h>
-#include <GLUT\glut.h>
-#include <glm\glm\glm.hpp>
-#include <glm\glm\gtx\rotate_vector.hpp>
 #include <string>
 
 class MorphMath {
