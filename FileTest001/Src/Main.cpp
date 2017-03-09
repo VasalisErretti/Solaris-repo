@@ -1,13 +1,3 @@
-
-//	#pragma comment(lib, "DevIL.lib")
-//	#pragma comment(lib, "glew32.lib")
-//	#pragma comment(lib, "glut32.lib")
-//	#pragma comment(lib, "ILU.lib")
-//	#pragma comment(lib, "ILUT.lib")
-//	#pragma comment(lib, "XInput.lib")
-//	#pragma comment(lib, "../Include/FMOD/fmod_vc.lib")
-
-
 // Core Libraries
 #define WIN32_LEAN_AND_MEAN //cmd
 #include <Windows.h> //cmd
@@ -84,18 +74,13 @@ const int NumberOfObjects = 7; GameObject Objects[NumberOfObjects];
 const int NumberOfSpecials = 10; GameObject Specials[NumberOfSpecials];
 const int NumberOfEnemies = 12; GameObject Enemies[12];
 GameObject ShadowObject[2];
-//Menu Screens
-const int NumberOfPlaneForText = 5; GameObject planeForText[NumberOfPlaneForText];
-//Sliders
+const int NumberOfPlaneForText = 5; GameObject planeForText[NumberOfPlaneForText];//Menu Screens
 const int NumberOfSliders = 10; GameObject planeForSliders[NumberOfSliders]; GameObject ButtonForSliders[NumberOfSliders];
-Sliders Slider[NumberOfSliders];
-//Buttons
+Sliders Slider[NumberOfSliders];//Sliders
 const int NumberOfButtons = 7; GameObject ButtonObjects[NumberOfButtons];
-Buttons Button[NumberOfButtons];
-//Boarders
-const int NumberOfBorders = 1; GameObject Borders[NumberOfBorders];
-//Materials
-std::map<std::string, std::shared_ptr<Material>> materials;
+Buttons Button[NumberOfButtons];//Buttons
+const int NumberOfBorders = 1; GameObject Borders[NumberOfBorders];//Boarders
+std::map<std::string, std::shared_ptr<Material>> materials;//Materials
 //Framebuffer objects
 FrameBufferObject fbo;
 
@@ -144,6 +129,7 @@ FMOD::Channel *drumChannel;
 //Text
 RenderText SystemText;
 Manifold m;
+
 
 //////////////////////////////////////////////////////////////////////
 
@@ -300,142 +286,560 @@ void WhatCameraIsLookingAt()
 	else { }
 }
 
+
+/* function ControllerDelayButton()
+* Description:
+*   - this is called to get inputs from controllers
+*/
+void ControllerDelayButton(int portNumber, float deltaTasSeconds)
+{
+	float MovementModifier = 12.0f;
+
+
+	if (inGame) {
+		if (cameraMode == 0) {
+			//JoySticks
+			if (PlayerTeam[portNumber] == 0) {
+				float Tx = 0.0f; float Ty = 0.0f; float Tz = 0.0f; float rotY = 0.0f;
+				//checks to see if the sticks are out of the deadzone, then translates them based on how far the stick is pushed.
+				if (!FlipedControllers[portNumber]) {
+					if (gamepad.leftStickY < -0.1) { Tx -= gamepad.leftStickY * 0.0666666f; } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
+					if (gamepad.leftStickY > 00.1) { Tx -= gamepad.leftStickY * 0.0666666f; } //Y-Up
+					if (gamepad.leftStickX < -0.1) { Tz -= gamepad.leftStickX * 0.0666666f; } //X-Left
+					if (gamepad.leftStickX > 00.1) { Tz -= gamepad.leftStickX * 0.0666666f; } //X-Right
+				}
+				else {
+					if (gamepad.leftStickY < -0.1) { Tx -= gamepad.leftStickY * -0.0666666f; } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
+					if (gamepad.leftStickY > 00.1) { Tx -= gamepad.leftStickY * -0.0666666f; } //Y-Up
+					if (gamepad.leftStickX < -0.1) { Tz -= gamepad.leftStickX * -0.0666666f; } //X-Left
+					if (gamepad.leftStickX > 00.1) { Tz -= gamepad.leftStickX * -0.0666666f; } //X-Right
+				}
+
+				if (Tx > 00.055f) { Tx = 00.055f; }
+				else if (Tx < -0.055f) { Tx = -0.055f; }
+				if (Tz > 00.055f) { Tz = 00.055f; }
+				else if (Tz < -0.055f) { Tz = -0.055f; }
+				Tx = Tx * 1.25f; Ty = Ty * 1.25f; Tz = Tz * 1.25f;
+
+				if (gamepad.rightStickX > 00.1) { rotY -= gamepad.rightStickX * 0.0666666f; }
+				if (gamepad.rightStickX < -0.1) { rotY -= gamepad.rightStickX * 0.0666666f; }
+
+				Tx = ((Tx*MovementModifier*0.750f));//(Tx*MovementModifier)*(Tx*MovementModifier));
+				Ty = ((Ty*MovementModifier*0.750f));//(Ty*MovementModifier)*(Ty*MovementModifier));
+				Tz = ((Tz*MovementModifier*0.750f));//(Tz*MovementModifier)*(Tz*MovementModifier));
+
+				Players[portNumber].setForceOnObject(glm::vec3(Tx, Ty, Tz));
+				Players[portNumber].setVelocity(glm::vec3(Tx, Ty, Tz)*Players[portNumber].SprintSpeed);
+				Players[portNumber].ForwardDirection = (Players[portNumber].Position() - (Players[portNumber].Position() + Players[portNumber].Velocity()));
+			}
+			if (PlayerTeam[portNumber] == 1) {
+				float Tx = 0.0f; float Ty = 0.0f; float Tz = 0.0f; float rotY = 0.0f;
+				//checks to see if the sticks are out of the deadzone, then translates them based on how far the stick is pushed.
+				if (!FlipedControllers[portNumber]) {
+					if (gamepad.leftStickY < -0.1) { Tx += gamepad.leftStickY * 0.0666666f; } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
+					if (gamepad.leftStickY > 00.1) { Tx += gamepad.leftStickY * 0.0666666f; } //Y-Up
+					if (gamepad.leftStickX < -0.1) { Tz += gamepad.leftStickX * 0.0666666f; } //X-Left
+					if (gamepad.leftStickX > 00.1) { Tz += gamepad.leftStickX * 0.0666666f; } //X-Right
+				}
+				else {
+					if (gamepad.leftStickY < -0.1) { Tx -= gamepad.leftStickY * 0.0666666f; } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
+					if (gamepad.leftStickY > 00.1) { Tx -= gamepad.leftStickY * 0.0666666f; } //Y-Up
+					if (gamepad.leftStickX < -0.1) { Tz -= gamepad.leftStickX * 0.0666666f; } //X-Left
+					if (gamepad.leftStickX > 00.1) { Tz -= gamepad.leftStickX * 0.0666666f; } //X-Right
+				}
+
+				if (Tx > 00.055f) { Tx = 00.055f; }
+				else if (Tx < -0.055f) { Tx = -0.055f; }
+				if (Tz > 00.055f) { Tz = 00.055f; }
+				else if (Tz < -0.055f) { Tz = -0.055f; }
+				Tx = Tx * 1.25f; Ty = Ty * 1.25f; Tz = Tz * 1.25f;
+
+				if (gamepad.rightStickX > 0.1) { rotY -= gamepad.rightStickX * 0.0666666f; }
+				if (gamepad.rightStickX < -0.1) { rotY -= gamepad.rightStickX * 0.0666666f; }
+
+				Tx = ((Tx*MovementModifier*0.750f));//(Tx*MovementModifier)*(Tx*MovementModifier));
+				Ty = ((Ty*MovementModifier*0.750f));//(Ty*MovementModifier)*(Ty*MovementModifier));
+				Tz = ((Tz*MovementModifier*0.750f));//(Tz*MovementModifier)*(Tz*MovementModifier));
+
+				Players[portNumber].setForceOnObject(glm::vec3(Tx, Ty, Tz));
+				Players[portNumber].setVelocity(glm::vec3(Tx, Ty, Tz)*Players[portNumber].SprintSpeed);
+				Players[portNumber].ForwardDirection = (Players[portNumber].Position() - (Players[portNumber].Position() + Players[portNumber].Velocity()));
+			}
+		}
+		else if (cameraMode == 1) {
+			if (portNumber >= 0) {
+				float Tmovement = 0.0f; float yaw = 0.0f; float pitch = 0.0f;
+				//checks to see if the sticks are out of the deadzone, then translates them based on how far the stick is pushed.
+
+				if (!FlipedControllers[portNumber]) {
+					if (gamepad.leftStickY < -0.1) { Tmovement = (MovementModifier * (gamepad.leftStickY * 0.0666666f)); } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
+					if (gamepad.leftStickY > 00.1) { Tmovement = (MovementModifier * (gamepad.leftStickY * 0.0666666f)); } //Y-Up
+					if (gamepad.leftStickX < -0.1) { yaw = (gamepad.leftStickX * -0.0666666f); } //X-Left
+					if (gamepad.leftStickX > 00.1) { yaw = (gamepad.leftStickX * -0.0666666f); } //X-Right
+
+					if (gamepad.rightStickY > 00.1) { pitch = gamepad.rightStickY * 0.0666666f; }
+					if (gamepad.rightStickY < -0.1) { pitch = gamepad.rightStickY * 0.0666666f; }
+					if (gamepad.rightStickX < -0.1) { yaw = (gamepad.rightStickX * -0.0666666f); } //X-Left
+					if (gamepad.rightStickX > 00.1) { yaw = (gamepad.rightStickX * -0.0666666f); } //X-Right
+				}
+				else {
+					if (gamepad.leftStickY < -0.1) { Tmovement = -(MovementModifier * (gamepad.leftStickY * 0.0666666f)); } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
+					if (gamepad.leftStickY > 00.1) { Tmovement = -(MovementModifier * (gamepad.leftStickY * 0.0666666f)); } //Y-Up
+					if (gamepad.leftStickX < -0.1) { yaw = -(gamepad.leftStickX * -0.0666666f); } //X-Left
+					if (gamepad.leftStickX > 00.1) { yaw = -(gamepad.leftStickX * -0.0666666f); } //X-Right
+
+					if (gamepad.rightStickY > 00.1) { pitch = -gamepad.rightStickY * 0.0666666f; }
+					if (gamepad.rightStickY < -0.1) { pitch = -gamepad.rightStickY * 0.0666666f; }
+					if (gamepad.rightStickX < -0.1) { yaw = -(gamepad.rightStickX * -0.0666666f); } //X-Left
+					if (gamepad.rightStickX > 00.1) { yaw = -(gamepad.rightStickX * -0.0666666f); } //X-Right
+				}
+
+				//yaw
+				rightVector = glm::cross(forwardVector[portNumber], glm::vec3(0.0f, 1.0f, 0.0f));
+				rightVector = glm::normalize(rightVector);
+				forwardVector[portNumber] = glm::rotate(forwardVector[portNumber], yaw, glm::vec3(0.0f, 1.0f, 0.0f));
+				//pitch
+				rightVector = glm::cross(forwardVector[portNumber], glm::vec3(0.0f, 1.0f, 0.0f));
+				rightVector = glm::normalize(rightVector);
+				forwardVector[portNumber] = glm::rotate(forwardVector[portNumber], pitch, rightVector);
+				//player position
+				glm::vec3 forwardVectorTemp = glm::vec3(forwardVector[portNumber].x, 0.0f, forwardVector[portNumber].z);
+				Players[portNumber].ForwardDirection = (forwardVectorTemp * -0.001f);
+				Players[portNumber].setForceOnObject((Tmovement * forwardVectorTemp)*0.5f);
+				Players[portNumber].setVelocity((Tmovement * forwardVectorTemp)*0.5f*Players[portNumber].SprintSpeed);
+				//camera position
+				cameraPosition[portNumber] = glm::vec3(Players[portNumber].Position().x - (forwardVector[portNumber].x*6.0f),
+					Players[portNumber].Position().y + (Players[portNumber].Radius().y*2.0f),
+					Players[portNumber].Position().z - (forwardVector[portNumber].z*6.0f));
+				//shockwace position
+			}
+		}
+		//Buttons
+		if (portNumber >= 0) {
+			if (MenuSwitchCounter[portNumber] > 0.0f) { MenuSwitchCounter[portNumber] -= deltaTasSeconds; }
+			else {
+				//first press of [LEFT_TRIGGERED]
+				if (gamepad.leftTrigger > 0.2 && Left_TRIGGERED[portNumber] == false) { Left_TRIGGERED[portNumber] = true; std::cout << "[LEFT_TRIGGERED][-]"; }
+				//[LEFT_TRIGGERED] was pressed last tic
+				else if (Left_TRIGGERED[portNumber] == true) {
+					//holding [LEFT_TRIGGERED]
+					if (gamepad.leftTrigger > 0.2) {}
+					//[LEFT_TRIGGERED] released
+					else {
+						Left_TRIGGERED[portNumber] = false;
+						MenuSwitchCounter[portNumber] = 0.70f;
+						std::cout << "[LEFT_TRIGGERED][+]";
+					}
+				}
+
+				//first press of [RIGHT_TRIGGERED]
+				if (gamepad.rightTrigger > 0.2 && Right_TRIGGERED[portNumber] == false) { Right_TRIGGERED[portNumber] = true; std::cout << "[RIGHT_TRIGGERED][-]"; }
+				//[RIGHT_TRIGGERED] was pressed last tic
+				else if (Right_TRIGGERED[portNumber] == true) {
+					//holding [RIGHT_TRIGGERED]
+					if (gamepad.rightTrigger > 0.2) {
+						PShockWaveChargeUp[portNumber] += deltaTasSeconds;
+						//std::cout << "	[C](" << portNumber << ")[" << PShockWaveChargeUp[portNumber] << "]" << std::endl;
+					}
+					//[RIGHT_TRIGGERED] released
+					else {
+						if (PShockWaveChargeUp[portNumber] < 0.50f) { PShockWaveChargeUp[portNumber] = 0.0f; }
+						Right_TRIGGERED[portNumber] = false;
+						PShockWave[portNumber] = true;
+						PShockWaveCounter[portNumber] = 0.250f;
+						MenuSwitchCounter[portNumber] = 0.60f;
+						std::cout << "[RIGHT_TRIGGERED][+]";
+					}
+					Players[portNumber].setVelocity(Players[portNumber].Velocity()*0.5f);
+				}
+
+				////first press of [A]
+				//if (gamepad.IsPressed(XINPUT_GAMEPAD_A) && AButtonDown == false) { AButtonDown = true; std::cout << "[A][-]"; }
+				////[A] was pressed last tic
+				//else if (gamepad.WasPressed(XINPUT_GAMEPAD_A) && AButtonDown == true) {
+				//	//holding [A]
+				//	if (gamepad.IsPressed(XINPUT_GAMEPAD_A)) {
+				//		PShockWaveChargeUp[portNumber] += deltaTasSeconds;
+				//		std::cout << "	(" << portNumber << ")[" << PShockWaveChargeUp[portNumber] << "]" << std::endl;
+				//	}
+				//	//[A] released
+				//	else {
+				//		if (PShockWaveChargeUp[portNumber] < 0.50f) { PShockWaveChargeUp[portNumber] = 0.0f; }
+				//		AButtonDown = false;
+				//		PShockWave[portNumber] = true;
+				//		PShockWaveCounter[portNumber] = 0.250f;
+				//		MenuSwitchCounter[portNumber] = 0.70f;
+				//		std::cout << "[A][+]";
+				//	}
+				//	Players[portNumber].setVelocity(Players[portNumber].Velocity()*0.5f);
+				//}
+
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_A)) {
+					if (Players[portNumber].inAir == false && Players[portNumber].IsJumping == false) {
+						Players[portNumber].inAir = true; Players[portNumber].IsJumping = true;
+						Players[portNumber].onObject = false;
+						Players[portNumber].InAirCounter = 0.25f;
+						Players[portNumber].setPosition(glm::vec3(Players[portNumber].Position().x, Players[portNumber].Position().y + (Players[portNumber].Radius().y * 0.30f), Players[portNumber].Position().z));
+					}
+				}
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_B)) {
+					if (PSprintCounter[portNumber] < PSprintCoolDown && Players[portNumber].inAir == false) {
+						PSprintCounter[portNumber] += deltaTasSeconds;
+						Players[portNumber].setVelocity(Players[portNumber].Velocity()*SprintSpeed);
+					}
+				}
+				else {
+					if (PSprintCounter[portNumber] > 0.0f && Players[portNumber].inAir == false) {
+						PSprintCounter[portNumber] -= deltaTasSeconds;
+					}
+				}
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_X)) { std::cout << "[X][-]"; }
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_Y)) {
+					Players[portNumber].setVelocity(Players[portNumber].Velocity()*0.50f);
+				}
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_LEFT_THUMB)) { std::cout << "[LEFT_THUMB][-]"; }
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_RIGHT_THUMB)) { std::cout << "[RIGHT_THUMB][-]"; }
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_UP)) { std::cout << "[DPAD_UP][-]"; }
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_DOWN)) { std::cout << "[DPAD_DOWN][-]"; }
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_LEFT)) { std::cout << "[DPAD_LEFT][-]"; }
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_RIGHT)) { std::cout << "[DPAD_RIGHT][-]"; }
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_START)) {
+					std::cout << "[START][-]";
+					while (1) {
+						gamepad.Refresh();
+						if (gamepad.IsPressed(XINPUT_GAMEPAD_START) && gamepad.IsPressed(XINPUT_GAMEPAD_BACK)) {
+							break;
+						}
+					}
+					MenuSwitchCounter[portNumber] = 1.0f;
+				}
+				else if (gamepad.IsPressed(XINPUT_GAMEPAD_BACK)) {
+					std::cout << "[BACK][-]";
+					inGame = false; inMenu = true;
+					MenuSwitchCounter[portNumber] = 1.0f;
+				}
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_LEFT_SHOULDER)) { std::cout << "[LEFT_SHOULDER][-]"; }
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_RIGHT_SHOULDER)) { std::cout << "[RIGHT_SHOULDER][-]"; }
+			}
+		}
+	}
+	else if (inMenu || inOptions) {
+		MovementModifier = MovementModifier*10.0f;
+
+		if (mousepositionX + screenpositionX > GetSystemMetrics(SM_CXSCREEN)) { mousepositionX = GetSystemMetrics(SM_CXSCREEN) - screenpositionX; }
+		else if (mousepositionX + screenpositionX < 0) { mousepositionX = 0 - screenpositionX; }
+		if (mousepositionY + screenpositionY > GetSystemMetrics(SM_CYSCREEN)) { mousepositionY = GetSystemMetrics(SM_CYSCREEN) - screenpositionY; }
+		else if (mousepositionY + screenpositionY < 0) { mousepositionY = 0 - screenpositionY; }
+
+		if (portNumber >= 0) {
+			float Tx = 0.0f; float Ty = 0.0f; float Tz = 0.0f; float rotY = 0.0f;
+			//checks to see if the sticks are out of the deadzone, then translates them based on how far the stick is pushed.
+			if (gamepad.leftStickY < -0.08f) { Ty -= gamepad.leftStickY * 0.0666666f; } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
+			if (gamepad.leftStickY > 00.08f) { Ty -= gamepad.leftStickY * 0.0666666f; } //Y-Up
+			if (gamepad.leftStickX < -0.08f) { Tx -= gamepad.leftStickX * 0.0666666f; } //X-Left
+			if (gamepad.leftStickX > 00.08f) { Tx -= gamepad.leftStickX * 0.0666666f; } //X-Right
+
+			if (gamepad.rightStickY < -0.10f) { Ty -= gamepad.rightStickY * 0.0366666f; } //Y-Down
+			if (gamepad.rightStickY > 00.10f) { Ty -= gamepad.rightStickY * 0.0366666f; } //Y-Up
+			if (gamepad.rightStickX < -0.10f) { Tx -= gamepad.rightStickX * 0.0366666f; } //X-Left
+			if (gamepad.rightStickX > 00.10f) { Tx -= gamepad.rightStickX * 0.0366666f; } //X-Right
+
+			Tx = (Tx*MovementModifier);
+			Ty = (Ty*MovementModifier);
+			Tz = (Tz*MovementModifier);
+
+			mousepositionX -= static_cast<int>(Tx); mousepositionY += static_cast<int>(Ty);
+			//
+			//std::cout << "[" << screen_pos_x << "] [" << screen_pos_y << "]" << std::endl;
+			if (Tx != 0.0f || Ty != 0.0f || Tz != 0.0f) { SetCursorPos(glutGet((GLenum)GLUT_WINDOW_X) + mousepositionX, glutGet((GLenum)GLUT_WINDOW_Y) + mousepositionY); }
+
+			if (MenuSwitchCounter[portNumber] > 0.0f) { MenuSwitchCounter[portNumber] -= deltaTasSeconds; }
+			else {
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_A)) {
+					std::cout << "[A]";
+					INPUT input;
+					input.type = INPUT_MOUSE;
+					input.mi.dwFlags = (MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP);
+					input.mi.mouseData = 0;
+					input.mi.dwExtraInfo = NULL;
+					input.mi.time = 0;
+					SendInput(1, &input, sizeof(INPUT));
+
+					bool pressedASlider = false;
+					for (unsigned int i = 0; i < NumberOfSliders; i++) {
+						//move nob along the slider
+						if (Slider[i].moveNob(MPosToOPosX, MPosToOPosY)) { ButtonForSliders[i].setPosition(glm::vec3(MPosToOPosX, 0.02f, Slider[i].SBar_Pos.z)); pressedASlider = true; }
+					}
+					if (!pressedASlider) { MenuSwitchCounter[portNumber] = 0.40f; }
+				}
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_B)) {
+					std::cout << "[B]";
+					INPUT input;
+					input.type = INPUT_MOUSE;
+					input.mi.dwFlags = (MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP);
+					input.mi.mouseData = 0;
+					input.mi.dwExtraInfo = NULL;
+					input.mi.time = 0;
+					SendInput(1, &input, sizeof(INPUT));
+
+					MenuSwitchCounter[portNumber] = 1.0f;
+				}
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_X)) { std::cout << "[X]"; }
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_Y)) { std::cout << "[Y]"; }
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_UP)) { std::cout << "[DPAD_UP]"; }
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_DOWN)) { std::cout << "[DPAD_DOWN]"; }
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_LEFT)) { std::cout << "[DPAD_LEFT]"; }
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_RIGHT)) { std::cout << "[DPAD_RIGHT]"; }
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_START)) {
+					std::cout << "[START]";
+					setBoardStart();
+					inMenu = false; inGame = true;
+					MenuSwitchCounter[portNumber] = 1.0f;
+				}
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_BACK)) {
+					std::cout << "[BACK]";
+					if (inOptions) {
+						if (inOptionsTab != 0) { inOptionsTab = 0; }
+						else { inOptions = false; inMenu = true; }
+						MenuSwitchCounter[portNumber] = 1.0f;
+					}
+					else { exitProgram(); }
+				}
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_LEFT_SHOULDER)) { std::cout << "[LEFT_SHOULDER]"; }
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_RIGHT_SHOULDER)) { std::cout << "[RIGHT_SHOULDER]"; }
+			}
+		}
+	}
+}
+
+/* function KeyBoardDelayButton()
+* Description:
+*   - this is called to get inputs from the keyboard
+*	- only called during the game
+*/
+void KeyBoardDelayButton(float deltaTasSeconds) {
+
+	for (int playerNumberControl = 0; playerNumberControl < NumberOfPlayers; playerNumberControl++) {
+		if (cameraMode == 0) {
+			float Tx[2]{ 0.0f,0.0f }; float Ty[2]{ 0.0f,0.0f }; float Tz[2]{ 0.0f,0.0f };
+
+			if (MenuSwitchCounter[playerNumberControl] > 0.0f) { MenuSwitchCounter[playerNumberControl] -= deltaTasSeconds; }
+			else {
+				if (playerNumberControl == 0) {
+					//player One
+					if (!FlipedControllers[playerNumberControl]) {
+						if (keyDown['w'] || keyDown['W']) { Tx[playerNumberControl] = -0.20f; }
+						if (keyDown['s'] || keyDown['S']) { Tx[playerNumberControl] = 00.20f; }
+						if (keyDown['a'] || keyDown['A']) { Tz[playerNumberControl] = 00.20f; }
+						if (keyDown['d'] || keyDown['D']) { Tz[playerNumberControl] = -0.20f; }
+					}
+					else {
+						if (keyDown['w'] || keyDown['W']) { Tx[playerNumberControl] = 00.20f; }
+						if (keyDown['s'] || keyDown['S']) { Tx[playerNumberControl] = -0.20f; }
+						if (keyDown['a'] || keyDown['A']) { Tz[playerNumberControl] = -0.20f; }
+						if (keyDown['d'] || keyDown['D']) { Tz[playerNumberControl] = 00.20f; }
+					}
+
+
+					if (keyDown['q'] || keyDown['Q']) {
+						if (Players[playerNumberControl].inAir == false && Players[playerNumberControl].IsJumping == false) {
+							Players[playerNumberControl].inAir = true; Players[playerNumberControl].IsJumping = true;
+							Players[playerNumberControl].onObject = false;
+							Players[playerNumberControl].InAirCounter = 0.25f;
+							Players[playerNumberControl].setPosition(glm::vec3(Players[playerNumberControl].Position().x, Players[playerNumberControl].Position().y + (Players[playerNumberControl].Radius().y * 0.30f), Players[playerNumberControl].Position().z));
+						}
+					}
+					//first press of [RIGHT_TRIGGERED]
+					if ((keyDown['e'] || keyDown['E']) && Right_TRIGGERED[playerNumberControl] == false) { Right_TRIGGERED[playerNumberControl] = true; }
+					//[RIGHT_TRIGGERED] was pressed last tic
+					else if (Right_TRIGGERED[playerNumberControl] == true) {
+						//holding [RIGHT_TRIGGERED]
+						if (keyDown['e'] || keyDown['E']) {
+							PShockWaveChargeUp[playerNumberControl] += deltaTasSeconds;
+							//std::cout << "	[C](" << 0 << ")[" << PShockWaveChargeUp[0] << "]" << std::endl;
+						}
+						//[RIGHT_TRIGGERED] released
+						else {
+							if (PShockWaveChargeUp[playerNumberControl] < 0.50f) { PShockWaveChargeUp[playerNumberControl] = 0.0f; }
+							Right_TRIGGERED[playerNumberControl] = false;
+							PShockWave[playerNumberControl] = true;
+							PShockWaveCounter[playerNumberControl] = 0.250f;
+							MenuSwitchCounter[playerNumberControl] = 0.60f;
+							//std::cout << "[RIGHT_TRIGGERED][+]";
+						}
+						Players[playerNumberControl].setVelocity(Players[playerNumberControl].Velocity()*0.5f);
+					}
+				}
+				else if (playerNumberControl == 1) {
+					//player Two
+					if (!FlipedControllers[playerNumberControl]) {
+						if (keyDown['i'] || keyDown['I']) { Tx[playerNumberControl] = 00.20f; }
+						if (keyDown['k'] || keyDown['K']) { Tx[playerNumberControl] = -0.20f; }
+						if (keyDown['j'] || keyDown['J']) { Tz[playerNumberControl] = -0.20f; }
+						if (keyDown['l'] || keyDown['L']) { Tz[playerNumberControl] = 00.20f; }
+					}
+					else {
+						if (keyDown['i'] || keyDown['I']) { Tx[playerNumberControl] = -0.20f; }
+						if (keyDown['k'] || keyDown['K']) { Tx[playerNumberControl] = 00.20f; }
+						if (keyDown['j'] || keyDown['J']) { Tz[playerNumberControl] = 00.20f; }
+						if (keyDown['l'] || keyDown['L']) { Tz[playerNumberControl] = -0.20f; }
+					}
+					if (keyDown['o'] || keyDown['O']) {
+						if (Players[playerNumberControl].inAir == false && Players[playerNumberControl].IsJumping == false) {
+							Players[playerNumberControl].inAir = true; Players[playerNumberControl].IsJumping = true;
+							Players[playerNumberControl].onObject = false;
+							Players[playerNumberControl].InAirCounter = 0.25f;
+							Players[playerNumberControl].setPosition(glm::vec3(Players[playerNumberControl].Position().x, Players[playerNumberControl].Position().y + (Players[playerNumberControl].Radius().y * 0.30f), Players[playerNumberControl].Position().z));
+						}
+					}
+					//first press of [RIGHT_TRIGGERED]
+					if ((keyDown['U'] || keyDown['u']) && Right_TRIGGERED[playerNumberControl] == false) { Right_TRIGGERED[playerNumberControl] = true; }
+					//[RIGHT_TRIGGERED] was pressed last tic
+					else if (Right_TRIGGERED[playerNumberControl] == true) {
+						//holding [RIGHT_TRIGGERED]
+						if (keyDown['U'] || keyDown['u']) {
+							PShockWaveChargeUp[playerNumberControl] += deltaTasSeconds;
+							//std::cout << "	[C](" << 1 << ")[" << PShockWaveChargeUp[1] << "]" << std::endl;
+						}
+						//[RIGHT_TRIGGERED] released
+						else {
+							if (PShockWaveChargeUp[playerNumberControl] < 0.50f) { PShockWaveChargeUp[playerNumberControl] = 0.0f; }
+							Right_TRIGGERED[playerNumberControl] = false;
+							PShockWave[playerNumberControl] = true;
+							PShockWaveCounter[playerNumberControl] = 0.250f;
+							MenuSwitchCounter[playerNumberControl] = 0.60f;
+							//std::cout << "[RIGHT_TRIGGERED][+]";
+						}
+						Players[playerNumberControl].setVelocity(Players[playerNumberControl].Velocity()*0.5f);
+					}
+				}
+
+
+				Players[playerNumberControl].setForceOnObject(glm::vec3(Tx[playerNumberControl], Ty[playerNumberControl], Tz[playerNumberControl]));
+				Players[playerNumberControl].setVelocity(glm::vec3(Tx[playerNumberControl], Ty[playerNumberControl], Tz[playerNumberControl])*SprintSpeed);
+				Players[playerNumberControl].ForwardDirection = (Players[playerNumberControl].Position() - (Players[playerNumberControl].Position() + Players[playerNumberControl].Velocity()));
+			}
+		}
+		else if (cameraMode == 1) {
+			float Tmovement[2]{ 0.0f,0.0f }; float yaw[2]{ 0.0f,0.0f }; float pitch[2]{ 0.0f,0.0f };
+
+
+			if (MenuSwitchCounter[playerNumberControl] > 0.0f) { MenuSwitchCounter[playerNumberControl] -= deltaTasSeconds; }
+			else {
+				if (playerNumberControl == 0) {
+					//player One //checks to see if the sticks are out of the deadzone, then translates them based on how far the stick is pushed.
+					if (!FlipedControllers[playerNumberControl]) {
+						if (keyDown['w'] || keyDown['W']) { Tmovement[playerNumberControl] = 00.50f; }
+						if (keyDown['s'] || keyDown['S']) { Tmovement[playerNumberControl] = -0.50f; }
+						if (keyDown['a'] || keyDown['A']) { yaw[playerNumberControl] = 00.05f; }
+						if (keyDown['d'] || keyDown['D']) { yaw[playerNumberControl] = -0.05f; }
+					}
+					else {
+						if (keyDown['w'] || keyDown['W']) { Tmovement[playerNumberControl] = -0.50f; }
+						if (keyDown['s'] || keyDown['S']) { Tmovement[playerNumberControl] = 00.50f; }
+						if (keyDown['a'] || keyDown['A']) { yaw[playerNumberControl] = -0.05f; }
+						if (keyDown['d'] || keyDown['D']) { yaw[playerNumberControl] = 00.05f; }
+					}
+
+					if (keyDown['q'] || keyDown['Q']) {
+						if (Players[playerNumberControl].inAir == false && Players[playerNumberControl].IsJumping == false) {
+							Players[playerNumberControl].inAir = true; Players[playerNumberControl].IsJumping = true;
+							Players[playerNumberControl].onObject = false;
+							Players[playerNumberControl].InAirCounter = 0.25f;
+							Players[playerNumberControl].setPosition(glm::vec3(Players[playerNumberControl].Position().x, Players[playerNumberControl].Position().y + (Players[playerNumberControl].Radius().y * 0.30f), Players[playerNumberControl].Position().z));
+						}
+					}
+					//first press of [RIGHT_TRIGGERED]
+					if ((keyDown['e'] || keyDown['E']) && Right_TRIGGERED[playerNumberControl] == false) { Right_TRIGGERED[playerNumberControl] = true; }
+					//[RIGHT_TRIGGERED] was pressed last tic
+					else if (Right_TRIGGERED[playerNumberControl] == true) {
+						//holding [RIGHT_TRIGGERED]
+						if (keyDown['e'] || keyDown['E']) {
+							PShockWaveChargeUp[playerNumberControl] += deltaTasSeconds;
+							//std::cout << "	[C](" << 0 << ")[" << PShockWaveChargeUp[0] << "]" << std::endl;
+						}
+						//[RIGHT_TRIGGERED] released
+						else {
+							if (PShockWaveChargeUp[playerNumberControl] < 0.50f) { PShockWaveChargeUp[playerNumberControl] = 0.0f; }
+							Right_TRIGGERED[playerNumberControl] = false;
+							PShockWave[playerNumberControl] = true;
+							PShockWaveCounter[playerNumberControl] = 0.250f;
+							MenuSwitchCounter[playerNumberControl] = 0.60f;
+							//std::cout << "[RIGHT_TRIGGERED][+]";
+						}
+						Players[playerNumberControl].setVelocity(Players[playerNumberControl].Velocity()*0.5f);
+					}
+				}
+				if (playerNumberControl == 1) {
+					//player Two
+					if (!FlipedControllers[playerNumberControl]) {
+						if (keyDown['i'] || keyDown['I']) { Tmovement[playerNumberControl] = 00.50f; }
+						if (keyDown['k'] || keyDown['K']) { Tmovement[playerNumberControl] = -0.50f; }
+						if (keyDown['j'] || keyDown['J']) { yaw[playerNumberControl] = 00.05f; }
+						if (keyDown['l'] || keyDown['L']) { yaw[playerNumberControl] = -0.05f; }
+					}
+					else {
+						if (keyDown['i'] || keyDown['I']) { Tmovement[playerNumberControl] = -0.50f; }
+						if (keyDown['k'] || keyDown['K']) { Tmovement[playerNumberControl] = 00.50f; }
+						if (keyDown['j'] || keyDown['J']) { yaw[playerNumberControl] = -0.05f; }
+						if (keyDown['l'] || keyDown['L']) { yaw[playerNumberControl] = 00.05f; }
+					}
+					if (keyDown['o'] || keyDown['O']) {
+						if (Players[playerNumberControl].inAir == false && Players[playerNumberControl].IsJumping == false) {
+							Players[playerNumberControl].inAir = true; Players[playerNumberControl].IsJumping = true;
+							Players[playerNumberControl].onObject = false;
+							Players[playerNumberControl].InAirCounter = 0.25f;
+							Players[playerNumberControl].setPosition(glm::vec3(Players[playerNumberControl].Position().x, Players[playerNumberControl].Position().y + (Players[playerNumberControl].Radius().y * 0.30f), Players[playerNumberControl].Position().z));
+						}
+					}
+					//first press of [RIGHT_TRIGGERED]
+					if ((keyDown['U'] || keyDown['u']) && Right_TRIGGERED[playerNumberControl] == false) { Right_TRIGGERED[playerNumberControl] = true; }
+					//[RIGHT_TRIGGERED] was pressed last tic
+					else if (Right_TRIGGERED[playerNumberControl] == true) {
+						//holding [RIGHT_TRIGGERED]
+						if (keyDown['U'] || keyDown['u']) {
+							PShockWaveChargeUp[playerNumberControl] += deltaTasSeconds;
+							//std::cout << "	[C](" << 1 << ")[" << PShockWaveChargeUp[1] << "]" << std::endl;
+						}
+						//[RIGHT_TRIGGERED] released
+						else {
+							if (PShockWaveChargeUp[playerNumberControl] < 0.50f) { PShockWaveChargeUp[playerNumberControl] = 0.0f; }
+							Right_TRIGGERED[playerNumberControl] = false;
+							PShockWave[playerNumberControl] = true;
+							PShockWaveCounter[playerNumberControl] = 0.250f;
+							MenuSwitchCounter[playerNumberControl] = 0.60f;
+							//std::cout << "[RIGHT_TRIGGERED][+]";
+						}
+						Players[playerNumberControl].setVelocity(Players[playerNumberControl].Velocity()*0.5f);
+					}
+				}
+			}
+
+			//yaw
+			rightVector = glm::cross(forwardVector[playerNumberControl], glm::vec3(0.0f, 1.0f, 0.0f));
+			rightVector = glm::normalize(rightVector);
+			forwardVector[playerNumberControl] = glm::rotate(forwardVector[playerNumberControl], yaw[playerNumberControl], glm::vec3(0.0f, 1.0f, 0.0f));
+			//pitch
+			rightVector = glm::cross(forwardVector[playerNumberControl], glm::vec3(0.0f, 1.0f, 0.0f));
+			rightVector = glm::normalize(rightVector);
+			forwardVector[playerNumberControl] = glm::rotate(forwardVector[playerNumberControl], pitch[playerNumberControl], rightVector);
+			//player position
+			glm::vec3 forwardVectorTemp = glm::vec3(forwardVector[playerNumberControl].x, 0.0f, forwardVector[playerNumberControl].z);
+			Players[playerNumberControl].ForwardDirection = (forwardVectorTemp * -0.001f);
+			Players[playerNumberControl].setForceOnObject((Tmovement[playerNumberControl] * forwardVectorTemp)*0.5f);
+			Players[playerNumberControl].setVelocity((Tmovement[playerNumberControl] * forwardVectorTemp)*0.5f*SprintSpeed);
+			//camera position
+			cameraPosition[playerNumberControl] = glm::vec3(Players[playerNumberControl].Position().x - (forwardVector[playerNumberControl].x*6.0f),
+				Players[playerNumberControl].Position().y + (Players[playerNumberControl].Radius().y*2.0f),
+				Players[playerNumberControl].Position().z - (forwardVector[playerNumberControl].z*6.0f));
+			//shockwace position
+		}
+	}
+}
+
+
+
 //////////////////////////////////////////////////////////////////////
-
-/* function InGameDraw()
-* Description:
-*  - Draws the game screen
-*/
-void InEditorDraw(int Inum)
-{
-	auto defaultMaterial = materials["default"];
-	auto passThroughMaterial = materials["passThrough"];
-	auto textMaterial = materials["text"];
-
-
-
-	passThroughMaterial->shader->bind();
-	cameralook = Inum; //window
-	WhatCameraIsLookingAt(); //Resising Window
-	 //Draw scene//cameraViewMatrix //modelViewMatrix
-	passThroughMaterial->shader->sendUniformMat4("mvm", modelViewMatrix[Inum]);
-	passThroughMaterial->shader->sendUniformMat4("prm", projectionMatrix[Inum]);
-	passThroughMaterial->shader->sendUniformMat4("u_mvp", (modelViewMatrix[Inum] * projectionMatrix[Inum]));
-	passThroughMaterial->shader->sendUniformMat4("u_mv", modelViewMatrix[Inum]);
-	passThroughMaterial->shader->sendUniformMat4("u_lightPos_01", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01)));
-	passThroughMaterial->shader->sendUniformMat4("u_lightPos_02", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
-
-	for (unsigned int i = 0; i < NumberOfPlayers; i++) {
-		if (Players[i].Viewable) {
-			//Players
-			if (Players[i].textureHandle_hasTransparency == true) { disableCulling(); }
-			else { enableCulling(); }
-			Players[i].drawObject();
-			//Shadows
-			if (EnableShadows) {
-				if (ShadowObject[0].textureHandle_hasTransparency == true) { disableCulling(); }
-				else { enableCulling(); }
-				ShadowObject[0].setPosition(glm::vec3(Players[i].Position().x, 0.01f, Players[i].Position().z));
-				ShadowObject[0].setScale(Players[i].Scale());
-				ShadowObject[0].setRotation(Players[i].Angle());
-				ShadowObject[0].drawObject();
-			}
-			//ShockWaves
-			if (ShockWaveOn) {
-				if (ShockWaves[i].textureHandle_hasTransparency == true) { disableCulling(); }
-				else { enableCulling(); }
-				ShockWaves[i].drawObject();
-			}
-
-			//Players[i].drawHTR(shader);
-		}
-	}
-	for (unsigned int i = 0; i < NumberOfRifts; i++) {
-		if (Rifts[i].Viewable) {
-			//Rifts
-			if (Rifts[i].textureHandle_hasTransparency == true) { disableCulling(); }
-			else { enableCulling(); }
-			Rifts[i].drawObject();
-		}
-	}
-	for (unsigned int i = 0; i < NumberOfObjects; i++) {
-		if (Objects[i].Viewable) {
-			if (Objects[i].textureHandle_hasTransparency == true) { disableCulling(); }
-			else { enableCulling(); }
-			Objects[i].drawObject();
-		}
-	}
-	for (unsigned int i = 0; i < NumberOfEnemies; i++) {
-		//if (NumberOfEnemies > (sizeof(Enemies) / sizeof(Enemies[0]))) {
-		//	for (unsigned int i = (sizeof(Enemies) / sizeof(Enemies[0])); i < NumberOfEnemies; i++) {
-		//		Enemies[i].objectLoader(&Enemies[0]);
-		//		std::cout << "[" << i << "] [created more enemies]" << std::endl;
-		//	}
-		//	NumberOfEnemies = (sizeof(Enemies) / sizeof(Enemies[0]));
-		//}
-		if (Enemies[i].Viewable) {
-			//Enemies
-			if (Enemies[i].textureHandle_hasTransparency == true) { disableCulling(); }
-			else { enableCulling(); }
-			Enemies[i].drawObject();
-			//Shadows
-			if (EnableShadows) {
-				if (ShadowObject[0].textureHandle_hasTransparency == true) { disableCulling(); }
-				else { enableCulling(); }
-				ShadowObject[0].setPosition(glm::vec3(Enemies[i].Position().x, 0.01f, Enemies[i].Position().z));
-
-				if ((Enemies[i].Position().y*0.05f) > 1.50f) { ShadowObject[0].setScale(Enemies[i].Scale()*1.50f); }
-				else if ((Enemies[i].Position().y*0.05f) < 1.0f) { ShadowObject[0].setScale(Enemies[i].Scale()*1.0f); }
-				else { ShadowObject[0].setScale(Enemies[i].Scale()*(Enemies[i].Position().y*0.05f)); }
-
-				ShadowObject[0].setRotation(Enemies[i].Angle());
-				ShadowObject[0].drawObject();
-			}
-		}
-	}
-	for (unsigned int i = 0; i < NumberOfSpecials; i++) {
-		if (Specials[i].Viewable) {
-			//Specials
-			if (Specials[i].textureHandle_hasTransparency == true) { disableCulling(); }
-			else { enableCulling(); }
-			Specials[i].drawObject();
-			//Shadows
-			if (EnableShadows) {
-				if (ShadowObject[1].textureHandle_hasTransparency == true) { disableCulling(); }
-				else { enableCulling(); }
-				ShadowObject[1].setPosition(glm::vec3(Specials[i].Position().x, 0.01f, Specials[i].Position().z));
-				ShadowObject[1].setScale(Specials[i].Scale());
-				ShadowObject[1].setRotation(Specials[i].Angle());
-				ShadowObject[1].drawObject();
-			}
-		}
-	}
-
-	//passThroughMaterial->shader->unbind();
-
-
-
-	cameralook = 3; //window
-	WhatCameraIsLookingAt(); //Resising Window
-
-	SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]", -(windowWidth / 4), -(windowHeight / 4), 1.0f, glm::vec3(0.3, 0.3f, 0.9f), 1);
-
-}
-
-/* function GameField()
-* Description:
-*  - does all the functions/calculations for the game screen
-*/
-void EditorScreen(float deltaTasSeconds)
-{
-
-	//Updating Targets
-	for (int i = 0; i < NumberOfPlayers; i++)	{ Players[i].updateP(deltaTasSeconds); }
-	for (int i = 0; i < NumberOfEnemies; i++)	{ Enemies[i].update(deltaTasSeconds); }
-	for (int i = 0; i < NumberOfSpecials; i++)	{ Specials[i].update(deltaTasSeconds); }
-	for (int i = 0; i < NumberOfObjects; i++)	{ Objects[i].update(deltaTasSeconds); }
-}
-
 
 
 
@@ -463,7 +867,6 @@ void InMenuDraw(int Inum)
 	passThroughMaterial->shader->sendUniformMat4("u_lightPos_02", (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02)));
 
 	if (planeForText[0].Viewable) { planeForText[0].drawObject(); }
-
 	for (unsigned int i = 0; i <= 2; i++) {
 		if (ButtonObjects[i].Viewable) { ButtonObjects[i].drawObject(); }
 	}
@@ -491,6 +894,9 @@ void MenuScreen(float deltaTasSeconds)
 	if (mouseDown[2]) {
 		mouseDown[2] = false; 
 	}
+
+
+	
 }
 
 /* function InOptionDraw()
@@ -719,12 +1125,13 @@ void InGameDraw(int Inum)
 
 	
 	if (Inum == 0) {
-		SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]", -(windowWidth / 4), -3.0f * (windowHeight / 8), 1.0f, glm::vec3(0.3, 0.3f, 0.9f), 1);
-		SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[1]) + "]", -(windowWidth / 4), (windowHeight / 2) - (windowHeight / 8), 1.0f, glm::vec3(0.9, 0.2f, 0.2f), 1);
+		void TextDraw(Material &s, glm::mat4x4 *pvm, std::string text, float _x, float _y, float _scale, glm::vec3 color, int orientation);
+		SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]", -(windowWidth / 4.0f), -3.0f * (windowHeight / 8.0f), 1.0f, glm::vec3(0.3, 0.3f, 0.9f), 1);
+		SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[1]) + "]", -(windowWidth / 4.0f), (windowHeight / 2.0f) - (windowHeight / 8.0f), 1.0f, glm::vec3(0.9, 0.2f, 0.2f), 1);
 	}
 	else if (Inum == 1) {
-		SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]",  (windowWidth / 4), (windowHeight / 2) - (windowHeight / 8), 1.0f, glm::vec3(0.3, 0.3f, 0.9f), 1);
-		SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[1]) + "]",  (windowWidth / 4), -3.0f * (windowHeight / 8), 1.0f, glm::vec3(0.9, 0.2f, 0.2f), 1);
+		SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[0]) + "]",  (windowWidth / 4.0f), (windowHeight / 2.0f) - (windowHeight / 8.0f), 1.0f, glm::vec3(0.3, 0.3f, 0.9f), 1);
+		SystemText.TextDraw(*textMaterial, &projectionMatrix[3], "[" + std::to_string(Health[1]) + "]",  (windowWidth / 4.0f), -3.0f * (windowHeight / 8.0f), 1.0f, glm::vec3(0.9, 0.2f, 0.2f), 1);
 	}
 }
 
@@ -1491,554 +1898,10 @@ void GameScreen(float deltaTasSeconds)
 }
 
 
-/* function ControllerDelayButton()
-* Description:
-*   - this is called to get inputs from controllers
-*/
-void ControllerDelayButton(int portNumber,float deltaTasSeconds)
-{
-	float MovementModifier = 12.0f;
-
-
-	if (inGame) {
-		if (cameraMode == 0) {
-			//JoySticks
-			if (PlayerTeam[portNumber] == 0) {
-				float Tx = 0.0f; float Ty = 0.0f; float Tz = 0.0f; float rotY = 0.0f;
-				//checks to see if the sticks are out of the deadzone, then translates them based on how far the stick is pushed.
-				if (!FlipedControllers[portNumber]) {
-					if (gamepad.leftStickY < -0.1) { Tx -= gamepad.leftStickY * 0.0666666f; } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
-					if (gamepad.leftStickY > 00.1) { Tx -= gamepad.leftStickY * 0.0666666f; } //Y-Up
-					if (gamepad.leftStickX < -0.1) { Tz -= gamepad.leftStickX * 0.0666666f; } //X-Left
-					if (gamepad.leftStickX > 00.1) { Tz -= gamepad.leftStickX * 0.0666666f; } //X-Right
-				}
-				else {
-					if (gamepad.leftStickY < -0.1) { Tx -= gamepad.leftStickY * -0.0666666f; } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
-					if (gamepad.leftStickY > 00.1) { Tx -= gamepad.leftStickY * -0.0666666f; } //Y-Up
-					if (gamepad.leftStickX < -0.1) { Tz -= gamepad.leftStickX * -0.0666666f; } //X-Left
-					if (gamepad.leftStickX > 00.1) { Tz -= gamepad.leftStickX * -0.0666666f; } //X-Right
-				}
-
-				if (Tx > 00.055f) { Tx = 00.055f; } else if (Tx < -0.055f) { Tx = -0.055f; }
-				if (Tz > 00.055f) { Tz = 00.055f; } else if (Tz < -0.055f) { Tz = -0.055f; }
-				Tx = Tx * 1.25f; Ty = Ty * 1.25f; Tz = Tz * 1.25f;
-
-				if (gamepad.rightStickX > 00.1) { rotY -= gamepad.rightStickX * 0.0666666f; }
-				if (gamepad.rightStickX < -0.1) { rotY -= gamepad.rightStickX * 0.0666666f; }
-
-				Tx = ((Tx*MovementModifier*0.750f));//(Tx*MovementModifier)*(Tx*MovementModifier));
-				Ty = ((Ty*MovementModifier*0.750f));//(Ty*MovementModifier)*(Ty*MovementModifier));
-				Tz = ((Tz*MovementModifier*0.750f));//(Tz*MovementModifier)*(Tz*MovementModifier));
-
-				Players[portNumber].setForceOnObject(glm::vec3(Tx, Ty, Tz));
-				Players[portNumber].setVelocity(glm::vec3(Tx, Ty, Tz)*Players[portNumber].SprintSpeed);
-				Players[portNumber].ForwardDirection = (Players[portNumber].Position() - (Players[portNumber].Position() + Players[portNumber].Velocity()));
-			}
-			if (PlayerTeam[portNumber] == 1) {
-				float Tx = 0.0f; float Ty = 0.0f; float Tz = 0.0f; float rotY = 0.0f;
-				//checks to see if the sticks are out of the deadzone, then translates them based on how far the stick is pushed.
-				if (!FlipedControllers[portNumber]) {
-					if (gamepad.leftStickY < -0.1) { Tx += gamepad.leftStickY * 0.0666666f; } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
-					if (gamepad.leftStickY > 00.1) { Tx += gamepad.leftStickY * 0.0666666f; } //Y-Up
-					if (gamepad.leftStickX < -0.1) { Tz += gamepad.leftStickX * 0.0666666f; } //X-Left
-					if (gamepad.leftStickX > 00.1) { Tz += gamepad.leftStickX * 0.0666666f; } //X-Right
-				}
-				else {
-					if (gamepad.leftStickY < -0.1) { Tx -= gamepad.leftStickY * 0.0666666f; } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
-					if (gamepad.leftStickY > 00.1) { Tx -= gamepad.leftStickY * 0.0666666f; } //Y-Up
-					if (gamepad.leftStickX < -0.1) { Tz -= gamepad.leftStickX * 0.0666666f; } //X-Left
-					if (gamepad.leftStickX > 00.1) { Tz -= gamepad.leftStickX * 0.0666666f; } //X-Right
-				}
-
-				if (Tx > 00.055f) { Tx = 00.055f; } else if (Tx < -0.055f) { Tx = -0.055f; }
-				if (Tz > 00.055f) { Tz = 00.055f; } else if (Tz < -0.055f) { Tz = -0.055f; }
-				Tx = Tx * 1.25f; Ty = Ty * 1.25f; Tz = Tz * 1.25f;
-
-				if (gamepad.rightStickX > 0.1) { rotY -= gamepad.rightStickX * 0.0666666f; }
-				if (gamepad.rightStickX < -0.1) { rotY -= gamepad.rightStickX * 0.0666666f; }
-
-				Tx = ((Tx*MovementModifier*0.750f));//(Tx*MovementModifier)*(Tx*MovementModifier));
-				Ty = ((Ty*MovementModifier*0.750f));//(Ty*MovementModifier)*(Ty*MovementModifier));
-				Tz = ((Tz*MovementModifier*0.750f));//(Tz*MovementModifier)*(Tz*MovementModifier));
-
-				Players[portNumber].setForceOnObject(glm::vec3(Tx, Ty, Tz));
-				Players[portNumber].setVelocity(glm::vec3(Tx, Ty, Tz)*Players[portNumber].SprintSpeed);
-				Players[portNumber].ForwardDirection = (Players[portNumber].Position() - (Players[portNumber].Position() + Players[portNumber].Velocity()));
-			}
-		}
-		else if (cameraMode == 1) {
-			if (portNumber >= 0) {
-				float Tmovement = 0.0f; float yaw = 0.0f; float pitch = 0.0f;
-				//checks to see if the sticks are out of the deadzone, then translates them based on how far the stick is pushed.
-
-				if (!FlipedControllers[portNumber]) {
-					if (gamepad.leftStickY < -0.1) { Tmovement = (MovementModifier * (gamepad.leftStickY * 0.0666666f)); } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
-					if (gamepad.leftStickY > 00.1) { Tmovement = (MovementModifier * (gamepad.leftStickY * 0.0666666f)); } //Y-Up
-					if (gamepad.leftStickX < -0.1) { yaw = (gamepad.leftStickX * -0.0666666f); } //X-Left
-					if (gamepad.leftStickX > 00.1) { yaw = (gamepad.leftStickX * -0.0666666f); } //X-Right
-
-					if (gamepad.rightStickY > 00.1) { pitch = gamepad.rightStickY * 0.0666666f; }
-					if (gamepad.rightStickY < -0.1) { pitch = gamepad.rightStickY * 0.0666666f; }
-					if (gamepad.rightStickX < -0.1) { yaw = (gamepad.rightStickX * -0.0666666f); } //X-Left
-					if (gamepad.rightStickX > 00.1) { yaw = (gamepad.rightStickX * -0.0666666f); } //X-Right
-				}
-				else {
-					if (gamepad.leftStickY < -0.1) { Tmovement = -(MovementModifier * (gamepad.leftStickY * 0.0666666f)); } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
-					if (gamepad.leftStickY > 00.1) { Tmovement = -(MovementModifier * (gamepad.leftStickY * 0.0666666f)); } //Y-Up
-					if (gamepad.leftStickX < -0.1) { yaw = -(gamepad.leftStickX * -0.0666666f); } //X-Left
-					if (gamepad.leftStickX > 00.1) { yaw = -(gamepad.leftStickX * -0.0666666f); } //X-Right
-
-					if (gamepad.rightStickY > 00.1) { pitch = -gamepad.rightStickY * 0.0666666f; }
-					if (gamepad.rightStickY < -0.1) { pitch = -gamepad.rightStickY * 0.0666666f; }
-					if (gamepad.rightStickX < -0.1) { yaw = -(gamepad.rightStickX * -0.0666666f); } //X-Left
-					if (gamepad.rightStickX > 00.1) { yaw = -(gamepad.rightStickX * -0.0666666f); } //X-Right
-				}
-
-				//yaw
-				rightVector = glm::cross(forwardVector[portNumber], glm::vec3(0.0f, 1.0f, 0.0f));
-				rightVector = glm::normalize(rightVector);
-				forwardVector[portNumber] = glm::rotate(forwardVector[portNumber], yaw, glm::vec3(0.0f, 1.0f, 0.0f));
-				//pitch
-				rightVector = glm::cross(forwardVector[portNumber], glm::vec3(0.0f, 1.0f, 0.0f));
-				rightVector = glm::normalize(rightVector);
-				forwardVector[portNumber] = glm::rotate(forwardVector[portNumber], pitch, rightVector);
-				//player position
-				glm::vec3 forwardVectorTemp = glm::vec3(forwardVector[portNumber].x, 0.0f, forwardVector[portNumber].z);
-				Players[portNumber].ForwardDirection = (forwardVectorTemp * -0.001f);
-				Players[portNumber].setForceOnObject((Tmovement * forwardVectorTemp)*0.5f);
-				Players[portNumber].setVelocity((Tmovement * forwardVectorTemp)*0.5f*Players[portNumber].SprintSpeed);
-				//camera position
-				cameraPosition[portNumber] = glm::vec3(Players[portNumber].Position().x - (forwardVector[portNumber].x*6.0f),
-					Players[portNumber].Position().y + (Players[portNumber].Radius().y*2.0f),
-					Players[portNumber].Position().z - (forwardVector[portNumber].z*6.0f));
-				//shockwace position
-			}
-		}
-		//Buttons
-		if (portNumber >= 0) {
-			if (MenuSwitchCounter[portNumber] > 0.0f) { MenuSwitchCounter[portNumber] -= deltaTasSeconds; }
-			else {
-				//first press of [LEFT_TRIGGERED]
-				if (gamepad.leftTrigger > 0.2 && Left_TRIGGERED[portNumber] == false) { Left_TRIGGERED[portNumber] = true; std::cout << "[LEFT_TRIGGERED][-]"; }
-				//[LEFT_TRIGGERED] was pressed last tic
-				else if (Left_TRIGGERED[portNumber] == true) {
-					//holding [LEFT_TRIGGERED]
-					if (gamepad.leftTrigger > 0.2) {}
-					//[LEFT_TRIGGERED] released
-					else {
-						Left_TRIGGERED[portNumber] = false;
-						MenuSwitchCounter[portNumber] = 0.70f;
-						std::cout << "[LEFT_TRIGGERED][+]";
-					}
-				}
-
-				//first press of [RIGHT_TRIGGERED]
-				if (gamepad.rightTrigger > 0.2 && Right_TRIGGERED[portNumber] == false) { Right_TRIGGERED[portNumber] = true; std::cout << "[RIGHT_TRIGGERED][-]"; }
-				//[RIGHT_TRIGGERED] was pressed last tic
-				else if (Right_TRIGGERED[portNumber] == true) {
-					//holding [RIGHT_TRIGGERED]
-					if (gamepad.rightTrigger > 0.2) {
-						PShockWaveChargeUp[portNumber] += deltaTasSeconds;
-						//std::cout << "	[C](" << portNumber << ")[" << PShockWaveChargeUp[portNumber] << "]" << std::endl;
-					}
-					//[RIGHT_TRIGGERED] released
-					else {
-						if (PShockWaveChargeUp[portNumber] < 0.50f) { PShockWaveChargeUp[portNumber] = 0.0f; }
-						Right_TRIGGERED[portNumber] = false;
-						PShockWave[portNumber] = true;
-						PShockWaveCounter[portNumber] = 0.250f;
-						MenuSwitchCounter[portNumber] = 0.60f;
-						std::cout << "[RIGHT_TRIGGERED][+]";
-					}
-					Players[portNumber].setVelocity(Players[portNumber].Velocity()*0.5f);
-				}
-
-				////first press of [A]
-				//if (gamepad.IsPressed(XINPUT_GAMEPAD_A) && AButtonDown == false) { AButtonDown = true; std::cout << "[A][-]"; }
-				////[A] was pressed last tic
-				//else if (gamepad.WasPressed(XINPUT_GAMEPAD_A) && AButtonDown == true) {
-				//	//holding [A]
-				//	if (gamepad.IsPressed(XINPUT_GAMEPAD_A)) {
-				//		PShockWaveChargeUp[portNumber] += deltaTasSeconds;
-				//		std::cout << "	(" << portNumber << ")[" << PShockWaveChargeUp[portNumber] << "]" << std::endl;
-				//	}
-				//	//[A] released
-				//	else {
-				//		if (PShockWaveChargeUp[portNumber] < 0.50f) { PShockWaveChargeUp[portNumber] = 0.0f; }
-				//		AButtonDown = false;
-				//		PShockWave[portNumber] = true;
-				//		PShockWaveCounter[portNumber] = 0.250f;
-				//		MenuSwitchCounter[portNumber] = 0.70f;
-				//		std::cout << "[A][+]";
-				//	}
-				//	Players[portNumber].setVelocity(Players[portNumber].Velocity()*0.5f);
-				//}
-
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_A)) {
-					if (Players[portNumber].inAir == false && Players[portNumber].IsJumping == false) {
-						Players[portNumber].inAir = true; Players[portNumber].IsJumping = true;
-						Players[portNumber].onObject = false;
-						Players[portNumber].InAirCounter = 0.25f;
-						Players[portNumber].setPosition(glm::vec3(Players[portNumber].Position().x, Players[portNumber].Position().y + (Players[portNumber].Radius().y * 0.30f), Players[portNumber].Position().z));
-					}
-				}
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_B)) {
-					if (PSprintCounter[portNumber] < PSprintCoolDown && Players[portNumber].inAir == false) {
-						PSprintCounter[portNumber] += deltaTasSeconds;
-						Players[portNumber].setVelocity(Players[portNumber].Velocity()*SprintSpeed);
-					}
-				}
-				else { 
-					if (PSprintCounter[portNumber] > 0.0f && Players[portNumber].inAir == false) {
-						PSprintCounter[portNumber] -= deltaTasSeconds;
-					}
-				}
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_X)) { std::cout << "[X][-]"; }
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_Y)) {
-					Players[portNumber].setVelocity(Players[portNumber].Velocity()*0.50f);
-				}
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_LEFT_THUMB)) { std::cout << "[LEFT_THUMB][-]"; }
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_RIGHT_THUMB)) { std::cout << "[RIGHT_THUMB][-]"; }
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_UP)) { std::cout << "[DPAD_UP][-]"; }
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_DOWN)) { std::cout << "[DPAD_DOWN][-]"; }
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_LEFT)) { std::cout << "[DPAD_LEFT][-]"; }
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_RIGHT)) { std::cout << "[DPAD_RIGHT][-]"; }
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_START)) {
-					std::cout << "[START][-]";
-					while (1) {
-						gamepad.Refresh();
-						if (gamepad.IsPressed(XINPUT_GAMEPAD_START) && gamepad.IsPressed(XINPUT_GAMEPAD_BACK)) {
-							break;
-						}
-					}
-					MenuSwitchCounter[portNumber] = 1.0f;
-				}
-				else if (gamepad.IsPressed(XINPUT_GAMEPAD_BACK)) {
-					std::cout << "[BACK][-]";
-					inGame = false; inMenu = true;
-					MenuSwitchCounter[portNumber] = 1.0f;
-				}
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_LEFT_SHOULDER)) { std::cout << "[LEFT_SHOULDER][-]"; }
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_RIGHT_SHOULDER)) { std::cout << "[RIGHT_SHOULDER][-]"; }
-			}
-		}
-	}
-	else if (inMenu || inOptions) {
-		MovementModifier = MovementModifier*10.0f;
-
-		if (mousepositionX + screenpositionX > GetSystemMetrics(SM_CXSCREEN)) { mousepositionX = GetSystemMetrics(SM_CXSCREEN) - screenpositionX; }
-		else if (mousepositionX + screenpositionX < 0) { mousepositionX = 0 - screenpositionX; }
-		if (mousepositionY + screenpositionY > GetSystemMetrics(SM_CYSCREEN)) { mousepositionY = GetSystemMetrics(SM_CYSCREEN) - screenpositionY; }
-		else if (mousepositionY + screenpositionY < 0) { mousepositionY = 0 - screenpositionY; }
-
-		if (portNumber >= 0) {
-			float Tx = 0.0f; float Ty = 0.0f; float Tz = 0.0f; float rotY = 0.0f;
-			//checks to see if the sticks are out of the deadzone, then translates them based on how far the stick is pushed.
-			if (gamepad.leftStickY < -0.08f) { Ty -= gamepad.leftStickY * 0.0666666f; } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
-			if (gamepad.leftStickY > 00.08f) { Ty -= gamepad.leftStickY * 0.0666666f; } //Y-Up
-			if (gamepad.leftStickX < -0.08f) { Tx -= gamepad.leftStickX * 0.0666666f; } //X-Left
-			if (gamepad.leftStickX > 00.08f) { Tx -= gamepad.leftStickX * 0.0666666f; } //X-Right
-
-			if (gamepad.rightStickY < -0.10f) { Ty -= gamepad.rightStickY * 0.0366666f; } //Y-Down
-			if (gamepad.rightStickY > 00.10f) { Ty -= gamepad.rightStickY * 0.0366666f; } //Y-Up
-			if (gamepad.rightStickX < -0.10f) { Tx -= gamepad.rightStickX * 0.0366666f; } //X-Left
-			if (gamepad.rightStickX > 00.10f) { Tx -= gamepad.rightStickX * 0.0366666f; } //X-Right
-
-			Tx = (Tx*MovementModifier);
-			Ty = (Ty*MovementModifier);
-			Tz = (Tz*MovementModifier);
-			
-			mousepositionX -= static_cast<int>(Tx); mousepositionY += static_cast<int>(Ty);
-			//
-			//std::cout << "[" << screen_pos_x << "] [" << screen_pos_y << "]" << std::endl;
-			if (Tx != 0.0f || Ty != 0.0f || Tz != 0.0f) { SetCursorPos(glutGet((GLenum)GLUT_WINDOW_X)+mousepositionX, glutGet((GLenum)GLUT_WINDOW_Y)+mousepositionY); }
-		
-			if (MenuSwitchCounter[portNumber] > 0.0f) { MenuSwitchCounter[portNumber] -= deltaTasSeconds; }
-			else {
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_A)) {
-					std::cout << "[A]";
-					INPUT input;
-					input.type = INPUT_MOUSE;
-					input.mi.dwFlags = (MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP);
-					input.mi.mouseData = 0;
-					input.mi.dwExtraInfo = NULL;
-					input.mi.time = 0;
-					SendInput(1, &input, sizeof(INPUT));
-
-					bool pressedASlider = false;
-					for (unsigned int i = 0; i < NumberOfSliders; i++) {
-						//move nob along the slider
-						if (Slider[i].moveNob(MPosToOPosX, MPosToOPosY)) { ButtonForSliders[i].setPosition(glm::vec3(MPosToOPosX, 0.02f, Slider[i].SBar_Pos.z)); pressedASlider = true;}
-					}
-					if (!pressedASlider) { MenuSwitchCounter[portNumber] = 0.40f; }
-				}
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_B)) {
-					std::cout << "[B]";
-					INPUT input;
-					input.type = INPUT_MOUSE;
-					input.mi.dwFlags = (MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP);
-					input.mi.mouseData = 0;
-					input.mi.dwExtraInfo = NULL;
-					input.mi.time = 0;
-					SendInput(1, &input, sizeof(INPUT));
-
-					MenuSwitchCounter[portNumber] = 1.0f;
-				}
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_X)) { std::cout << "[X]"; }
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_Y)) { std::cout << "[Y]"; }
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_UP)) { std::cout << "[DPAD_UP]"; }
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_DOWN)) { std::cout << "[DPAD_DOWN]"; }
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_LEFT)) { std::cout << "[DPAD_LEFT]"; }
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_RIGHT)) { std::cout << "[DPAD_RIGHT]"; }
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_START)) {
-					std::cout << "[START]";
-					setBoardStart();
-					inMenu = false; inGame = true;
-					MenuSwitchCounter[portNumber] = 1.0f;
-				}
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_BACK)) {
-					std::cout << "[BACK]";
-					if (inOptions) {
-						if (inOptionsTab != 0) { inOptionsTab = 0; }
-						else { inOptions = false; inMenu = true; }
-						MenuSwitchCounter[portNumber] = 1.0f;
-					}
-					else { exitProgram(); }
-				}
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_LEFT_SHOULDER)) { std::cout << "[LEFT_SHOULDER]"; }
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_RIGHT_SHOULDER)) { std::cout << "[RIGHT_SHOULDER]"; }
-			}
-		}
-	}
-}
-
-/* function KeyBoardDelayButton()
-* Description:
-*   - this is called to get inputs from the keyboard
-*	- only called during the game
-*/
-void KeyBoardDelayButton(float deltaTasSeconds) {
-
-	for (int playerNumberControl = 0; playerNumberControl < NumberOfPlayers; playerNumberControl++) {
-		if (cameraMode == 0) {
-			float Tx[2]{ 0.0f,0.0f }; float Ty[2]{ 0.0f,0.0f }; float Tz[2]{ 0.0f,0.0f };
-
-			if (MenuSwitchCounter[playerNumberControl] > 0.0f) { MenuSwitchCounter[playerNumberControl] -= deltaTasSeconds; }
-			else {
-				if (playerNumberControl == 0) {
-					//player One
-					if (!FlipedControllers[playerNumberControl]) {
-						if (keyDown['w'] || keyDown['W']) { Tx[playerNumberControl] = -0.20f; }
-						if (keyDown['s'] || keyDown['S']) { Tx[playerNumberControl] = 00.20f; }
-						if (keyDown['a'] || keyDown['A']) { Tz[playerNumberControl] = 00.20f; }
-						if (keyDown['d'] || keyDown['D']) { Tz[playerNumberControl] = -0.20f; }
-					}
-					else {
-						if (keyDown['w'] || keyDown['W']) { Tx[playerNumberControl] = 00.20f; }
-						if (keyDown['s'] || keyDown['S']) { Tx[playerNumberControl] = -0.20f; }
-						if (keyDown['a'] || keyDown['A']) { Tz[playerNumberControl] = -0.20f; }
-						if (keyDown['d'] || keyDown['D']) { Tz[playerNumberControl] = 00.20f; }
-					}
-
-
-					if (keyDown['q'] || keyDown['Q']) {
-						if (Players[playerNumberControl].inAir == false && Players[playerNumberControl].IsJumping == false) {
-							Players[playerNumberControl].inAir = true; Players[playerNumberControl].IsJumping = true;
-							Players[playerNumberControl].onObject = false;
-							Players[playerNumberControl].InAirCounter = 0.25f;
-							Players[playerNumberControl].setPosition(glm::vec3(Players[playerNumberControl].Position().x, Players[playerNumberControl].Position().y + (Players[playerNumberControl].Radius().y * 0.30f), Players[playerNumberControl].Position().z));
-						}
-					}
-					//first press of [RIGHT_TRIGGERED]
-					if ((keyDown['e'] || keyDown['E']) && Right_TRIGGERED[playerNumberControl] == false) { Right_TRIGGERED[playerNumberControl] = true; }
-					//[RIGHT_TRIGGERED] was pressed last tic
-					else if (Right_TRIGGERED[playerNumberControl] == true) {
-						//holding [RIGHT_TRIGGERED]
-						if (keyDown['e'] || keyDown['E']) {
-							PShockWaveChargeUp[playerNumberControl] += deltaTasSeconds;
-							//std::cout << "	[C](" << 0 << ")[" << PShockWaveChargeUp[0] << "]" << std::endl;
-						}
-						//[RIGHT_TRIGGERED] released
-						else {
-							if (PShockWaveChargeUp[playerNumberControl] < 0.50f) { PShockWaveChargeUp[playerNumberControl] = 0.0f; }
-							Right_TRIGGERED[playerNumberControl] = false;
-							PShockWave[playerNumberControl] = true;
-							PShockWaveCounter[playerNumberControl] = 0.250f;
-							MenuSwitchCounter[playerNumberControl] = 0.60f;
-							//std::cout << "[RIGHT_TRIGGERED][+]";
-						}
-						Players[playerNumberControl].setVelocity(Players[playerNumberControl].Velocity()*0.5f);
-					}
-				}
-				else if (playerNumberControl == 1) {
-					//player Two
-					if (!FlipedControllers[playerNumberControl]) {
-						if (keyDown['i'] || keyDown['I']) { Tx[playerNumberControl] = 00.20f; }
-						if (keyDown['k'] || keyDown['K']) { Tx[playerNumberControl] = -0.20f; }
-						if (keyDown['j'] || keyDown['J']) { Tz[playerNumberControl] = -0.20f; }
-						if (keyDown['l'] || keyDown['L']) { Tz[playerNumberControl] = 00.20f; }
-					}
-					else {
-						if (keyDown['i'] || keyDown['I']) { Tx[playerNumberControl] = -0.20f; }
-						if (keyDown['k'] || keyDown['K']) { Tx[playerNumberControl] = 00.20f; }
-						if (keyDown['j'] || keyDown['J']) { Tz[playerNumberControl] = 00.20f; }
-						if (keyDown['l'] || keyDown['L']) { Tz[playerNumberControl] = -0.20f; }
-					}
-					if (keyDown['o'] || keyDown['O']) {
-						if (Players[playerNumberControl].inAir == false && Players[playerNumberControl].IsJumping == false) {
-							Players[playerNumberControl].inAir = true; Players[playerNumberControl].IsJumping = true;
-							Players[playerNumberControl].onObject = false;
-							Players[playerNumberControl].InAirCounter = 0.25f;
-							Players[playerNumberControl].setPosition(glm::vec3(Players[playerNumberControl].Position().x, Players[playerNumberControl].Position().y + (Players[playerNumberControl].Radius().y * 0.30f), Players[playerNumberControl].Position().z));
-						}
-					}
-					//first press of [RIGHT_TRIGGERED]
-					if ((keyDown['U'] || keyDown['u']) && Right_TRIGGERED[playerNumberControl] == false) { Right_TRIGGERED[playerNumberControl] = true; }
-					//[RIGHT_TRIGGERED] was pressed last tic
-					else if (Right_TRIGGERED[playerNumberControl] == true) {
-						//holding [RIGHT_TRIGGERED]
-						if (keyDown['U'] || keyDown['u']) {
-							PShockWaveChargeUp[playerNumberControl] += deltaTasSeconds;
-							//std::cout << "	[C](" << 1 << ")[" << PShockWaveChargeUp[1] << "]" << std::endl;
-						}
-						//[RIGHT_TRIGGERED] released
-						else {
-							if (PShockWaveChargeUp[playerNumberControl] < 0.50f) { PShockWaveChargeUp[playerNumberControl] = 0.0f; }
-							Right_TRIGGERED[playerNumberControl] = false;
-							PShockWave[playerNumberControl] = true;
-							PShockWaveCounter[playerNumberControl] = 0.250f;
-							MenuSwitchCounter[playerNumberControl] = 0.60f;
-							//std::cout << "[RIGHT_TRIGGERED][+]";
-						}
-						Players[playerNumberControl].setVelocity(Players[playerNumberControl].Velocity()*0.5f);
-					}
-				}
-
-
-				Players[playerNumberControl].setForceOnObject(glm::vec3(Tx[playerNumberControl], Ty[playerNumberControl], Tz[playerNumberControl]));
-				Players[playerNumberControl].setVelocity(glm::vec3(Tx[playerNumberControl], Ty[playerNumberControl], Tz[playerNumberControl])*SprintSpeed);
-				Players[playerNumberControl].ForwardDirection = (Players[playerNumberControl].Position() - (Players[playerNumberControl].Position() + Players[playerNumberControl].Velocity()));
-			}
-		}
-		else if (cameraMode == 1) {
-			float Tmovement[2]{ 0.0f,0.0f }; float yaw[2]{ 0.0f,0.0f }; float pitch[2]{ 0.0f,0.0f };
-
-
-			if (MenuSwitchCounter[playerNumberControl] > 0.0f) { MenuSwitchCounter[playerNumberControl] -= deltaTasSeconds; }
-			else {
-				if (playerNumberControl == 0) {
-					//player One //checks to see if the sticks are out of the deadzone, then translates them based on how far the stick is pushed.
-					if (!FlipedControllers[playerNumberControl]) {
-						if (keyDown['w'] || keyDown['W']) { Tmovement[playerNumberControl] = 00.50f; }
-						if (keyDown['s'] || keyDown['S']) { Tmovement[playerNumberControl] = -0.50f; }
-						if (keyDown['a'] || keyDown['A']) { yaw[playerNumberControl] = 00.05f; }
-						if (keyDown['d'] || keyDown['D']) { yaw[playerNumberControl] = -0.05f; }
-					}
-					else {
-						if (keyDown['w'] || keyDown['W']) { Tmovement[playerNumberControl] = -0.50f; }
-						if (keyDown['s'] || keyDown['S']) { Tmovement[playerNumberControl] = 00.50f; }
-						if (keyDown['a'] || keyDown['A']) { yaw[playerNumberControl] = -0.05f; }
-						if (keyDown['d'] || keyDown['D']) { yaw[playerNumberControl] = 00.05f; }
-					}
-
-					if (keyDown['q'] || keyDown['Q']) {
-						if (Players[playerNumberControl].inAir == false && Players[playerNumberControl].IsJumping == false) {
-							Players[playerNumberControl].inAir = true; Players[playerNumberControl].IsJumping = true;
-							Players[playerNumberControl].onObject = false;
-							Players[playerNumberControl].InAirCounter = 0.25f;
-							Players[playerNumberControl].setPosition(glm::vec3(Players[playerNumberControl].Position().x, Players[playerNumberControl].Position().y + (Players[playerNumberControl].Radius().y * 0.30f), Players[playerNumberControl].Position().z));
-						}
-					}
-					//first press of [RIGHT_TRIGGERED]
-					if ((keyDown['e'] || keyDown['E']) && Right_TRIGGERED[playerNumberControl] == false) { Right_TRIGGERED[playerNumberControl] = true; }
-					//[RIGHT_TRIGGERED] was pressed last tic
-					else if (Right_TRIGGERED[playerNumberControl] == true) {
-						//holding [RIGHT_TRIGGERED]
-						if (keyDown['e'] || keyDown['E']) {
-							PShockWaveChargeUp[playerNumberControl] += deltaTasSeconds;
-							//std::cout << "	[C](" << 0 << ")[" << PShockWaveChargeUp[0] << "]" << std::endl;
-						}
-						//[RIGHT_TRIGGERED] released
-						else {
-							if (PShockWaveChargeUp[playerNumberControl] < 0.50f) { PShockWaveChargeUp[playerNumberControl] = 0.0f; }
-							Right_TRIGGERED[playerNumberControl] = false;
-							PShockWave[playerNumberControl] = true;
-							PShockWaveCounter[playerNumberControl] = 0.250f;
-							MenuSwitchCounter[playerNumberControl] = 0.60f;
-							//std::cout << "[RIGHT_TRIGGERED][+]";
-						}
-						Players[playerNumberControl].setVelocity(Players[playerNumberControl].Velocity()*0.5f);
-					}
-				}
-				if (playerNumberControl == 1) {
-					//player Two
-					if (!FlipedControllers[playerNumberControl]) {
-						if (keyDown['i'] || keyDown['I']) { Tmovement[playerNumberControl] = 00.50f; }
-						if (keyDown['k'] || keyDown['K']) { Tmovement[playerNumberControl] = -0.50f; }
-						if (keyDown['j'] || keyDown['J']) { yaw[playerNumberControl] = 00.05f; }
-						if (keyDown['l'] || keyDown['L']) { yaw[playerNumberControl] = -0.05f; }
-					}
-					else {
-						if (keyDown['i'] || keyDown['I']) { Tmovement[playerNumberControl] = -0.50f; }
-						if (keyDown['k'] || keyDown['K']) { Tmovement[playerNumberControl] = 00.50f; }
-						if (keyDown['j'] || keyDown['J']) { yaw[playerNumberControl] = -0.05f; }
-						if (keyDown['l'] || keyDown['L']) { yaw[playerNumberControl] = 00.05f; }
-					}
-					if (keyDown['o'] || keyDown['O']) {
-						if (Players[playerNumberControl].inAir == false && Players[playerNumberControl].IsJumping == false) {
-							Players[playerNumberControl].inAir = true; Players[playerNumberControl].IsJumping = true;
-							Players[playerNumberControl].onObject = false;
-							Players[playerNumberControl].InAirCounter = 0.25f;
-							Players[playerNumberControl].setPosition(glm::vec3(Players[playerNumberControl].Position().x, Players[playerNumberControl].Position().y + (Players[playerNumberControl].Radius().y * 0.30f), Players[playerNumberControl].Position().z));
-						}
-					}
-					//first press of [RIGHT_TRIGGERED]
-					if ((keyDown['U'] || keyDown['u']) && Right_TRIGGERED[playerNumberControl] == false) { Right_TRIGGERED[playerNumberControl] = true; }
-					//[RIGHT_TRIGGERED] was pressed last tic
-					else if (Right_TRIGGERED[playerNumberControl] == true) {
-						//holding [RIGHT_TRIGGERED]
-						if (keyDown['U'] || keyDown['u']) {
-							PShockWaveChargeUp[playerNumberControl] += deltaTasSeconds;
-							//std::cout << "	[C](" << 1 << ")[" << PShockWaveChargeUp[1] << "]" << std::endl;
-						}
-						//[RIGHT_TRIGGERED] released
-						else {
-							if (PShockWaveChargeUp[playerNumberControl] < 0.50f) { PShockWaveChargeUp[playerNumberControl] = 0.0f; }
-							Right_TRIGGERED[playerNumberControl] = false;
-							PShockWave[playerNumberControl] = true;
-							PShockWaveCounter[playerNumberControl] = 0.250f;
-							MenuSwitchCounter[playerNumberControl] = 0.60f;
-							//std::cout << "[RIGHT_TRIGGERED][+]";
-						}
-						Players[playerNumberControl].setVelocity(Players[playerNumberControl].Velocity()*0.5f);
-					}
-				}
-			}
-
-			//yaw
-			rightVector = glm::cross(forwardVector[playerNumberControl], glm::vec3(0.0f, 1.0f, 0.0f));
-			rightVector = glm::normalize(rightVector);
-			forwardVector[playerNumberControl] = glm::rotate(forwardVector[playerNumberControl], yaw[playerNumberControl], glm::vec3(0.0f, 1.0f, 0.0f));
-			//pitch
-			rightVector = glm::cross(forwardVector[playerNumberControl], glm::vec3(0.0f, 1.0f, 0.0f));
-			rightVector = glm::normalize(rightVector);
-			forwardVector[playerNumberControl] = glm::rotate(forwardVector[playerNumberControl], pitch[playerNumberControl], rightVector);
-			//player position
-			glm::vec3 forwardVectorTemp = glm::vec3(forwardVector[playerNumberControl].x, 0.0f, forwardVector[playerNumberControl].z);
-			Players[playerNumberControl].ForwardDirection = (forwardVectorTemp * -0.001f);
-			Players[playerNumberControl].setForceOnObject((Tmovement[playerNumberControl] * forwardVectorTemp)*0.5f);
-			Players[playerNumberControl].setVelocity((Tmovement[playerNumberControl] * forwardVectorTemp)*0.5f*SprintSpeed);
-			//camera position
-			cameraPosition[playerNumberControl] = glm::vec3(Players[playerNumberControl].Position().x - (forwardVector[playerNumberControl].x*6.0f),
-				Players[playerNumberControl].Position().y + (Players[playerNumberControl].Radius().y*2.0f),
-				Players[playerNumberControl].Position().z - (forwardVector[playerNumberControl].z*6.0f));
-			//shockwace position
-		}
-	}
-}
-
 
 //////////////////////////////////////////////////////////////////////
+
+
 
 /* function DisplayCallbackFunction(void)
 * Description:
@@ -2370,8 +2233,133 @@ void InitializeShaders()
 	materials["text"]->shader->attachShader(v_textShader);
 	materials["text"]->shader->attachShader(f_textShader);
 	materials["text"]->shader->linkProgram();
+
+
 }
 
+/* function InitializeTextPlane()
+* Description:
+*   - this is called when the file first loads
+*   - loads all the menu pages into the game
+*/
+void InitializeTextPlane()
+{
+	auto defaultMaterial = materials["default"];
+	auto passThroughMaterial = materials["passThrough"];
+
+
+
+	std::string ImagePath;
+	std::string ObjectPath;
+	if (DoesFileExists("..//Assets//Img") && DoesFileExists("..//Assets//Obj")) {
+		ImagePath = "..//Assets//Img//";
+		ObjectPath = "..//Assets//Obj//";
+	}
+	else if (DoesFileExists("Assets//Img") && DoesFileExists("Assets//Obj")) {
+		ImagePath = "Assets//Img//";
+		ObjectPath = "Assets//Obj//";
+	}
+	else { std::cout << "[ERROR] Could not find [Img] and/or [Obj]" << std::endl; }
+
+
+	planeForText[0].objectLoader(ObjectPath + "PlainForText.obj");
+	planeForText[0].setMaterial(passThroughMaterial);
+	planeForText[0].setMass(0.0f);
+	planeForText[0].Viewable = true;
+	planeForText[0].setScale(glm::vec3(39.0f*0.9f, 1.0f, 39.0f*1.6f));
+	planeForText[0].setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+	planeForText[0].setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+	planeForText[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Main_Menu.png").c_str())));
+
+	planeForText[1].objectLoader(&planeForText[0]);
+	planeForText[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Options.png").c_str())));
+
+	planeForText[2].objectLoader(&planeForText[0]);
+	planeForText[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Controls.png").c_str())));
+
+	planeForText[3].objectLoader(&planeForText[0]);
+	planeForText[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Power_Ups.png").c_str())));
+
+	planeForText[4].objectLoader(&planeForText[0]);
+	planeForText[4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Options.png").c_str())));
+
+
+
+	//Start Button
+	ButtonObjects[0].objectLoader(ObjectPath + "PlainForText.obj");
+	ButtonObjects[0].setMaterial(passThroughMaterial);
+	ButtonObjects[0].setScale(glm::vec3(9.0f*0.9f, 1.0f, 7.0f*1.6f));
+	ButtonObjects[0].setSizeOfHitBox(glm::vec3(9.0f*1.45f, 1.0f, 7.0f*1.58f));
+	ButtonObjects[0].setPosition(glm::vec3(0.0f, 0.01f, -3.0f));
+	ButtonObjects[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Start_Button.png").c_str())));
+	for (unsigned int i = 1; i < NumberOfButtons; i++) { ButtonObjects[i].objectLoader(&ButtonObjects[0]); }
+	//Options Button
+	ButtonObjects[1].setPosition(glm::vec3(0.0f, 0.01f, 9.0f));
+	ButtonObjects[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Options_Button.png").c_str())));
+	//Exit Button
+	ButtonObjects[2].setPosition(glm::vec3(0.0f, 0.01f, 21.0f));
+	ButtonObjects[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Exit_Button.png").c_str())));
+	//Back Button
+	ButtonObjects[3].setPosition(glm::vec3(-21.0f, 0.01f, -21.0f));
+	ButtonObjects[3].setScale(glm::vec3(2.0f*0.9f, 1.0f, 3.50f*0.9f));
+	ButtonObjects[3].setSizeOfHitBox(glm::vec3(2.0f*1.5f, 1.0f, 3.50f*0.9f));
+	ButtonObjects[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Back_Button.png").c_str())));
+	//Controls Button
+	ButtonObjects[4].setPosition(glm::vec3(0.0f, 0.01f, -3.0f));
+	ButtonObjects[4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Controls_Button.png").c_str())));
+	//Power_Ups Button
+	ButtonObjects[5].setPosition(glm::vec3(0.0f, 0.01f, 9.0f));
+	ButtonObjects[5].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Power_Ups_Button.png").c_str())));
+	//Config Button
+	ButtonObjects[6].setPosition(glm::vec3(0.0f, 0.01f, 21.0f));
+	ButtonObjects[6].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Config_Button.png").c_str())));
+	//Button
+	for (unsigned int i = 0; i < NumberOfButtons; i++) {
+		Button[i].SBut_Top = ButtonObjects[i].Top(), Button[i].SBut_Bot = ButtonObjects[i].Bottom(), Button[i].SBut_Pos = ButtonObjects[i].Position(), Button[i].SBut_Rad = (ButtonObjects[i].Radius() / 2.0f);
+	}
+
+
+	//Slider bar
+	planeForSliders[0].objectLoader(ObjectPath + "PlainForText.obj");
+	planeForSliders[0].setMaterial(passThroughMaterial);
+	planeForSliders[0].setScale(glm::vec3(5.0f, 1.0f, 3.50f));
+	planeForSliders[0].setSizeOfHitBox(glm::vec3(5.0f*1.6f, 1.0f, 3.50f*0.9f));
+	planeForSliders[0].setPosition(glm::vec3(20.0f, 0.01f, -10.0f));
+	planeForSliders[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Slider_Bar.png").c_str())));
+	//Slider nob
+	ButtonForSliders[0].objectLoader(&planeForSliders[0]);
+	ButtonForSliders[0].setScale(glm::vec3(1.0f, 1.0f, 3.50f));
+	ButtonForSliders[0].setSizeOfHitBox(glm::vec3(1.0f, 1.0f, 3.50f*0.9f));
+	ButtonForSliders[0].setPosition(glm::vec3(20.0f, 0.02f, -10.0f));
+	ButtonForSliders[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Slider_Nob.png").c_str())));
+
+
+	//Slider full
+	Slider[0].SBar_Top = planeForSliders[0].Top(), Slider[0].SBar_Bot = planeForSliders[0].Bottom(), Slider[0].SBar_Pos = planeForSliders[0].Position(), Slider[0].SBar_Rad = (planeForSliders[0].Radius() / 2.0f);
+	Slider[0].SNob_Top = ButtonForSliders[0].Top(), Slider[0].SNob_Bot = ButtonForSliders[0].Bottom(), Slider[0].SNob_Pos = ButtonForSliders[0].Position(), Slider[0].SNob_Rad = (ButtonForSliders[0].Radius() / 2.0f);
+	Slider[0].SBar_Length = ((Slider[0].SBar_Top - Slider[0].SNob_Rad) - (Slider[0].SBar_Bot + Slider[0].SNob_Rad));
+	Slider[0].SNob_Length = (Slider[0].SNob_Pos - (Slider[0].SBar_Bot + Slider[0].SNob_Rad));
+	Slider[0].SNob_Precent = (Slider[0].SNob_Length / Slider[0].SBar_Length)*100.0f;
+
+	for (unsigned int i = 1; i < NumberOfSliders; i++) {
+		//Slider bar
+		planeForSliders[i].objectLoader(&planeForSliders[i - 1]);
+		planeForSliders[i].setPosition(planeForSliders[i - 1].Position() + glm::vec3(0.0f, 0.0f, planeForSliders[i - 1].Radius().z));
+		//Slider nob
+		ButtonForSliders[i].objectLoader(&ButtonForSliders[i - 1]);
+		ButtonForSliders[i].setPosition(ButtonForSliders[i - 1].Position() + glm::vec3(0.0f, 0.0f, ButtonForSliders[i - 1].Radius().z));
+		//Slider full
+		Slider[i].SBar_Top = planeForSliders[i].Top(), Slider[i].SBar_Bot = planeForSliders[i].Bottom(), Slider[i].SBar_Pos = planeForSliders[i].Position(), Slider[i].SBar_Rad = (planeForSliders[i].Radius() / 2.0f);
+		Slider[i].SNob_Top = ButtonForSliders[i].Top(), Slider[i].SNob_Bot = ButtonForSliders[i].Bottom(), Slider[i].SNob_Pos = ButtonForSliders[i].Position(), Slider[i].SNob_Rad = (ButtonForSliders[i].Radius() / 2.0f);
+		Slider[i].SBar_Length = ((Slider[i].SBar_Top - Slider[i].SNob_Rad) - (Slider[i].SBar_Bot + Slider[i].SNob_Rad));
+		Slider[i].SNob_Length = (Slider[i].SNob_Pos - (Slider[i].SBar_Bot + Slider[i].SNob_Rad));
+		Slider[i].SNob_Precent = (Slider[i].SNob_Length / Slider[i].SBar_Length)*100.0f;
+	}
+
+	planeForText[0].Viewable = true;
+
+
+}
 
 /* function InitializeSounds()
 * Description:
@@ -2450,16 +2438,16 @@ void InitializeObjects()
 
 
 	//Player ONE
-	Players[0].objectLoader(ObjectPath + "blitzbot.obj");
+	Players[0].objectLoader(ObjectPath + "Player//blitzbot.obj");
 	Players[0].setMaterial(passThroughMaterial);
 	Players[0].setMass(5.0f);
 	Players[0].setScale(glm::vec3(5.0f, 5.0f, 5.0f)); //displayed size
 	Players[0].setSizeOfHitBox(glm::vec3(10.0f, 2.50f, 10.0f)); //HitBox
 	Players[0].setPosition(glm::vec3(10.0f, -1.0f, 0.0f)); //Position of Object
-	Players[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "blitzbot//B_blitzbot_diff.png").c_str())));
+	Players[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//B_blitzbot_diff.png").c_str())));
 	Players[1].objectLoader(&Players[0]);
 	Players[1].setPosition(glm::vec3(-10.0f, -1.0f, 0.0f)); //Position of Object
-	if (NumberOfPlayers >= 2) {
+	if (NumberOfPlayers > 2) {
 		Players[2].objectLoader(&Players[0]);
 		Players[2].setPosition(glm::vec3(15.0f, -1.0f, 0.0f)); //Position of Object
 		Players[3].objectLoader(&Players[0]);
@@ -2467,14 +2455,14 @@ void InitializeObjects()
 	}
 
 	//Player ShockWave
-	ShockWaves[0].objectLoader(ObjectPath + "ShockWave.obj");
+	ShockWaves[0].objectLoader(ObjectPath + "Player//ShockWave.obj");
 	ShockWaves[0].setMaterial(passThroughMaterial);
-	ShockWaves[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "ShockWave_01.png").c_str())));
+	ShockWaves[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//ShockWave_01.png").c_str())));
 	ShockWaves[0].setMass(10.0f);
 	ShockWaves[0].setSizeOfHitBox(glm::vec3(1.0f, 1.0f, 1.0f)); //HitBox
 	ShockWaves[0].textureHandle_hasTransparency = true;
 	ShockWaves[1].objectLoader(&ShockWaves[0]);
-	if (NumberOfPlayers >= 2) {
+	if (NumberOfPlayers > 2) {
 		ShockWaves[2].objectLoader(&ShockWaves[0]);
 		ShockWaves[3].objectLoader(&ShockWaves[0]);
 	}
@@ -2482,12 +2470,12 @@ void InitializeObjects()
 
 	for (int i = 0; i < NumberOfPlayers; i++) {
 		if (PlayerTeam[i] == 0) {
-			Players[i].setTexture(ilutGLLoadImage(_strdup((ImagePath + "blitzbot//B_blitzbot_diff.png").c_str())));
-			ShockWaves[i].setTexture(ilutGLLoadImage(_strdup((ImagePath + "ShockWave_01.png").c_str())));
+			Players[i].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//B_blitzbot_diff.png").c_str())));
+			ShockWaves[i].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//ShockWave_01.png").c_str())));
 		}
 		else if (PlayerTeam[i] == 1) { 
-			Players[i].setTexture(ilutGLLoadImage(_strdup((ImagePath + "blitzbot//R_blitzbot_diff.png").c_str())));
-			ShockWaves[i].setTexture(ilutGLLoadImage(_strdup((ImagePath + "ShockWave_02.png").c_str())));
+			Players[i].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//R_blitzbot_diff.png").c_str())));
+			ShockWaves[i].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//ShockWave_02.png").c_str())));
 		}
 	}
 
@@ -2501,13 +2489,13 @@ void InitializeObjects()
 	Rifts[0].setSizeOfHitBox(glm::vec3(2.0f, 14.0f, 30.0f)); //HitBox
 	Rifts[0].setPosition(glm::vec3(48.0f, 7.0f, 0.0f));
 	//Rifts[0].textureHandle_hasTransparency = true;
-	Rifts[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Hexagons.png").c_str())));
+	Rifts[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Hexagons.png").c_str())));
 	//Player TWO Tower	//Rift_01  Rift_02  
 	Rifts[1].objectLoader(&Rifts[0]);
 	Rifts[1].setPosition(glm::vec3(-48.0f, 7.0f, 0.0f));
 	Rifts[1].setRotation(glm::vec3(0.0f, 180.0f, 0.0f));
 	//Rifts[1].textureHandle_hasTransparency = true;
-	Rifts[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Hexagons.png").c_str())));
+	Rifts[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Hexagons.png").c_str())));
 
 	//Specials
 	Specials[0].objectLoader(ObjectPath + "Square.obj");
@@ -2595,24 +2583,24 @@ void InitializeObjects()
 
 
 	//Ground
-	Objects[0].objectLoader(ObjectPath + "Map002.obj");
+	Objects[0].objectLoader(ObjectPath + "Rift//Ground.obj");
 	Objects[0].setMaterial(passThroughMaterial);
 	Objects[0].setColour(glm::vec4(0.5f, 0.5f, 0.5f, 1.0f));
 	Objects[0].setMass(0.0f);
 	Objects[0].setSizeOfHitBox(glm::vec3(100.0f, 0.01f, 100.0f)); //HitBox
 	Objects[0].setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 	Objects[0].setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-	Objects[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Ground_3.png").c_str())));
+	Objects[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Ground_3.png").c_str())));
 
 	//Walls Left
-	Objects[1].objectLoader(ObjectPath + "stadium.obj");
+	Objects[1].objectLoader(ObjectPath + "Rift//stadium.obj");
 	Objects[1].setMaterial(passThroughMaterial);
 	Objects[1].setColour(glm::vec4(0.5f, 0.50f, 0.5f, 1.0f));
 	Objects[1].setMass(0.0f);
 	Objects[1].setScale(glm::vec3(1.0f, 1.0f, 1.0f)); //size
 	Objects[1].setPosition(glm::vec3(0.0f, -1.0f, 0.0f));
 	Objects[1].setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
-	Objects[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "bitchtits.png").c_str())));
+	Objects[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Rockwall.png").c_str())));
 	//Rift magnets
 	Objects[2].objectLoader(ObjectPath + "Rift//Magnet_Left.obj");
 	Objects[2].setMaterial(passThroughMaterial);
@@ -2620,39 +2608,39 @@ void InitializeObjects()
 	Objects[2].setMass(0.0f);
 	Objects[2].setScale(glm::vec3(1.0f, 1.50f, 1.50f));
 	Objects[2].setSizeOfHitBox(glm::vec3(2.650f, 7.0f, 3.60f));
-	Objects[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Magnet_Rift_01.png").c_str())));
+	Objects[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Magnet_Rift_01.png").c_str())));
 	Objects[3].objectLoader(ObjectPath + "Rift//Magnet_Right.obj");
 	Objects[3].setMaterial(passThroughMaterial);
 	Objects[3].setPosition(glm::vec3(47.0f, 0.0f, 20.0f));
 	Objects[3].setMass(0.0f);
 	Objects[3].setScale(glm::vec3(1.0f, 1.50f, 1.50f));
 	Objects[3].setSizeOfHitBox(glm::vec3(2.650f, 7.0f, 3.60f));
-	Objects[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Magnet_Rift_01.png").c_str())));
+	Objects[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Magnet_Rift_01.png").c_str())));
 	Objects[4].objectLoader(&Objects[2]);//left
 	Objects[4].setPosition(glm::vec3(-47.0f, 0.0f, 20.0f));
 	Objects[4].setRotation(glm::vec3(0.0f, 180.0f, 0.0f));
-	Objects[4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Magnet_Rift_02.png").c_str())));
+	Objects[4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Magnet_Rift_02.png").c_str())));
 	Objects[5].objectLoader(&Objects[3]);//right
 	Objects[5].setPosition(glm::vec3(-47.0f, 0.0f, -20.0f));
 	Objects[5].setRotation(glm::vec3(0.0f, 180.0f, 0.0f));
-	Objects[5].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Magnet_Rift_02.png").c_str())));
+	Objects[5].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Magnet_Rift_02.png").c_str())));
 
-	Objects[6].objectLoader(ObjectPath + "crowd.obj");
+	Objects[6].objectLoader(ObjectPath + "Rift//crowd.obj");
 	Objects[6].setMaterial(passThroughMaterial);
 	Objects[6].setColour(glm::vec4(0.5f, 0.50f, 0.5f, 1.0f));
 	Objects[6].setMass(0.0f);
 	Objects[6].setScale(glm::vec3(1.0f, 1.0f, 1.0f)); //size
 	Objects[6].setPosition(glm::vec3(0.0f, -1.0f, 0.0f));
 	Objects[6].setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
-	Objects[6].setTexture(ilutGLLoadImage(_strdup((ImagePath + "crowd.png").c_str())));
+	Objects[6].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//crowd.png").c_str())));
 
 
 	//Enemies
-	Enemies[0].objectLoader(ObjectPath + "obj_03.obj");
+	Enemies[0].objectLoader(ObjectPath + "Enemies//Enemie_LP.obj");
 	Enemies[0].setMaterial(passThroughMaterial);
-	Enemies[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Enemy_2.png").c_str())));
+	Enemies[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Enemies//Enemy_2.png").c_str())));
 	Enemies[1].objectLoader(&Enemies[0]);
-	Enemies[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Enemy_3.png").c_str())));
+	Enemies[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Enemies//Enemy_3.png").c_str())));
 
 	ShadowObject[0].objectLoader(ObjectPath + "PlainForShadow.obj");
 	ShadowObject[0].setMaterial(passThroughMaterial);
@@ -2679,141 +2667,14 @@ void InitializeObjects()
 	//skeleton.loadHTR("assets/animations/Orbit.htr");
 	//skeleton.createGameObjects();
 	//Players[0].addChild(skeleton.getRootGameObject());
-}
-
-/* function InitializeTextPlane()
-* Description:
-*   - this is called when the file first loads
-*   - loads all the menu pages into the game
-*/
-void InitializeTextPlane()
-{
-	auto defaultMaterial = materials["default"];
-	auto passThroughMaterial = materials["passThrough"];
-
-
-
-	std::string ImagePath;
-	std::string ObjectPath;
-	if (DoesFileExists("..//Assets//Img") && DoesFileExists("..//Assets//Obj")) {
-		ImagePath = "..//Assets//Img//";
-		ObjectPath = "..//Assets//Obj//";
-	}
-	else if (DoesFileExists("Assets//Img") && DoesFileExists("Assets//Obj")) {
-		ImagePath = "Assets//Img//";
-		ObjectPath = "Assets//Obj//";
-	}
-	else { std::cout << "[ERROR] Could not find [Img] and/or [Obj]" << std::endl; }
-
-
-	planeForText[0].objectLoader(ObjectPath + "PlainForText.obj");
-	planeForText[0].setMaterial(passThroughMaterial);
-	planeForText[0].setMass(0.0f);
-	planeForText[0].Viewable = true;
-	planeForText[0].setScale(glm::vec3(39.0f*0.9f, 1.0f, 39.0f*1.6f));
-	planeForText[0].setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-	planeForText[0].setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-	planeForText[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Main_Menu.png").c_str())));
-
-	planeForText[1].objectLoader(&planeForText[0]);
-	planeForText[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Options.png").c_str())));
-
-	planeForText[2].objectLoader(&planeForText[0]);
-	planeForText[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Controls.png").c_str())));
-
-	planeForText[3].objectLoader(&planeForText[0]);
-	planeForText[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Power_Ups.png").c_str())));
-
-	planeForText[4].objectLoader(&planeForText[0]);
-	planeForText[4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Options.png").c_str())));
-
-
-
-	//Start Button
-	ButtonObjects[0].objectLoader(ObjectPath + "PlainForText.obj");
-	ButtonObjects[0].setMaterial(passThroughMaterial);
-	ButtonObjects[0].setScale(glm::vec3(9.0f*0.9f, 1.0f, 7.0f*1.6f));
-	ButtonObjects[0].setSizeOfHitBox(glm::vec3(9.0f*1.45f, 1.0f, 7.0f*1.58f));
-	ButtonObjects[0].setPosition(glm::vec3(0.0f, 0.01f, -3.0f));
-	ButtonObjects[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Start_Button.png").c_str())));
-	for (unsigned int i = 1; i < NumberOfButtons; i++) { ButtonObjects[i].objectLoader(&ButtonObjects[0]); }
-	//Options Button
-	ButtonObjects[1].setPosition(glm::vec3(0.0f, 0.01f, 9.0f));
-	ButtonObjects[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Options_Button.png").c_str())));
-	//Exit Button
-	ButtonObjects[2].setPosition(glm::vec3(0.0f, 0.01f, 21.0f));
-	ButtonObjects[2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Exit_Button.png").c_str())));
-	//Back Button
-	ButtonObjects[3].setPosition(glm::vec3(-21.0f, 0.01f, -21.0f));
-	ButtonObjects[3].setScale(glm::vec3(2.0f*0.9f, 1.0f, 3.50f*0.9f));
-	ButtonObjects[3].setSizeOfHitBox(glm::vec3(2.0f*1.5f, 1.0f, 3.50f*0.9f));
-	ButtonObjects[3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Back_Button.png").c_str())));
-	//Exit Button
-	ButtonObjects[4].setPosition(glm::vec3(0.0f, 0.01f, -3.0f));
-	ButtonObjects[4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Controls_Button.png").c_str())));
-	//Exit Button
-	ButtonObjects[5].setPosition(glm::vec3(0.0f, 0.01f, 9.0f));
-	ButtonObjects[5].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Power_Ups_Button.png").c_str())));
-	//Exit Button
-	ButtonObjects[6].setPosition(glm::vec3(0.0f, 0.01f, 21.0f));
-	ButtonObjects[6].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Config_Button.png").c_str())));
-	//_Button.png
-	for (unsigned int i = 0; i < NumberOfButtons; i++) {
-		Button[i].SBut_Top = ButtonObjects[i].Top(), Button[i].SBut_Bot = ButtonObjects[i].Bottom(), Button[i].SBut_Pos = ButtonObjects[i].Position(), Button[i].SBut_Rad = (ButtonObjects[i].Radius() / 2.0f);
-	}
-	
-
-	//Slider bar
-	planeForSliders[0].objectLoader(ObjectPath + "PlainForText.obj");
-	planeForSliders[0].setMaterial(passThroughMaterial);
-	planeForSliders[0].setScale(glm::vec3(5.0f, 1.0f, 3.50f));
-	planeForSliders[0].setSizeOfHitBox(glm::vec3(5.0f*1.6f, 1.0f, 3.50f*0.9f));
-	planeForSliders[0].setPosition(glm::vec3(20.0f, 0.01f, -10.0f));
-	planeForSliders[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Slider_Bar.png").c_str())));
-	//Slider nob
-	ButtonForSliders[0].objectLoader(&planeForSliders[0]);
-	ButtonForSliders[0].setScale(glm::vec3(1.0f, 1.0f, 3.50f));
-	ButtonForSliders[0].setSizeOfHitBox(glm::vec3(1.0f, 1.0f, 3.50f*0.9f));
-	ButtonForSliders[0].setPosition(glm::vec3(20.0f, 0.02f, -10.0f));
-	ButtonForSliders[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Slider_Nob.png").c_str())));
-
-
-	//Slider full
-	Slider[0].SBar_Top = planeForSliders[0].Top(), Slider[0].SBar_Bot = planeForSliders[0].Bottom(), Slider[0].SBar_Pos = planeForSliders[0].Position(), Slider[0].SBar_Rad = (planeForSliders[0].Radius() / 2.0f);
-	Slider[0].SNob_Top = ButtonForSliders[0].Top(), Slider[0].SNob_Bot = ButtonForSliders[0].Bottom(), Slider[0].SNob_Pos = ButtonForSliders[0].Position(), Slider[0].SNob_Rad = (ButtonForSliders[0].Radius() / 2.0f);
-	Slider[0].SBar_Length = ((Slider[0].SBar_Top - Slider[0].SNob_Rad) - (Slider[0].SBar_Bot + Slider[0].SNob_Rad));
-	Slider[0].SNob_Length = (Slider[0].SNob_Pos - (Slider[0].SBar_Bot + Slider[0].SNob_Rad));
-	Slider[0].SNob_Precent = (Slider[0].SNob_Length / Slider[0].SBar_Length)*100.0f;
-
-	for (unsigned int i = 1; i < NumberOfSliders; i++) {
-		//Slider bar
-		planeForSliders[i].objectLoader(&planeForSliders[i - 1]);
-		planeForSliders[i].setPosition(planeForSliders[i - 1].Position() + glm::vec3(0.0f, 0.0f, planeForSliders[i - 1].Radius().z));
-		//Slider nob
-		ButtonForSliders[i].objectLoader(&ButtonForSliders[i - 1]);
-		ButtonForSliders[i].setPosition(ButtonForSliders[i - 1].Position() + glm::vec3(0.0f, 0.0f, ButtonForSliders[i - 1].Radius().z));
-		//Slider full
-		Slider[i].SBar_Top = planeForSliders[i].Top(), Slider[i].SBar_Bot = planeForSliders[i].Bottom(), Slider[i].SBar_Pos = planeForSliders[i].Position(), Slider[i].SBar_Rad = (planeForSliders[i].Radius() / 2.0f);
-		Slider[i].SNob_Top = ButtonForSliders[i].Top(), Slider[i].SNob_Bot = ButtonForSliders[i].Bottom(), Slider[i].SNob_Pos = ButtonForSliders[i].Position(), Slider[i].SNob_Rad = (ButtonForSliders[i].Radius() / 2.0f);
-		Slider[i].SBar_Length = ((Slider[i].SBar_Top - Slider[i].SNob_Rad) - (Slider[i].SBar_Bot + Slider[i].SNob_Rad));
-		Slider[i].SNob_Length = (Slider[i].SNob_Pos - (Slider[i].SBar_Bot + Slider[i].SNob_Rad));
-		Slider[i].SNob_Precent = (Slider[i].SNob_Length / Slider[i].SBar_Length)*100.0f;
-	}
-
 
 }
+
 
 
 void init()
 {
-
-
-	TextLoader loadTextFile;
-	if (DoesFileExists("..//Assets")) { loadTextFile.objectLoader("..//Assets//file.txt"); }
-	else if (DoesFileExists("Assets")) { loadTextFile.objectLoader("Assets//file.txt"); }
-	else { std::cout << "[ERROR] Could not find [Font]" << std::endl; }
-
-
+	srand(static_cast <unsigned> (time(NULL)));
 
 	//Textures & Texture parameters
 	glEnable(GL_TEXTURE_2D);
@@ -2834,16 +2695,30 @@ void init()
 	glPolygonMode(GL_FRONT, GL_FILL);
 
 
-
-
-
 	ilInit();
 	iluInit();
 	ilutRenderer(ILUT_OPENGL);
 
+	std::cout << "_____________________________________" << std::endl;
+	TextLoader loadTextFile;
+	if (DoesFileExists("..//Assets")) { loadTextFile.objectLoader("..//Assets//file.txt"); }
+	else if (DoesFileExists("Assets")) { loadTextFile.objectLoader("Assets//file.txt"); }
+	else { std::cout << "[ERROR] Could not find [Font]" << std::endl; }
+
 	if (DoesFileExists("..//Assets//Fonts//")) { SystemText.LoadTextFont("..//Assets//Fonts//FreeSerif.ttf", SystemText); }
 	else if (DoesFileExists("Assets//Fonts//")) { SystemText.LoadTextFont("Assets//Fonts//FreeSerif.ttf", SystemText); }
 	else { std::cout << "[ERROR] Could not find [Font]" << std::endl; }
+
+	
+
+	InitializeShaders();
+	std::cout << "_____________________________________" << std::endl;
+	InitializeTextPlane();
+	std::cout << "_____________________________________" << std::endl;
+	InitializeSounds();
+	std::cout << "_____________________________________" << std::endl;
+	InitializeObjects();
+	std::cout << "_____________________________________" << std::endl;
 
 	if (true) {
 		PlayerTeam[0] = 0;
@@ -2858,13 +2733,7 @@ void init()
 		PlayerTeam[3] = 0;
 	}
 
-	InitializeShaders();
-	InitializeSounds();
-	InitializeObjects();
-	InitializeTextPlane();
-
-
-
+	//setting abilitys
 	for (int i = 0; i < NumberOfPlayers; i++) {
 		//PlayerTeam[i] = i;
 		for (int j = 0; j < NumberOfSpecials; j++) {
@@ -2873,23 +2742,15 @@ void init()
 			AbilityLength[i][j] = 6.0f;
 		}
 	}
-
-
+	randomSpecialTime = (rand() % 45 + 15) + ((rand() % 100 - 50)*0.01f);
+	//setting all four camera's
 	for (int i = 0; i < 4; i++) {
 		cameralook = i;
 		WhatCameraIsLookingAt();
 	}
 
-	srand(static_cast <unsigned> (time(NULL)));
 	std::cout << std::endl << "Press [Esc] to exit." << std::endl;
 	std::cout << "_____________________________________" << std::endl;
-	planeForText[0].Viewable = true;
-
-
-	randomSpecialTime = (rand() % 45 + 15) + ((rand() % 100 - 50)*0.01f); //-29.50 to 90.50
-
-
-
 }
 
 /* function main()
@@ -2933,7 +2794,6 @@ int main(int argc, char **argv)
 
 	// start the event handler
 	glutMainLoop();
-
 
 	return 0;
 }

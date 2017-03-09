@@ -235,8 +235,13 @@ public:
 	}
 
 	//draw text to the screen
-	void TextDraw(Material &s, glm::mat4x4 *pvm, std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color, int orientation)
+	void TextDraw(Material &s, glm::mat4x4 *pvm, std::string text, float _x, float _y, float _scale, glm::vec3 color, int orientation)
 	{
+		GLfloat x = static_cast<GLfloat>(_x);
+		GLfloat y = static_cast<GLfloat>(_y);
+		GLfloat scale = static_cast<GLfloat>(_scale);
+
+
 		//binds shader
 		s.shader->bind();
 		//set the colour of the text
@@ -294,7 +299,7 @@ public:
 			//draw the charater texture
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 			//set the starting position of the next charater
-			x += (ch.Advance >> 6) * scale;
+			static_cast<GLfloat>(x) += (ch.Advance >> 6) * scale;
 		}
 		//unbind vertex array
 		glBindVertexArray(0);
@@ -554,6 +559,7 @@ static void setEnemySpawn(Manifold &m, int Inum) {
 	if (Inum % 2 == 0) { m.B.setPosition(glm::vec3(-ranPosX, ranPosY, ranPosZ)); }
 	else { m.B.setPosition(glm::vec3(ranPosX, ranPosY, ranPosZ)); }
 	m.B.setVelocity(glm::vec3(0.0f, (-0.15f - ranFall), 0.0f));
+	m.B.setForceOnObject(glm::vec3(0.0f, 0.0f, 0.0f));
 }
 
 /* function applyWallAvoidingSystem()
