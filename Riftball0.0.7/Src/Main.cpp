@@ -124,10 +124,11 @@ float SprintSpeed = 1.5f; float abilityRotation[NumberOfSpecials]{ 0.0f };
 Gamepad gamepad;
 MorphMath morphmath;
 //Sounds
-Sound drum[2];
-Sound powerup[10];
-FMOD::Channel *drum_Channel;
-FMOD::Channel *powerup_Channel;
+Sound systemSound;
+Sound powerup[9];//Powerup sounds
+Sound Fx[3];//Fx sounds
+FMOD::Channel *powChannel;
+FMOD::Channel *FxChannel[3];
 //Text
 RenderText SystemText;
 Manifold m;
@@ -884,7 +885,16 @@ void InMenuDraw(int Inum)
 */
 void MenuScreen(float deltaTasSeconds)
 {
-	Sound::SystemUpdate();
+	//Sound::SystemUpdate();
+
+	systemSound.SystemUpdate();
+
+	FMOD_VECTOR drumPos; drumPos.x = 0; drumPos.y = 0; drumPos.z = 0;
+	FMOD_VECTOR drumVel; drumVel.x = 12.0f; drumVel.y = 0.0f; drumVel.z = 0.0f;
+
+	powerup[5].SetPosition(powChannel, drumPos, drumVel);
+	Fx[0].SetPosition(FxChannel[0], drumPos, drumVel);
+	Fx[1].SetPosition(FxChannel[1], drumPos, drumVel);
 
 	if (mouseDown[0]) {
 		mouseDown[0] = false;
@@ -1146,13 +1156,17 @@ void InGameDraw(int Inum)
 */
 void GameScreen(float deltaTasSeconds) 
 {
+	//Intialize the crowd sound to play when the game starts
+	FxChannel[1] = Fx[1].Play();
+	FxChannel[1]->setVolume(0.1);
+
 	for (int i = 0; i < 2; i++) {
 		Sound::Sys.listenerPos[i].x = Players[i].Position().x*10.0f;
 		Sound::Sys.listenerPos[i].y = Players[i].Position().y*10.0f;
 		Sound::Sys.listenerPos[i].z = Players[i].Position().z*10.0f;
 	}
-	Sound::SystemUpdate();
-	drum[0].channel->setVolume(100.0f);
+	systemSound.Sys.Init();
+	
 
 
 	//Collision between things
@@ -1348,14 +1362,14 @@ void GameScreen(float deltaTasSeconds)
 					if (m.B.SpecialAttribute() == 0) {}
 					//Seeker Swarm
 					else if (m.B.SpecialAttribute() == 1) {
-						powerup[1].Play();
+						powerup[0].Play();
 						m.B.Viewable = false;
 						AbilityAffected[i][1] = true;
 						AbilityCounter[i][1] = 0.0f;
 					}
 					//Toss-Up
 					else if (m.B.SpecialAttribute() == 2) {
-						powerup[2].Play();
+						powerup[1].Play();
 						m.B.Viewable = false;
 						for (int ij = 0; ij < NumberOfEnemies; ij++) {
 							float ranPosY = static_cast<float>(rand() % 1000 + 100); //100 to 1100
@@ -1364,48 +1378,48 @@ void GameScreen(float deltaTasSeconds)
 					}
 					//Health Up
 					else if (m.B.SpecialAttribute() == 3) {
-						powerup[3].Play();
+						powerup[2].Play();
 						m.B.Viewable = false;
 						Health[i] += 10; 
 					}
 					//Boost
 					else if (m.B.SpecialAttribute() == 4) {
-						powerup[4].Play();
+						powerup[3].Play();
 						m.B.Viewable = false;
 						AbilityAffected[i][4] = true;
 						AbilityCounter[i][4] = 0.0f;
 					}
 					//Flee
 					else if (m.B.SpecialAttribute() == 5) {
-						powerup[5].Play();
+						powerup[4].Play();
 						m.B.Viewable = false;
 						AbilityAffected[i][5] = true;
 						AbilityCounter[i][5] = 0.0f;
 					}
 					//Short Circuit
 					else if (m.B.SpecialAttribute() == 6) {
-						powerup[6].Play();
+						powerup[5].Play();
 						m.B.Viewable = false;
 						AbilityAffected[i][6] = true;
 						AbilityCounter[i][6] = 0.0f;
 					}
 					//Super Shockwave
 					else if (m.B.SpecialAttribute() == 7) {
-						powerup[7].Play();
+						powerup[6].Play();
 						m.B.Viewable = false;
 						AbilityAffected[i][7] = true;
 						AbilityCounter[i][7] = 0.0f;
 					}
 					//Invincibility
 					else if (m.B.SpecialAttribute() == 8) {
-						powerup[8].Play();
+						powerup[7].Play();
 						m.B.Viewable = false;
 						AbilityAffected[i][8] = true;
 						AbilityCounter[i][8] = 0.0f;
 					}
 					//Flipped
 					else if (m.B.SpecialAttribute() == 9) {
-						powerup[9].Play();
+						powerup[8].Play();
 						m.B.Viewable = false;
 						AbilityAffected[i][9] = true;
 						AbilityCounter[i][9] = 0.0f;
@@ -2018,8 +2032,6 @@ void KeyboardCallbackFunction(unsigned char key, int x, int y)
 			drum[0].SetPosition(glm::vec3(110.0f));
 			drum[0].Play();
 			*/
-			drum[0].SetPosition(glm::vec3(110.0f));
-			drum[0].Play();
 			
 			break;
 		case 'R':
@@ -2044,10 +2056,15 @@ void KeyboardCallbackFunction(unsigned char key, int x, int y)
 			Specials[static_cast<int>(TestFloat)].Viewable = true; Specials[static_cast<int>(TestFloat)].setPosition(glm::vec3(0.0f, 20.0f, 0.0f));
 			break;
 		case '1':
+			FxChannel[0] = Fx[0].Play();
+			FxChannel[0]->setVolume(1.0);
 			break;
 		case '2': 
+			FxChannel[1] = Fx[1].Play();
+			FxChannel[1]->setVolume(0.1);
 			break;
 		case '3': 
+			Fx[2].Play();
 			break;
 		case '4': 
 			break;
@@ -2404,8 +2421,8 @@ void InitializeSounds() {
 	else if (DoesFileExists("Assets//Media")) { SoundPath = "Assets//Media//"; }
 	else { std::cout << "[ERROR] Could not find [Media]" << std::endl; }
 
-	Sound::Sys.Init();
-	drum[0].Load(_strdup((SoundPath + "drumloop.wav").c_str()), true, false);
+	systemSound.Sys.Init();
+
 	for (int i = 0; i < 2; i++) {
 		Sound::Sys.listenerPos[i].x = 0.0f; Sound::Sys.listenerPos[i].y = 0.0f; Sound::Sys.listenerPos[i].z = 0.0f;
 	}
@@ -2413,26 +2430,39 @@ void InitializeSounds() {
 
 
 	//Power up sound effects
-	powerup[0].Load(_strdup((SoundPath + "drumloop.wav").c_str()), TRUE, FALSE);
-	//Seeker Swarm = 1
-	powerup[1].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_seeker.wav").c_str()), TRUE, FALSE);
-	//Toss-Up = 2
-	powerup[2].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_toss.wav").c_str()), TRUE, FALSE);
-	//Health Up = 3
-	powerup[3].Load(_strdup((SoundPath + "drumloop.wav").c_str()), TRUE, FALSE);
-	//Boost = 4
-	powerup[4].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_boost.wav").c_str()), TRUE, FALSE);
-	//Flee = 5
-	powerup[5].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_flee.wav").c_str()), TRUE, FALSE);
-	//Short Circuit = 6
-	powerup[6].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_sc.wav").c_str()), TRUE, FALSE);
-	//Super Shockwave = 7
-	powerup[7].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_ss.wav").c_str()), TRUE, FALSE);
-	//Invincibility = 8
-	powerup[8].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_invincible.wav").c_str()), TRUE, FALSE);
-	//Flipped = 9
-	powerup[9].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_flipped.wav").c_str()), TRUE, FALSE);
 
+	//Seeker Swarm = 0
+	powerup[0].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_seeker.wav").c_str()), TRUE, FALSE);
+	//Toss-Up = 1
+	powerup[1].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_toss.wav").c_str()), TRUE, FALSE);
+	//Health Up = 2
+	powerup[2].Load(_strdup((SoundPath + "drumloop.wav").c_str()), TRUE, FALSE);
+	//Boost = 3
+	powerup[3].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_boost.wav").c_str()), TRUE, FALSE);
+	//Flee = 4
+	powerup[4].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_flee.wav").c_str()), TRUE, FALSE);
+	//Short Circuit = 5
+	powerup[5].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_sc.wav").c_str()), TRUE, FALSE);
+	//Super Shockwave = 6
+	powerup[6].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_ss.wav").c_str()), TRUE, FALSE);
+	//Invincibility = 7
+	powerup[7].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_invincible.wav").c_str()), TRUE, FALSE);
+	//Flipped = 8
+	powerup[8].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_flipped.wav").c_str()), TRUE, FALSE);
+
+
+	//Fx sound effects
+	Fx[0].Load(_strdup((SoundPath + "Soundeffects//bounce0.3.wav").c_str()), TRUE, FALSE);//Ball bouncing
+	Fx[1].Load(_strdup((SoundPath + "Soundeffects//crowdsound0.1.wav").c_str()), TRUE, TRUE);//Crowd sound effect
+
+	FxChannel[0] = Fx[0].Play();
+
+	FxChannel[0]->setVolume(1.0);
+	FxChannel[1]->setVolume(0.1);
+
+	for (int i = 0; i < 2; i++) {
+		Sound::Sys.listenerPos[i].x = 0.0f; Sound::Sys.listenerPos[i].y = 0.0f; Sound::Sys.listenerPos[i].z = 0.0f;
+	}
 }
 
 /* function InitializeObjects()
@@ -2632,7 +2662,7 @@ void InitializeObjects()
 	Objects[0].setSizeOfHitBox(glm::vec3(100.0f, 0.01f, 100.0f)); //HitBox
 	Objects[0].setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 	Objects[0].setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-	Objects[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Ground_3.png").c_str())));
+	Objects[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Ground0.3.png").c_str())));
 
 	//Walls Left
 	Objects[1].objectLoader(ObjectPath + "Rift//stadium.obj");
@@ -2680,9 +2710,9 @@ void InitializeObjects()
 	//Enemies
 	Enemies[0].objectLoader(ObjectPath + "Enemies//Enemie_LP.obj");
 	Enemies[0].setMaterial(passThroughMaterial);
-	Enemies[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Enemies//Enemy_2.png").c_str())));
+	Enemies[0].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Enemies//Enemy0.2.png").c_str())));
 	Enemies[1].objectLoader(&Enemies[0]);
-	Enemies[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Enemies//Enemy_3.png").c_str())));
+	Enemies[1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Enemies//Enemy0.3.png").c_str())));
 
 	ShadowObject[0].objectLoader(ObjectPath + "PlainForShadow.obj");
 	ShadowObject[0].setMaterial(passThroughMaterial);
