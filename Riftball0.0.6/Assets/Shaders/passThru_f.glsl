@@ -70,5 +70,4 @@ void main()
 	if (textureColor.a < 0.9){ FragColor.a = (textureColor.a*0.5); }
 	if (textureColor.a < 0.3){ discard; }
 	
-	
 }

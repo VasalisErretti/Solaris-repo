@@ -1,37 +1,83 @@
-﻿  ExtraFunctions.cpp
-Include\ExtraFunctions.cpp(351): warning C4838: conversion from 'FT_Pos' to 'GLuint' requires a narrowing conversion
-  SoundEngine.cpp
-  FrameBufferObject.cpp
+﻿  SoundEngine.cpp
+  ExtraFunctions.cpp
   GameObject.cpp
-c:\stuff_and_things\github\solaris-repo\filetest001\include\MorphMath.h(112): warning C4477: 'fscanf_s' : format string '%s' requires an argument of type 'unsigned int', but variadic argument 2 has type 'unsigned __int64'
-  c:\stuff_and_things\github\solaris-repo\filetest001\include\MorphMath.h(112): note: this argument is used as a buffer size
-Include\GameObject.cpp(274): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
-Include\GameObject.cpp(218): warning C4477: 'fscanf_s' : format string '%s' requires an argument of type 'unsigned int', but variadic argument 2 has type 'unsigned __int64'
-  Include\GameObject.cpp(218): note: this argument is used as a buffer size
-Include\GameObject.cpp(459): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
-Include\GameObject.cpp(403): warning C4477: 'fscanf_s' : format string '%s' requires an argument of type 'unsigned int', but variadic argument 2 has type 'unsigned __int64'
-  Include\GameObject.cpp(403): note: this argument is used as a buffer size
-c:\stuff_and_things\github\solaris-repo\filetest001\include\MorphMath.h(30): warning C4244: 'initializing': conversion from 'float' to 'GLuint', possible loss of data
-  Include\GameObject.cpp(629): note: see reference to function template instantiation 'T MorphMath::Lerp<GLuint>(T,T,float)' being compiled
-          with
-          [
-              T=GLuint
-          ]
+c:\stuff_and_things\filetest001\include\MorphMath.h(108): warning C4477: 'fscanf_s' : format string '%s' requires an argument of type 'unsigned int', but variadic argument 2 has type 'unsigned __int64'
+  c:\stuff_and_things\filetest001\include\MorphMath.h(108): note: this argument is used as a buffer size
+Include\GameObject.cpp(256): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+Include\GameObject.cpp(200): warning C4477: 'fscanf_s' : format string '%s' requires an argument of type 'unsigned int', but variadic argument 2 has type 'unsigned __int64'
+  Include\GameObject.cpp(200): note: this argument is used as a buffer size
   HTRLoader.cpp
-Include\HTRLoader.cpp(380): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-Include\HTRLoader.cpp(393): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+Include\HTRLoader.cpp(378): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+Include\HTRLoader.cpp(391): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
   Shader.cpp
-Include\Shader.cpp(99): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-  ShaderProgram.cpp
+Include\Shader.cpp(87): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
   Main.cpp
-C:\Stuff_And_Things\GitHub\Solaris-repo\FileTest001\Include\MorphMath.h(112): warning C4477: 'fscanf_s' : format string '%s' requires an argument of type 'unsigned int', but variadic argument 2 has type 'unsigned __int64'
-  C:\Stuff_And_Things\GitHub\Solaris-repo\FileTest001\Include\MorphMath.h(112): note: this argument is used as a buffer size
-C:\Stuff_And_Things\GitHub\Solaris-repo\FileTest001\Include\ExtraFunctions.cpp(351): warning C4838: conversion from 'FT_Pos' to 'GLuint' requires a narrowing conversion
-C:\Stuff_And_Things\GitHub\Solaris-repo\FileTest001\Include\FileLoader.h(46): warning C4477: 'fscanf_s' : format string '%s' requires an argument of type 'unsigned int', but variadic argument 2 has type 'unsigned __int64'
-  C:\Stuff_And_Things\GitHub\Solaris-repo\FileTest001\Include\FileLoader.h(46): note: this argument is used as a buffer size
-Src\Main.cpp(445): warning C4244: 'argument': conversion from 'int' to 'GLfloat', possible loss of data
-Src\Main.cpp(746): warning C4244: 'argument': conversion from 'int' to 'GLfloat', possible loss of data
-Src\Main.cpp(747): warning C4244: 'argument': conversion from 'int' to 'GLfloat', possible loss of data
-Src\Main.cpp(750): warning C4244: 'argument': conversion from 'int' to 'GLfloat', possible loss of data
-Src\Main.cpp(751): warning C4244: 'argument': conversion from 'int' to 'GLfloat', possible loss of data
-LINK : fatal error LNK1104: cannot open file 'freeglutd.lib'
+C:\Stuff_And_Things\FileTest001\Include\MorphMath.h(108): warning C4477: 'fscanf_s' : format string '%s' requires an argument of type 'unsigned int', but variadic argument 2 has type 'unsigned __int64'
+  C:\Stuff_And_Things\FileTest001\Include\MorphMath.h(108): note: this argument is used as a buffer size
+SoundEngine.obj : error LNK2001: unresolved external symbol FMOD_System_Create
+SoundEngine.obj : error LNK2001: unresolved external symbol "public: enum FMOD_RESULT __cdecl FMOD::System::playSound(class FMOD::Sound *,class FMOD::ChannelGroup *,bool,class FMOD::Channel * *)" (?playSound@System@FMOD@@QEAA?AW4FMOD_RESULT@@PEAVSound@2@PEAVChannelGroup@2@_NPEAPEAVChannel@2@@Z)
+SoundEngine.obj : error LNK2001: unresolved external symbol "public: enum FMOD_RESULT __cdecl FMOD::System::createSound(char const *,unsigned int,struct FMOD_CREATESOUNDEXINFO *,class FMOD::Sound * *)" (?createSound@System@FMOD@@QEAA?AW4FMOD_RESULT@@PEBDIPEAUFMOD_CREATESOUNDEXINFO@@PEAPEAVSound@2@@Z)
+SoundEngine.obj : error LNK2001: unresolved external symbol "public: enum FMOD_RESULT __cdecl FMOD::System::getVersion(unsigned int *)" (?getVersion@System@FMOD@@QEAA?AW4FMOD_RESULT@@PEAI@Z)
+SoundEngine.obj : error LNK2001: unresolved external symbol "public: enum FMOD_RESULT __cdecl FMOD::System::set3DListenerAttributes(int,struct FMOD_VECTOR const *,struct FMOD_VECTOR const *,struct FMOD_VECTOR const *,struct FMOD_VECTOR const *)" (?set3DListenerAttributes@System@FMOD@@QEAA?AW4FMOD_RESULT@@HPEBUFMOD_VECTOR@@000@Z)
+SoundEngine.obj : error LNK2001: unresolved external symbol "public: enum FMOD_RESULT __cdecl FMOD::System::set3DSettings(float,float,float)" (?set3DSettings@System@FMOD@@QEAA?AW4FMOD_RESULT@@MMM@Z)
+SoundEngine.obj : error LNK2001: unresolved external symbol "public: enum FMOD_RESULT __cdecl FMOD::System::update(void)" (?update@System@FMOD@@QEAA?AW4FMOD_RESULT@@XZ)
+SoundEngine.obj : error LNK2001: unresolved external symbol "public: enum FMOD_RESULT __cdecl FMOD::System::close(void)" (?close@System@FMOD@@QEAA?AW4FMOD_RESULT@@XZ)
+SoundEngine.obj : error LNK2001: unresolved external symbol "public: enum FMOD_RESULT __cdecl FMOD::System::init(int,unsigned int,void *)" (?init@System@FMOD@@QEAA?AW4FMOD_RESULT@@HIPEAX@Z)
+SoundEngine.obj : error LNK2001: unresolved external symbol "public: enum FMOD_RESULT __cdecl FMOD::System::release(void)" (?release@System@FMOD@@QEAA?AW4FMOD_RESULT@@XZ)
+SoundEngine.obj : error LNK2001: unresolved external symbol "public: enum FMOD_RESULT __cdecl FMOD::Sound::setMode(unsigned int)" (?setMode@Sound@FMOD@@QEAA?AW4FMOD_RESULT@@I@Z)
+SoundEngine.obj : error LNK2001: unresolved external symbol "public: enum FMOD_RESULT __cdecl FMOD::Sound::set3DMinMaxDistance(float,float)" (?set3DMinMaxDistance@Sound@FMOD@@QEAA?AW4FMOD_RESULT@@MM@Z)
+SoundEngine.obj : error LNK2001: unresolved external symbol "public: enum FMOD_RESULT __cdecl FMOD::Sound::release(void)" (?release@Sound@FMOD@@QEAA?AW4FMOD_RESULT@@XZ)
+SoundEngine.obj : error LNK2001: unresolved external symbol "public: enum FMOD_RESULT __cdecl FMOD::ChannelControl::set3DAttributes(struct FMOD_VECTOR const *,struct FMOD_VECTOR const *,struct FMOD_VECTOR const *)" (?set3DAttributes@ChannelControl@FMOD@@QEAA?AW4FMOD_RESULT@@PEBUFMOD_VECTOR@@00@Z)
+SoundEngine.obj : error LNK2001: unresolved external symbol "public: enum FMOD_RESULT __cdecl FMOD::ChannelControl::setPaused(bool)" (?setPaused@ChannelControl@FMOD@@QEAA?AW4FMOD_RESULT@@_N@Z)
+GameObject.obj : error LNK2001: unresolved external symbol __imp___glewEnableVertexAttribArray
+GameObject.obj : error LNK2001: unresolved external symbol __imp___glewBindVertexArray
+GameObject.obj : error LNK2001: unresolved external symbol __imp___glewVertexAttribPointer
+GameObject.obj : error LNK2001: unresolved external symbol __imp___glewBindBuffer
+GameObject.obj : error LNK2001: unresolved external symbol __imp___glewBufferData
+GameObject.obj : error LNK2001: unresolved external symbol __imp___glewGenVertexArrays
+GameObject.obj : error LNK2001: unresolved external symbol __imp___glewGenBuffers
+GameObject.obj : error LNK2001: unresolved external symbol __imp___glewDeleteBuffers
+Shader.obj : error LNK2001: unresolved external symbol __imp___glewUseProgram
+Shader.obj : error LNK2001: unresolved external symbol __imp___glewGetShaderiv
+Shader.obj : error LNK2001: unresolved external symbol __imp___glewCompileShader
+Shader.obj : error LNK2001: unresolved external symbol __imp___glewCreateShader
+Shader.obj : error LNK2001: unresolved external symbol __imp___glewCreateProgram
+Shader.obj : error LNK2001: unresolved external symbol __imp___glewUniform1i
+Shader.obj : error LNK2001: unresolved external symbol __imp___glewGetShaderInfoLog
+Shader.obj : error LNK2001: unresolved external symbol __imp___glewUniform1f
+Shader.obj : error LNK2001: unresolved external symbol __imp___glewGetUniformLocation
+Shader.obj : error LNK2001: unresolved external symbol __imp___glewAttachShader
+Shader.obj : error LNK2001: unresolved external symbol __imp___glewActiveTexture
+Shader.obj : error LNK2001: unresolved external symbol __imp___glewDeleteProgram
+Shader.obj : error LNK2001: unresolved external symbol __imp___glewShaderSource
+Shader.obj : error LNK2001: unresolved external symbol __imp___glewUniformMatrix4fv
+Shader.obj : error LNK2001: unresolved external symbol __imp___glewDetachShader
+Shader.obj : error LNK2001: unresolved external symbol __imp___glewDeleteShader
+Shader.obj : error LNK2001: unresolved external symbol __imp___glewLinkProgram
+Shader.obj : error LNK2001: unresolved external symbol __imp___glewUniform3fv
+Main.obj : error LNK2001: unresolved external symbol __imp_glutPassiveMotionFunc
+Main.obj : error LNK2001: unresolved external symbol __imp_ilutGLLoadImage
+Main.obj : error LNK2001: unresolved external symbol __imp_glutBitmapCharacter
+Main.obj : error LNK2001: unresolved external symbol __imp_glutKeyboardUpFunc
+Main.obj : error LNK2001: unresolved external symbol __imp_glutReshapeFunc
+Main.obj : error LNK2001: unresolved external symbol __imp___glutCreateWindowWithExit
+Main.obj : error LNK2001: unresolved external symbol __imp_glutMouseFunc
+Main.obj : error LNK2001: unresolved external symbol __imp___glutInitWithExit
+Main.obj : error LNK2001: unresolved external symbol __imp___glewBindAttribLocation
+Main.obj : error LNK2001: unresolved external symbol __imp_glutPostRedisplay
+Main.obj : error LNK2001: unresolved external symbol __imp_glutKeyboardFunc
+Main.obj : error LNK2001: unresolved external symbol __imp_glutReshapeWindow
+Main.obj : error LNK2001: unresolved external symbol __imp_iluInit
+Main.obj : error LNK2001: unresolved external symbol __imp_ilutRenderer
+Main.obj : error LNK2001: unresolved external symbol __imp_glutInitDisplayMode
+Main.obj : error LNK2001: unresolved external symbol __imp_ilInit
+Main.obj : error LNK2001: unresolved external symbol __imp_glutTimerFunc
+Main.obj : error LNK2001: unresolved external symbol __imp_glutDisplayFunc
+Main.obj : error LNK2001: unresolved external symbol __imp_glutMainLoop
+Main.obj : error LNK2001: unresolved external symbol __imp_glutInitWindowPosition
+Main.obj : error LNK2001: unresolved external symbol __imp_glutMotionFunc
+Main.obj : error LNK2001: unresolved external symbol __imp_glutGet
+Main.obj : error LNK2001: unresolved external symbol __imp_glutInitWindowSize
+Main.obj : error LNK2001: unresolved external symbol __imp_glewInit
+Main.obj : error LNK2001: unresolved external symbol __imp_glutSwapBuffers
+C:\Stuff_And_Things\FileTest001\x64\Release\FileTest001.exe : fatal error LNK1120: 66 unresolved externals

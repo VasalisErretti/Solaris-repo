@@ -58,6 +58,4 @@ void main()
 
 
 	FragColor = (out_Color_01 + out_Color_02)*0.5; FragColor.w = 1.0;
-
-	FragColor = vec4(vIn.normal * 0.5 + 0.5, 1.0f);
 }

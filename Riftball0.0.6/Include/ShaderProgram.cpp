@@ -61,9 +61,7 @@ int ShaderProgram::linkProgram()
 	else
 	{
 		std::cout << "[ERROR.2] Shader program failed to link: handle not set. " << std::endl;
-		return 0;
 	}
-	return 0;
 }
 
 void ShaderProgram::bind()

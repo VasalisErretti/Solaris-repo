@@ -39,8 +39,6 @@ GameObject::~GameObject() {
 	glDeleteBuffers(1, &texbo);
 	glDeleteBuffers(1, &colorbo);
 	glDeleteBuffers(1, &vao);
-	if (&textureHandle != NULL) { glDeleteTextures(1, &textureHandle); }
-	if (&material != nullptr) { material.reset(); }
 }
 
 
@@ -81,12 +79,12 @@ void GameObject::update(float deltaT)
 				//update position based on velocity
 				m_Position += m_Velocity;
 			}
-			else if (m_Velocity.x >  TopSpeed) { m_Velocity.x =  (TopSpeed*0.95f); }
-			else if (m_Velocity.x < -TopSpeed) { m_Velocity.x = -(TopSpeed*0.95f); }
-			else if (m_Velocity.y >  TopSpeed) { m_Velocity.y =  (TopSpeed*0.95f); }
-			else if (m_Velocity.y < -TopSpeed) { m_Velocity.y = -(TopSpeed*0.95f); }
-			else if (m_Velocity.z >  TopSpeed) { m_Velocity.z =  (TopSpeed*0.95f); }
-			else if (m_Velocity.z < -TopSpeed) { m_Velocity.z = -(TopSpeed*0.95f); }
+			else if (m_Velocity.x >  TopSpeed) { m_Velocity.x =  (TopSpeed*0.95); }
+			else if (m_Velocity.x < -TopSpeed) { m_Velocity.x = -(TopSpeed*0.95); }
+			else if (m_Velocity.y >  TopSpeed) { m_Velocity.y =  (TopSpeed*0.95); }
+			else if (m_Velocity.y < -TopSpeed) { m_Velocity.y = -(TopSpeed*0.95); }
+			else if (m_Velocity.z >  TopSpeed) { m_Velocity.z =  (TopSpeed*0.95); }
+			else if (m_Velocity.z < -TopSpeed) { m_Velocity.z = -(TopSpeed*0.95); }
 
 			else if (m_Velocity.x == NULL) { m_Velocity.x = 0.0f; }
 			else if (m_Velocity.y == NULL) { m_Velocity.y = 0.0f; }
@@ -125,7 +123,7 @@ void GameObject::updateP(float deltaT)
 					&& ((m_Velocity.x > -TopSpeed) && (m_Velocity.y > -TopSpeed) && (m_Velocity.z > -TopSpeed)))
 				{
 					m_Acceleration = (m_ForceOnObject / m_Mass);//update acceleration based on external force
-					//if a force is applyed to the object  //update velocity based on acceleration
+					//if a force is applyed to the object //update velocity based on acceleration
 					if (m_Acceleration != glm::vec3(0.0f)) { m_Velocity += ((m_Acceleration * deltaT)*0.5f); }
 					//if no force is applyed to the object
 					else { m_Velocity -= (m_Velocity * m_Drag); }
@@ -139,12 +137,12 @@ void GameObject::updateP(float deltaT)
 					//update position based on velocity
 					m_Position += (m_Velocity + (((m_ForceOnObject / m_Mass))*1.5f));
 				}
-				else if (m_Velocity.x > TopSpeed)  { m_Velocity.x =  (TopSpeed*0.95f); }
-				else if (m_Velocity.x < -TopSpeed) { m_Velocity.x = -(TopSpeed*0.95f); }
-				else if (m_Velocity.y > TopSpeed)  { m_Velocity.y =  (TopSpeed*0.95f); }
-				else if (m_Velocity.y < -TopSpeed) { m_Velocity.y = -(TopSpeed*0.95f); }
-				else if (m_Velocity.z > TopSpeed)  { m_Velocity.z =  (TopSpeed*0.95f); }
-				else if (m_Velocity.z < -TopSpeed) { m_Velocity.z = -(TopSpeed*0.95f); }
+				else if (m_Velocity.x > TopSpeed) { m_Velocity.x = (TopSpeed*0.95); }
+				else if (m_Velocity.x < -TopSpeed) { m_Velocity.x = -(TopSpeed*0.95); }
+				else if (m_Velocity.y > TopSpeed) { m_Velocity.y = (TopSpeed*0.95); }
+				else if (m_Velocity.y < -TopSpeed) { m_Velocity.y = -(TopSpeed*0.95); }
+				else if (m_Velocity.z > TopSpeed) { m_Velocity.z = (TopSpeed*0.95); }
+				else if (m_Velocity.z < -TopSpeed) { m_Velocity.z = -(TopSpeed*0.95); }
 
 				else if (m_Velocity.x == NULL) { m_Velocity.x = 0.0f; }
 				else if (m_Velocity.y == NULL) { m_Velocity.y = 0.0f; }
@@ -168,7 +166,7 @@ void GameObject::updateP(float deltaT)
 */
 void GameObject::drawObject()
 {
-	if (Viewable && material != nullptr) {
+	if (Viewable) {
 		material->shader->bind();
 		// bind tex here if you had one
 		glBindTexture(GL_TEXTURE_2D, textureHandle);
@@ -177,6 +175,10 @@ void GameObject::drawObject()
 		glm::mat4x4 scaleMatrix = glm::scale(m_Scale);
 		glm::mat4x4 rotationMatrix = m_Rotation;
 		glm::mat4x4 translationMatrix = glm::translate(m_Position);
+		//glm::mat4x4 rotationX = glm::rotate(m_Angle.x, glm::vec3(1.0, 0.0, 0.0));
+		//glm::mat4x4 rotationY = glm::rotate(m_Angle.y, glm::vec3(0.0, 1.0, 0.0));
+		//glm::mat4x4 rotationZ = glm::rotate(m_Angle.z, glm::vec3(0.0, 0.0, 1.0));
+		//glm::mat4x4 rotationMatrix = (rotationZ * rotationY * rotationX);
 
 
 		//first [scale] then [rotate] then [translate]
@@ -297,7 +299,7 @@ bool GameObject::objectLoader(const char* filePath)
 	this->colors = new float[numtris * 3];
 	for (unsigned int i = 0; i < numtris * 3; i++)
 	{
-		colors[i] = norms[i] + 1.0f / 2.0f;
+		colors[i] = norms[i] + 1.0 / 2.0;
 	}
 
 	glGenVertexArrays(1, &vao);
@@ -310,7 +312,7 @@ bool GameObject::objectLoader(const char* filePath)
 	glEnableVertexAttribArray(0); // position/vertices
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	// textures tho
+	// textures tho(poopybutt)
 	glGenBuffers(1, &texbo);
 	glBindBuffer(GL_ARRAY_BUFFER, texbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*numtris * 2, this->texs, GL_STATIC_DRAW);
@@ -482,7 +484,7 @@ bool GameObject::objectLoader(std::string filePath1)
 	this->colors = new float[numtris * 3];
 	for (unsigned int i = 0; i < numtris * 3; i++)
 	{
-		colors[i] = norms[i] + 1.0f / 2.0f;
+		colors[i] = norms[i] + 1.0 / 2.0;
 	}
 
 	glGenVertexArrays(1, &vao);
@@ -612,8 +614,8 @@ void GameObject::objectLoaderHTR(GameObject * objPath)
 }
 
 void GameObject::morphTarget(GameObject * objPath, float dt) {
-	MorphMath hello;
-	//this once worked but now that it is in [Modern openGL] it broke.
+	//MorphMath hello;
+	////this once worked but now that it is in [Modern openGL] it broke.
 	//for (int i = 0; i < sizeof(verts); i++) {
 	//	this->verts = hello.Lerp(this->verts, objPath->verts, dt);
 	//}
@@ -623,23 +625,6 @@ void GameObject::morphTarget(GameObject * objPath, float dt) {
 	//for (int i = 0; i < sizeof(texs); i++) {
 	//	this->texs = hello.Lerp(this->texs, objPath->texs, dt);
 	//}
-
-
-	for (int i = 0; i < sizeof(vao); i++) {
-		this->vao = hello.Lerp(this->vao, objPath->vao, dt);
-	}
-	for (int i = 0; i < sizeof(vertbo); i++) {
-		this->vertbo = hello.Lerp(this->vertbo, objPath->vertbo, dt);
-	}
-	for (int i = 0; i < sizeof(normbo); i++) {
-		this->normbo = hello.Lerp(this->normbo, objPath->normbo, dt);
-	}
-	for (int i = 0; i < sizeof(texbo); i++) {
-		this->texbo = hello.Lerp(this->texbo, objPath->texbo, dt);
-	}
-	for (int i = 0; i < sizeof(colorbo); i++) {
-		this->colorbo = hello.Lerp(this->colorbo, objPath->colorbo, dt);
-	}
 }
 
 
