@@ -20,6 +20,9 @@
     <ClCompile Include="Include\ShaderProgram.cpp">
       <Filter>Shader</Filter>
     </ClCompile>
+    <ClCompile Include="Include\FrameBufferObject.cpp">
+      <Filter>Other Functions</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\Shader.h">
@@ -51,6 +54,9 @@
     </ClInclude>
     <ClInclude Include="Include\Material.h">
       <Filter>Shader</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\FrameBufferObject.h">
+      <Filter>Other Functions</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

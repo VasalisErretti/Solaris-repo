@@ -235,10 +235,15 @@ public:
 	}
 
 	//draw text to the screen
-	void TextDraw(Material &s, glm::mat4x4 *pvm, std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color, int orientation)
+	void TextDraw(Material &s, glm::mat4x4 *pvm, std::string text, float _x, float _y, float _scale, glm::vec3 color, int orientation)
 	{
+		GLfloat x = static_cast<GLfloat>(_x);
+		GLfloat y = static_cast<GLfloat>(_y);
+		GLfloat scale = static_cast<GLfloat>(_scale);
+
+
 		//binds shader
-		//s.shader->bind();
+		s.shader->bind();
 		//set the colour of the text
 		s.shader->sendUniformVec4("textColor", glm::vec4(color,1.0f));
 		//set the progection matrix the will be used for the text
@@ -294,7 +299,7 @@ public:
 			//draw the charater texture
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 			//set the starting position of the next charater
-			x += (ch.Advance >> 6) * scale;
+			static_cast<GLfloat>(x) += (ch.Advance >> 6) * scale;
 		}
 		//unbind vertex array
 		glBindVertexArray(0);
@@ -362,6 +367,12 @@ public:
 static const float degToRad = (3.14159f / 180.0f);
 // float myDegree = myRad * radToDegree;
 static const float radToDeg = (180.0f / 3.14159f);
+
+
+static float Random(float a, float b)
+{
+	return ((float(rand()) / float(RAND_MAX)) * abs(b - a) + std::fmin(a, b));
+}
 
 
 //////////////////////////////////////////////////////////////////////
@@ -547,13 +558,14 @@ static void setEnemySpawn(Manifold &m, int Inum) {
 	m.B.setScale(glm::vec3(3.0f, 3.0f, 3.0f)); //displayed size
 	m.B.setSizeOfHitBox(glm::vec3(3.0f, 2.0f, 3.0f)); //HitBox
 	m.B.setSizeOfHitBox(glm::vec3(1.3f)); //HitBox
-	float ranPosZ = (rand() % 80 - 40) + ((rand() % 100 - 50)*0.01f); //-39.50 to 40.50
-	float ranPosY = (rand() % 20 + 10) + ((rand() % 100 - 50)*0.01f); //9.50 to 30.50
-	float ranPosX = (rand() % 2) + 1.0 + ((rand() % 100 - 50)*0.01f);
-	float ranFall = ((rand() % 28) + 1.0f)*0.01;
+	float ranPosZ = ((rand() % 80 - 40) + ((rand() % 100 - 50)*0.01f))*1.0f; //-39.50 to 40.50
+	float ranPosY = ((rand() % 20 + 10) + ((rand() % 100 - 50)*0.01f))*1.0f; //9.50 to 30.50
+	float ranPosX = ((rand() % 2) + 1.0f + ((rand() % 100 - 50)*0.01f))*1.0f;
+	float ranFall = (((rand() % 28) + 1.0f)*0.01f)*1.0f;
 	if (Inum % 2 == 0) { m.B.setPosition(glm::vec3(-ranPosX, ranPosY, ranPosZ)); }
 	else { m.B.setPosition(glm::vec3(ranPosX, ranPosY, ranPosZ)); }
 	m.B.setVelocity(glm::vec3(0.0f, (-0.15f - ranFall), 0.0f));
+	m.B.setForceOnObject(glm::vec3(0.0f, 0.0f, 0.0f));
 }
 
 /* function applyWallAvoidingSystem()
@@ -647,6 +659,28 @@ static bool applyRadialAvoidingSystem(Manifold &m, float areaAvoidence, float in
 		else if (avoid.y < -0.5) { avoid.x = avoid.x*3.0f; avoid.z = avoid.z*3.0f; }
 		avoid *= infunce; //how much infunce 
 		m.A.setForceOnObject(m.B.ForceOnObject() + avoid);
+		m.B.setForceOnObject(m.B.ForceOnObject() - avoid);
+	}
+
+	return true;
+}
+static bool applyRadialFleeingSystem(Manifold &m, float areaAvoidence, float infunce)
+{
+	float minimumSeparationX = ((m.A.Radius().x + m.B.Radius().x));
+	float minimumSeparationY = ((m.A.Radius().y + m.B.Radius().y));
+	float minimumSeparationZ = ((m.A.Radius().z + m.B.Radius().z));
+	float dist = glm::distance(m.A.Position(), m.B.Position());
+
+	if (dist > (minimumSeparationX + areaAvoidence)) { return false; }
+	else if (dist > (minimumSeparationY + areaAvoidence)) { return false; }
+	else if (dist > (minimumSeparationZ + areaAvoidence)) { return false; }
+	else {
+		glm::vec3 avoid = m.A.Position() - m.B.Position();
+		if (glm::length(avoid) > 0.0f) { avoid = glm::normalize(avoid); }
+		else { avoid = glm::vec3(0.0f); }
+		if (avoid.y > 0.5) { avoid.x = avoid.x*3.0f; avoid.z = avoid.z*3.0f; }
+		else if (avoid.y < -0.5) { avoid.x = avoid.x*3.0f; avoid.z = avoid.z*3.0f; }
+		avoid *= infunce; //how much infunce 
 		m.B.setForceOnObject(m.B.ForceOnObject() - avoid);
 	}
 
@@ -766,8 +800,8 @@ static void applyGravitationalForces(Manifold &m, float gv)
 		if (m.B.inAir) {
 			//Jumping
 			if (m.B.IsJumping && m.B.InAirCounter > 0.0f) {
-				glm::vec3 gravity = glm::vec3(0.0f, ((0.980f * (m.B.Mass())*0.031) + gv), 0.0f);
-				glm::vec3 JumpDirectionForce = glm::vec3((radToDeg*m.B.ForwardDirection.x)*-0.001f, 0.50f, (radToDeg*m.B.ForwardDirection.z)*-0.001f);
+				glm::vec3 gravity = glm::vec3(0.0f, (((-0.980f - gv) * (m.B.Mass())*0.15 + m.B.InAirCounter)), 0.0f);
+				glm::vec3 JumpDirectionForce = glm::vec3((radToDeg*m.B.ForwardDirection.x)*-0.001f, 0.0f, (radToDeg*m.B.ForwardDirection.z)*-0.001f);
 
 				m.B.setForceOnObject(m.B.ForceOnObject() + gravity + JumpDirectionForce);
 			}
@@ -783,13 +817,13 @@ static void applyGravitationalForces(Manifold &m, float gv)
 			//if object is lower then the ground
 			if ((m.A.Position().y + (m.B.Radius().y - (m.B.Radius().y*0.1f))) > m.B.Position().y) {
 				m.B.setPosition(glm::vec3(m.B.Position().x, (m.A.Position().y + m.B.Radius().y), m.B.Position().z));
-				if (m.B.Velocity().y < 0.0f) { m.B.setVelocity(glm::vec3(m.B.Velocity().x, m.B.Velocity().y*-0.50f, m.B.Velocity().z)); }
+				if (m.B.Velocity().y < 0.0f) { m.B.setVelocity(glm::vec3(m.B.Velocity().x, m.B.Velocity().y*-0.450f, m.B.Velocity().z)); }
 				m.B.inAir = false;
 			}
 			//if the object is above the ground
 			else if (m.B.Position().y > (m.A.Position().y + (m.B.Radius().y + (m.B.Radius().y*0.2f)))) { m.B.inAir = true; }
 			//if the object is on the ground
-			else if (m.B.Position().y < (m.A.Position().y + (m.B.Radius().y + (m.B.Radius().y*0.2f))) && m.B.Velocity().y < 0.05f) {
+			else if (m.B.Position().y < (m.A.Position().y + (m.B.Radius().y + (m.B.Radius().y*0.2f))) && m.B.Velocity().y < 0.1f) {
 				m.B.setPosition(glm::vec3(m.B.Position().x, (m.A.Position().y + m.B.Radius().y), m.B.Position().z));
 				m.B.inAir = false;
 			}

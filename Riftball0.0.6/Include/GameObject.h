@@ -8,7 +8,8 @@
 // 3rd Party Libraries
 #include <glm\glm\glm.hpp>
 #include <GL\glew.h>
-#include <GLUT\glut.h>
+//#include <GL\glut.h>
+#include <GL\freeglut.h>
 #include <glm\glm\gtx\transform.hpp>
 #include <glm\glm\gtc\type_ptr.hpp>
 
@@ -91,7 +92,13 @@ public:
 	GameObject(glm::vec3 position, std::shared_ptr<Material> _material);
 	~GameObject();
 
-	void setTexture(GLuint _textureHandle) { textureHandle = _textureHandle; }
+	void setTexture(GLuint _textureHandle) {
+		textureHandle = _textureHandle;
+		glBindTexture(GL_TEXTURE_2D, textureHandle);
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	}
 
 	void setPosition(glm::vec3 newPosition) { m_Position = newPosition; }
 	void setRotation(glm::vec3 newRotation) { 

@@ -2,9 +2,6 @@
 
 #include <iostream>
 #include <math.h>
-#include <GLUT\glut.h>
-#include <glm\glm\glm.hpp>
-#include <glm\glm\gtx\rotate_vector.hpp>
 #include <string>
 
 class MorphMath {
@@ -24,7 +21,7 @@ public:
 		//t = (t*t) * (3.0f - 2.0f*t);
 		//modifier for Extra smoothstep
 		//t = (t*t*t) * ((t * (5.0f*t - 10.0f)) + 10.0f);
-		T temp = (((1.0f - t) * p1) + (p2 * t));
+		T temp = static_cast<T>(((1.0f - t) * p1) + (p2 * t));
 		return temp;
 	}
 

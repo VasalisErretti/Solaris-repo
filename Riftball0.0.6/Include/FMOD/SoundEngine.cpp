@@ -114,21 +114,18 @@ bool Sound::Load(char* fileName, bool is3d, bool isLoop) {
 
 FMOD::Channel* Sound::Play()
 {
+	if (!isPlayingF()) {
+		isPlaying = false;
+	}
 	//Play sound
 	if (!isPlaying) {
 		isPlaying = true;
 
 		result = Sys.system->playSound(sound, 0, true, &channel); CheckResult(result);
-		if (is3d)
-		{
+		if (is3d) {
 			result = channel->set3DAttributes(&pos, &vel); CheckResult(result);
 		}
 		result = channel->setPaused(false); CheckResult(result);
-	}
-	else {
-		if (!isPlayingF()) {
-			isPlaying = false;
-		}
 	}
 
 	return channel;
