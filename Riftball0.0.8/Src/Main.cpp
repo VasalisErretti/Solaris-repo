@@ -1525,7 +1525,7 @@ void GameScreen(float deltaTasSeconds)
 			for (int j = 0; j < NumberOfEnemies; j++) {
 				m.B = Enemies[j];
 				if (CheckCollision(m))
-				{	Fx[0].Play(); 
+				{	FxChannel[0] = Fx[0].Play(); 
 					ResolveCollision(m, 1.0f); 
 					applySeekSystem(m, -0.50f); }
 				Enemies[j] = m.B;
@@ -1539,8 +1539,8 @@ void GameScreen(float deltaTasSeconds)
 			for (int j = 0; j < NumberOfPlayers; j++) {
 				m.A = Rifts[PlayerTeam[j]];
 				if (ObjectsWithinRange(m, 15.0f)) { applySeekSystem(m, 2.0f); }
-				if (CheckCollision(m)) {
-					Fx[0].Play();
+				if (CheckCollision(m)) 
+				{	FxChannel[2] = Fx[2].Play();
 					setEnemySpawn(m, i);
 					if (!AbilityAffected[j][8]) { Health[PlayerTeam[j]] -= 1; }
 				}//end if
@@ -1555,7 +1555,7 @@ void GameScreen(float deltaTasSeconds)
 				m.A = Objects[j];
 				//if (CheckCollision(m)) { ResolveCollision(m, 1.0f); }
 				if (checkRadialCollision(m)) 
-				{	Fx[0].Play();
+				{	FxChannel[0] = Fx[0].Play();
 					ResolveCollision(m, 01.0f); }
 				if (CheckIfOnObject(m, 0.0f, true)) { onAObjectTemp = true; }
 				Objects[j] = m.A;
@@ -1570,7 +1570,7 @@ void GameScreen(float deltaTasSeconds)
 			for (int j = 0; j < NumberOfSpecials; j++) {
 				m.B = Specials[j];
 				if (checkRadialCollision(m)) 
-				{	Fx[0].Play();
+				{	FxChannel[0] = Fx[0].Play();
 					ResolveCollision(m, 2.0f, 0.01f); }
 				Specials[j] = m.B;
 			}//end for
@@ -1584,7 +1584,7 @@ void GameScreen(float deltaTasSeconds)
 					m.B = Enemies[j];
 					applyRadialAvoidingSystem(m, 01.0f, 0.20f);
 					if (checkRadialCollision(m)) 
-					{	Fx[0].Play(); 
+					{	FxChannel[0] = Fx[0].Play();
 						ResolveCollision(m, 0.50f); }
 					Enemies[j] = m.B;
 				}//end if
@@ -1848,7 +1848,7 @@ void GameScreen(float deltaTasSeconds)
 				for (int j = 0; j < NumberOfEnemies; j++) {
 					m.B = Enemies[j];
 					if (checkRadialCollision(m))
-					{	Fx[0].Play();
+					{	FxChannel[0] = Fx[0].Play();
 						applySeekSystem(m, ForceModifier);
 						ResolveCollision(m, 1.0f); 
 						m.B.inShock = true; }
@@ -2078,7 +2078,8 @@ void KeyboardCallbackFunction(unsigned char key, int x, int y)
 			FxChannel[1]->setVolume(0.1);
 			break;
 		case '3': 
-			Fx[2].Play();
+			FxChannel[2] = Fx[2].Play();
+			FxChannel[2]->setVolume(0.8);
 			break;
 		case '4': 
 			break;
@@ -2468,10 +2469,12 @@ void InitializeSounds() {
 	//Fx sound effects
 	Fx[0].Load(_strdup((SoundPath + "Soundeffects//bounce0.3.wav").c_str()), TRUE, FALSE);//Ball bouncing
 	Fx[1].Load(_strdup((SoundPath + "Soundeffects//crowdsound0.1.wav").c_str()), TRUE, TRUE);//Crowd sound effect
+	Fx[2].Load(_strdup((SoundPath + "Soundeffects//Cheering0.1.wav").c_str()), TRUE, FALSE);//Cheering effect, for when someone scores a goal
 
 	//Set Inital Volume of FX
 	FxChannel[0]->setVolume(1.0);
 	FxChannel[1]->setVolume(0.1);
+	FxChannel[2]->setVolume(0.8);
 
 	for (int i = 0; i < 2; i++) {
 		Sound::Sys.listenerPos[i].x = 0.0f; Sound::Sys.listenerPos[i].y = 0.0f; Sound::Sys.listenerPos[i].z = 0.0f;
