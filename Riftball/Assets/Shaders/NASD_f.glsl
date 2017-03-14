@@ -1,0 +1,73 @@
+
+#version 330
+
+uniform sampler2D tex1;
+uniform sampler2D u_diffuseMap;
+uniform sampler2D u_normalMap;
+uniform sampler2D u_specularMap;
+
+uniform vec4 u_lightPos_01;
+uniform mat4 u_mv;
+
+// Fragment Shader Inputs
+in VertexData
+{
+	vec3 normal;
+	vec2 texCoord;
+	vec4 colour;
+	vec3 eyePos;
+	vec3 vertex;
+} vIn;
+
+layout(location = 0) out vec4 FragColor; //FragColor response to GL_COLOR_ATTACHMENT0 [location = 0 so GL_COLOR_ATTACHMENT0]
+
+void main()
+{
+	FragColor = vec4(vIn.normal * 0.5 + 0.5, 1.0f);
+
+	vec4 diffuseTexture = texture(u_diffuseMap, vIn.texCoord.xy);
+	vec4 normalTexture = texture(u_normalMap, vIn.texCoord.xy);
+	vec4 specularTexture = texture(u_specularMap, vIn.texCoord.xy);
+
+	vec3 L = normalize(u_lightPos_01.xyz - vIn.eyePos);
+	//vec4 modelViewSpace = mvm * (vec4(localTransform * vec4(vIn.vertex, 1.0)));
+	//vec3 L = normalize(u_lightPos.xyz - modelViewSpace.xyz);
+	vec3 E = normalize(-vIn.eyePos);
+	vec3 H = normalize(L + E);
+
+	//normal
+	vec3 N;
+	if (true){
+		N = normalize(vIn.normal);
+	} else {
+		N = normalTexture.xyz;
+		N = ((N * 2.0) - 1.0);
+		N = (u_mv * vec4(N, 0.0)).xyz;
+		N = normalize(N);
+	}
+
+	//specular
+	float specPower = 100.0;
+	float specIntensity = 0.125;
+	float NdotH = max(0.0, dot(N, H));
+	float specularCoefficient = pow(NdotH, specPower);
+	if (true){ specularTexture = vec4(1.0,1.0,1.0,1.0); }
+	vec3 specular = specularCoefficient * specIntensity * specularTexture.xyz;
+
+	//diffuse
+	float NdotL = max(0.0, dot(N, L));
+	float diffuseIntensity = clamp(dot(vIn.normal, L), 0.0, 1.0);
+	if (true){ diffuseTexture = texture(tex1, vIn.texCoord.xy); }
+	vec3 diffuse = NdotL * diffuseIntensity * diffuseTexture.xyz; 
+	
+	//ambient
+	vec3 ambient = diffuseTexture.xyz * 0.1;
+
+
+	FragColor = vec4(diffuse + specular + ambient, 1.0); FragColor.w = 1.0;
+	FragColor.a = diffuseTexture.a;
+	//if (textureColor.a < 0.9){ FragColor.a = (textureColor.a*0.5); }
+	//if (textureColor.a < 0.3){ discard; }
+
+	//FragColor = vec4(vIn.normal * 0.5 + 0.5, 1.0f);
+}
