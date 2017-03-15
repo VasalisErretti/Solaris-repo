@@ -1165,7 +1165,8 @@ void GameScreen(float deltaTasSeconds)
 		Sound::Sys.listenerPos[i].y = Players[i].Position().y*10.0f;
 		Sound::Sys.listenerPos[i].z = Players[i].Position().z*10.0f;
 	}
-	systemSound.Sys.Init();
+	//systemSound.Sys.Init();
+	systemSound.Sys.Update();
 	
 
 
