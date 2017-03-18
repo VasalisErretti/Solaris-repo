@@ -76,7 +76,7 @@ void GameObject::update(float deltaT)
 				//if (m_Velocity.x <= -0.01f || m_Velocity.x >= 0.01f || m_Velocity.z <= -0.01f || m_Velocity.z >= 0.01f) {
 					ForwardDirection = (m_Position - (m_Position + m_Velocity));
 					FaceYRotation = atan2(ForwardDirection.z, -ForwardDirection.x);
-					this->setRotation(glm::vec3(0.0f, FaceYRotation*(180.0f / 3.14159f), 0.0f));
+					this->setRotation(glm::vec3(m_Angle.x, FaceYRotation*(180.0f / 3.14159f), m_Angle.z));
 				}
 				//update position based on velocity
 				m_Position += m_Velocity;
@@ -210,39 +210,7 @@ void GameObject::drawObject()
 	}
 }
 
-void GameObject::drawTileSet(float m_positionX, float m_positionY, float m_tileOffsetX, float m_tileOffsetY)
-{
-	if (Viewable && material != nullptr) {
-		material->shader->bind();
-		// bind tex here if you had one
-		glBindTexture(GL_TEXTURE_2D, textureHandle);
 
-
-		//glBegin(GL_QUADS);
-		glTexCoord2f(m_tileOffsetX, m_tileOffsetY);
-		glVertex3f(m_positionX, m_positionY, 0.0f);//bottom left
-		glTexCoord2f(0.1f + m_tileOffsetX, m_tileOffsetY);
-		glVertex3f(m_positionX + 130.0f, m_positionY, 0.0f);//bottom right
-		glTexCoord2f(0.1f + m_tileOffsetX, 0.1f + m_tileOffsetY);
-		glVertex3f(m_positionX + 130.0f, m_positionY + 100.0f, 0.0f);//top right
-		glTexCoord2f(m_tileOffsetX, 0.1f + m_tileOffsetY);
-		glVertex3f(m_positionX, m_positionY + 100.0f, 0.0f);//top left
-		//glEnd();
-		//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,2,2,0,GL_RGB,GL_FLOAT, textureHandle.getPixelsPtr());
-
-		// compute local transformation
-		glm::mat4x4 scaleMatrix = glm::scale(m_Scale);
-		glm::mat4x4 rotationMatrix = m_Rotation;
-		glm::mat4x4 translationMatrix = glm::translate(m_Position);
-		//first [scale] then [rotate] then [translate]
-		glm::mat4x4 transform = (translationMatrix * rotationMatrix * scaleMatrix);
-		material->shader->sendUniformMat4("localTransform", transform);
-
-		glBindVertexArray(vao);
-		glDrawArrays(GL_TRIANGLES, 0, numtris);
-		glBindVertexArray(0);
-	}
-}
 
 /* function objectLoader()
 * Description:
@@ -614,38 +582,67 @@ bool GameObject::objectLoader(std::string filePath1)
 
 	return true;
 }
-void GameObject::objectLoader(GameObject * objPath)
-{
+void GameObject::objectLoader(GameObject * objPath) {
 	//Modern openGL Object Loader///////////
-	vao = objPath->vao;
-	vertbo = objPath->vertbo;
-	normbo = objPath->normbo;
-	texbo = objPath->texbo;
-	colorbo = objPath->colorbo;
-	numtris = objPath->numtris;
-
-	textureHandle = objPath->textureHandle;
+	vao				= objPath->vao;
+	vertbo			= objPath->vertbo;
+	normbo			= objPath->normbo;
+	texbo			= objPath->texbo;
+	colorbo			= objPath->colorbo;
+	numtris			= objPath->numtris;
+	textureHandle	= objPath->textureHandle;
+	material		= objPath->material;
 	//variables///////////
-	Viewable = objPath->Viewable;
-	textureHandle_hasTransparency = objPath->textureHandle_hasTransparency;
-	m_Position = objPath->m_Position;
-	m_Rotation = objPath->m_Rotation;
-	m_Scale = objPath->m_Scale;
-	m_Top = objPath->m_Top;
-	m_Bottom = objPath->m_Bottom;
-	m_Radius = objPath->m_Radius;
-	m_Size = objPath->m_Size;
-	m_Colour = objPath->m_Colour;
-	m_Mass = objPath->m_Mass;
-	m_InvertedMass = objPath->m_InvertedMass;
-	m_Velocity = objPath->m_Velocity;
-	m_Acceleration = objPath->m_Acceleration;
-	m_ForceOnObject = objPath->m_ForceOnObject;
-	m_Restitution = objPath->m_Restitution;
-	m_Drag = objPath->m_Drag;
-
-	material = objPath->material;
+	Viewable		= objPath->Viewable;
+	m_Position		= objPath->m_Position;
+	m_Rotation		= objPath->m_Rotation;
+	m_Scale			= objPath->m_Scale;
+	m_Top			= objPath->m_Top;
+	m_Bottom		= objPath->m_Bottom;
+	m_Radius		= objPath->m_Radius;
+	m_Size			= objPath->m_Size;
+	m_Colour		= objPath->m_Colour;
+	m_Mass			= objPath->m_Mass;
+	m_InvertedMass	= objPath->m_InvertedMass;
+	m_Velocity		= objPath->m_Velocity;
+	m_Acceleration	= objPath->m_Acceleration;
+	m_ForceOnObject	= objPath->m_ForceOnObject;
+	m_Restitution	= objPath->m_Restitution;
+	m_Drag			= objPath->m_Drag;
+	textureHandle_hasTransparency	= objPath->textureHandle_hasTransparency;
 }
+void GameObject::objectLoader(std::shared_ptr<GameObject> * objPath) {
+	//Modern openGL Object Loader///////////
+	vao				= objPath->get()->vao;
+	vertbo			= objPath->get()->vertbo;
+	normbo			= objPath->get()->normbo;
+	texbo			= objPath->get()->texbo;
+	colorbo			= objPath->get()->colorbo;
+	numtris			= objPath->get()->numtris;
+	textureHandle	= objPath->get()->textureHandle;
+	material		= objPath->get()->material;
+	//variables///////////
+	Viewable		= objPath->get()->Viewable;
+	m_Position		= objPath->get()->m_Position;
+	m_Rotation		= objPath->get()->m_Rotation;
+	m_Scale			= objPath->get()->m_Scale;
+	m_Top			= objPath->get()->m_Top;
+	m_Bottom		= objPath->get()->m_Bottom;
+	m_Radius		= objPath->get()->m_Radius;
+	m_Size			= objPath->get()->m_Size;
+	m_Colour		= objPath->get()->m_Colour;
+	m_Mass			= objPath->get()->m_Mass;
+	m_InvertedMass	= objPath->get()->m_InvertedMass;
+	m_Velocity		= objPath->get()->m_Velocity;
+	m_Acceleration	= objPath->get()->m_Acceleration;
+	m_ForceOnObject	= objPath->get()->m_ForceOnObject;
+	m_Restitution	= objPath->get()->m_Restitution;
+	m_Drag			= objPath->get()->m_Drag;
+	textureHandle_hasTransparency	= objPath->get()->textureHandle_hasTransparency;
+}
+
+
+
 void GameObject::objectHitBox(GameObject * objPath) {
 
 }

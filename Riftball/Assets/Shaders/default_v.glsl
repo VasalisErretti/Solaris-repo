@@ -12,6 +12,7 @@ out VertexData
 	vec2 texCoord;
 	vec4 colour;
 	vec3 eyePos;
+	vec3 vertex;
 } vOut;
 
 uniform mat4 u_mvp;
@@ -23,11 +24,12 @@ uniform mat4 localTransform;
 
 void main()
 {
-	vOut.colour = vec4(vIn_colour, 1.0);
+	vOut.vertex = vIn_vertex;
 	vOut.texCoord = vIn_uv;
-
-	vOut.eyePos = (u_mv * vec4(vIn_vertex, 1.0)).xyz; //real
+	vOut.colour = vec4(vIn_colour, 1.0);
+	
 	vOut.normal = mat3(mvm) * mat3(localTransform) * vIn_normal; //real
+	vOut.eyePos = (u_mv * vec4(vIn_vertex, 1.0)).xyz; //real
 	//gl_Position = (u_mvp * vec4(vIn_vertex, 1.0));
 
 	//vOut.normal = (u_mv * vec4(vIn_normal, 0.0)).xyz;

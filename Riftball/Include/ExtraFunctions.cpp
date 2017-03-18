@@ -17,7 +17,8 @@ public:
 	Manifold() {}
 	~Manifold() {}
 
-	GameObject A, B; //holds two objects
+	//GameObject A, B; //holds two objects
+	std::shared_ptr<GameObject> A, B; //holds two objects
 	glm::vec3 Normal; //normal between two objects
 	bool AreColliding; // didn't really use
 };
@@ -376,9 +377,50 @@ static const float radToDeg = (180.0f / 3.14159f);
 template <typename T>
 static T Random(T a, T b)
 {
-	return ((T(rand()) / T(RAND_MAX)) * abs(b - a) + std::fmin(a, b));
+	return ((T(rand()) / T(RAND_MAX)) * abs(b - a) + std::fminf(a, b));
 }
 
+
+struct PlayerHealth {
+	int MaxHealth;
+	int MinHealth;
+	int CurrentHealth;
+	int PreviousHealth;
+};
+static bool changeInHealth(PlayerHealth Pnum) {
+	if (Pnum.CurrentHealth > Pnum.MaxHealth) { Pnum.CurrentHealth = Pnum.MaxHealth; }
+	if (Pnum.CurrentHealth < Pnum.MinHealth) { Pnum.CurrentHealth = Pnum.MinHealth; }
+	if (Pnum.CurrentHealth != Pnum.PreviousHealth) { return true; }
+	else { return false; }
+}
+
+struct PlayerInfo {
+	//PlayerValues[i].
+	//camera
+	int cameraMode;
+	glm::mat4x4 cameraTransform;
+	glm::vec3 cameraPosition;
+	glm::vec3 forwardVector;
+	glm::vec3 rightVector;
+	//
+	int PlayerTeam;
+	float MenuSwitchCounter;
+	//Shock wave attributes
+	bool Right_TRIGGERED;
+	bool Left_TRIGGERED;
+	bool ShockWave;
+	float ShockWaveCounter;
+	float ShockWaveChargeUp;
+	//Sprint attributes
+	float SprintSpeed;
+	float SprintCounter;
+	float SprintCoolDown;
+	//Abilitys
+	bool FlipedControllers;
+	bool* AbilityAffected;
+	float* AbilityCounter;
+	float* AbilityLength;
+};
 
 //////////////////////////////////////////////////////////////////////
 
@@ -433,13 +475,13 @@ static void writeSomething(float xPos, float yPos, float zPos, std::string str) 
 */
 static bool CheckCollision(Manifold &m)
 {
-	if (m.A.Viewable && m.B.Viewable) {
-		if (m.A.Top().x < m.B.Bottom().x || m.A.Bottom().x > m.B.Top().x) { return false; }
-		if (m.A.Top().y < m.B.Bottom().y || m.A.Bottom().y > m.B.Top().y) { return false; }
-		if (m.A.Top().z < m.B.Bottom().z || m.A.Bottom().z > m.B.Top().z) { return false; }
+	if (m.A.get()->Viewable && m.B.get()->Viewable) {
+		if (m.A.get()->Top().x < m.B.get()->Bottom().x || m.A.get()->Bottom().x > m.B.get()->Top().x) { return false; }
+		if (m.A.get()->Top().y < m.B.get()->Bottom().y || m.A.get()->Bottom().y > m.B.get()->Top().y) { return false; }
+		if (m.A.get()->Top().z < m.B.get()->Bottom().z || m.A.get()->Bottom().z > m.B.get()->Top().z) { return false; }
 
 		PhysicsMath DoPhysics;
-		m.Normal = DoPhysics.GetNormal(m.A.Position(), m.B.Position());
+		m.Normal = DoPhysics.GetNormal(m.A.get()->Position(), m.B.get()->Position());
 		m.AreColliding = true;
 		DoPhysics.~PhysicsMath();
 		return true;
@@ -452,11 +494,11 @@ static bool CheckCollision(Manifold &m)
 */
 static bool checkRadialCollision(Manifold &m)
 {
-	if (m.A.Viewable && m.B.Viewable) {
-		float minimumSeparationX = m.A.Radius().x + m.B.Radius().x;
-		float minimumSeparationY = m.A.Radius().y + m.B.Radius().y;
-		float minimumSeparationZ = m.A.Radius().z + m.B.Radius().z;
-		float dist = glm::distance(m.A.Position(), m.B.Position());
+	if (m.A.get()->Viewable && m.B.get()->Viewable) {
+		float minimumSeparationX = m.A.get()->Radius().x + m.B.get()->Radius().x;
+		float minimumSeparationY = m.A.get()->Radius().y + m.B.get()->Radius().y;
+		float minimumSeparationZ = m.A.get()->Radius().z + m.B.get()->Radius().z;
+		float dist = glm::distance(m.A.get()->Position(), m.B.get()->Position());
 
 		if (dist > minimumSeparationX) { return false; }
 		else if (dist > minimumSeparationY) { return false; }
@@ -473,21 +515,21 @@ static void ResolveCollision(Manifold &m)
 {
 	PhysicsMath DoPhysics;
 
-	m.Normal = glm::normalize(m.B.Position() - m.A.Position());
-	glm::vec3 rv = (m.B.Velocity() - m.A.Velocity());// Calculate relative velocity
+	m.Normal = glm::normalize(m.B.get()->Position() - m.A.get()->Position());
+	glm::vec3 rv = (m.B.get()->Velocity() - m.A.get()->Velocity());// Calculate relative velocity
 	float velAlongNormal = DoPhysics.DotProduct(rv, m.Normal);// Calculate relative velocity in terms of the normal direction
 	if (velAlongNormal > 0) { return; }// Do not resolve if velocities are separating
 
-	float e = std::fminf(m.A.Restitution(), m.B.Restitution());// Calculate restitution
+	float e = std::fminf(m.A.get()->Restitution(), m.B.get()->Restitution());// Calculate restitution
 	float j = (-(1 + e) * velAlongNormal);// Calculate impulse scalar
-	j = (j / (m.A.InvertedMass() + m.B.InvertedMass()));// Calculate impulse scalar
+	j = (j / (m.A.get()->InvertedMass() + m.B.get()->InvertedMass()));// Calculate impulse scalar
 	glm::vec3 impulse = (glm::vec3(j * m.Normal)*1000.0f);// Apply impulse
 	impulse = glm::vec3(impulse.x, impulse.y*0.1f, impulse.z);
 
-	//m.A.setVelocity(m.A.Velocity()-(m.A.InvertedMass()*impulse));
-	//m.B.setVelocity(m.A.Velocity()+(m.B.InvertedMass()*impulse));
-	m.A.setForceOnObject(m.A.Velocity() - ((m.A.InvertedMass()*impulse)));//*m.A.Restitution()
-	m.B.setForceOnObject(m.B.Velocity() + ((m.B.InvertedMass()*impulse)));//*m.B.Restitution()
+	//m.A.get()->setVelocity(m.A.get()->Velocity()-(m.A.get()->InvertedMass()*impulse));
+	//m.B.get()->setVelocity(m.A.get()->Velocity()+(m.B.get()->InvertedMass()*impulse));
+	//m.A.get()->setForceOnObject(m.A.get()->Velocity() - ((m.A.get()->InvertedMass()*impulse)));//*m.A.get()->Restitution()
+	m.B.get()->setForceOnObject(m.B.get()->Velocity() + ((m.B.get()->InvertedMass()*impulse)));//*m.B.get()->Restitution()
 
 	DoPhysics.~PhysicsMath();
 	return;
@@ -500,21 +542,21 @@ static void ResolveCollision(Manifold &m, float correction)
 {
 	PhysicsMath DoPhysics;
 
-	m.Normal = glm::normalize(m.B.Position() - m.A.Position());
-	glm::vec3 rv = correction*(m.B.Velocity() - m.A.Velocity());// Calculate relative velocity
+	m.Normal = glm::normalize(m.B.get()->Position() - m.A.get()->Position());
+	glm::vec3 rv = correction*(m.B.get()->Velocity() - m.A.get()->Velocity());// Calculate relative velocity
 	float velAlongNormal = DoPhysics.DotProduct(rv, m.Normal);// Calculate relative velocity in terms of the normal direction
 	if (velAlongNormal > 0) { return; }// Do not resolve if velocities are separating
 
-	float e = std::fminf(m.A.Restitution(), m.B.Restitution());// Calculate restitution
+	float e = std::fminf(m.A.get()->Restitution(), m.B.get()->Restitution());// Calculate restitution
 	float j = (-(1 + e) * velAlongNormal);// Calculate impulse scalar
-	j = (j / (m.A.InvertedMass() + m.B.InvertedMass()));// Calculate impulse scalar
+	j = (j / (m.A.get()->InvertedMass() + m.B.get()->InvertedMass()));// Calculate impulse scalar
 	glm::vec3 impulse = (glm::vec3(j * m.Normal)*1000.0f);// Apply impulse
 	impulse = glm::vec3(impulse.x, impulse.y*0.1f, impulse.z);
 
-	//m.A.setVelocity(m.A.Velocity()-(m.A.InvertedMass()*impulse));
-	//m.B.setVelocity(m.A.Velocity()+(m.B.InvertedMass()*impulse));
-	m.A.setForceOnObject(m.A.Velocity() - ((m.A.InvertedMass()*impulse)));//*m.A.Restitution()
-	m.B.setForceOnObject(m.B.Velocity() + ((m.B.InvertedMass()*impulse)));//*m.B.Restitution()
+	//m.A.get()->setVelocity(m.A.get()->Velocity()-(m.A.get()->InvertedMass()*impulse));
+	//m.B.get()->setVelocity(m.A.get()->Velocity()+(m.B.get()->InvertedMass()*impulse));
+	m.A.get()->setForceOnObject(m.A.get()->Velocity() - ((m.A.get()->InvertedMass()*impulse)));//*m.A.get()->Restitution()
+	m.B.get()->setForceOnObject(m.B.get()->Velocity() + ((m.B.get()->InvertedMass()*impulse)));//*m.B.get()->Restitution()
 
 	DoPhysics.~PhysicsMath();
 	return;
@@ -527,21 +569,21 @@ static void ResolveCollision(Manifold &m, float correction, float correction2)
 {
 	PhysicsMath DoPhysics;
 
-	m.Normal = glm::normalize(m.B.Position() - m.A.Position());
-	glm::vec3 rv = (m.B.Velocity() - m.A.Velocity());// Calculate relative velocity
+	m.Normal = glm::normalize(m.B.get()->Position() - m.A.get()->Position());
+	glm::vec3 rv = correction2*(m.B.get()->Velocity() - m.A.get()->Velocity());// Calculate relative velocity
 	float velAlongNormal = DoPhysics.DotProduct(rv, m.Normal);// Calculate relative velocity in terms of the normal direction
 	if (velAlongNormal > 0) { return; }// Do not resolve if velocities are separating
 
-	float e = std::fminf(m.A.Restitution(), m.B.Restitution());// Calculate restitution
+	float e = std::fminf(m.A.get()->Restitution(), m.B.get()->Restitution());// Calculate restitution
 	float j = (-(1 + e) * velAlongNormal);// Calculate impulse scalar
-	j = (j / (m.A.InvertedMass() + m.B.InvertedMass()));// Calculate impulse scalar
+	j = (j / (m.A.get()->InvertedMass() + m.B.get()->InvertedMass()));// Calculate impulse scalar
 	glm::vec3 impulse = (glm::vec3(j * m.Normal)*1000.0f);// Apply impulse
 	impulse = glm::vec3(impulse.x, impulse.y*0.1f, impulse.z);
 
-	//m.A.setVelocity(m.A.Velocity()-(m.A.InvertedMass()*impulse));
-	//m.B.setVelocity(m.A.Velocity()+(m.B.InvertedMass()*impulse));
-	m.A.setForceOnObject(m.A.Velocity() - ((m.A.InvertedMass()*impulse*correction)));//*m.A.Restitution()
-	m.B.setForceOnObject(m.B.Velocity() + ((m.B.InvertedMass()*impulse*correction2)));//*m.B.Restitution()
+	//m.A.get()->setVelocity(m.A.get()->Velocity()-(m.A.get()->InvertedMass()*impulse));
+	//m.B.get()->setVelocity(m.A.get()->Velocity()+(m.B.get()->InvertedMass()*impulse));
+	m.A.get()->setForceOnObject(m.A.get()->Velocity() - ((m.A.get()->InvertedMass()*impulse*correction)));//*m.A.get()->Restitution()
+	m.B.get()->setForceOnObject(m.B.get()->Velocity() + ((m.B.get()->InvertedMass()*impulse*correction2)));//*m.B.get()->Restitution()
 
 	DoPhysics.~PhysicsMath();
 	return;
@@ -556,21 +598,20 @@ static void ResolveCollision(Manifold &m, float correction, float correction2)
 *	- used m.B for enemies
 */
 static void setEnemySpawn(Manifold &m, int Inum) {
-	m.B.setColour(glm::vec4(0.0f, 0.5f, 0.0f, 1.0f));
-	m.B.setMass(5.0f);
-	m.B.setDrag(0.010f);
-	m.B.setRestitution(2.0f);
-	m.B.setScale(glm::vec3(3.0f, 3.0f, 3.0f)); //displayed size
-	m.B.setSizeOfHitBox(glm::vec3(3.0f, 2.0f, 3.0f)); //HitBox
-	m.B.setSizeOfHitBox(glm::vec3(1.3f)); //HitBox
-	float ranPosZ = ((rand() % 80 - 40) + ((rand() % 100 - 50)*0.01f))*1.0f; //-39.50 to 40.50
-	float ranPosY = ((rand() % 20 + 10) + ((rand() % 100 - 50)*0.01f))*1.0f; //9.50 to 30.50
-	float ranPosX = ((rand() % 2) + 1.0f + ((rand() % 100 - 50)*0.01f))*1.0f;
-	float ranFall = (((rand() % 28) + 1.0f)*0.01f)*1.0f;
-	if (Inum % 2 == 0) { m.B.setPosition(glm::vec3(-ranPosX, ranPosY, ranPosZ)); }
-	else { m.B.setPosition(glm::vec3(ranPosX, ranPosY, ranPosZ)); }
-	m.B.setVelocity(glm::vec3(0.0f, (-0.15f - ranFall), 0.0f));
-	m.B.setForceOnObject(glm::vec3(0.0f, 0.0f, 0.0f));
+	m.B.get()->setMass(5.0f);
+	m.B.get()->setDrag(0.010f);
+	m.B.get()->setRestitution(2.0f);
+	m.B.get()->setScale(glm::vec3(3.0f, 3.0f, 3.0f)); //displayed size
+	m.B.get()->setSizeOfHitBox(glm::vec3(3.0f, 2.0f, 3.0f)); //HitBox
+	m.B.get()->setSizeOfHitBox(glm::vec3(1.3f)); //HitBox
+	float ranPosZ = (Random(-40.0f, 40.0f) + (Random(0.0f, 100.0f)*0.01f));
+	float ranPosY = (Random(10.0f, 40.0f) + (Random(0.0f, 100.0f)*0.01f)); 
+	float ranPosX = (Random(-1.0f, 1.0f) + (Random(0.0f, 100.0f)*0.01f));
+	float ranFall = (Random(1.0f, 8.0f) + (Random(0.0f, 100.0f)*0.01f));
+	if (Inum % 2 == 0) { m.B.get()->setPosition(glm::vec3(-ranPosX, ranPosY, ranPosZ)); }
+	else { m.B.get()->setPosition(glm::vec3(ranPosX, ranPosY, ranPosZ)); }
+	m.B.get()->setVelocity(glm::vec3(0.0f, 0.0f, 0.0f));
+	m.B.get()->setForceOnObject(glm::vec3(0.0f, (-0.15f - ranFall), 0.0f));
 }
 
 /* function applyWallAvoidingSystem()
@@ -579,11 +620,11 @@ static void setEnemySpawn(Manifold &m, int Inum) {
 *	- used m.B for fleeing objects
 */
 static void applyWallAvoidingSystem(Manifold &m, float infunce) {
-	glm::vec3 seek = m.A.Position() - m.B.Position();
+	glm::vec3 seek = m.A.get()->Position() - m.B.get()->Position();
 	if (glm::length(seek) > 0.0f) { seek = glm::normalize(seek); }
 	else { seek = glm::vec3(0.0f); }
 	seek *= infunce; //how much infunce 
-	m.B.setForceOnObject(m.B.ForceOnObject() + seek);
+	m.B.get()->setForceOnObject(m.B.get()->ForceOnObject() + seek);
 }
 /* function ForceWallAvoidingSystem()
 * Description:
@@ -591,11 +632,11 @@ static void applyWallAvoidingSystem(Manifold &m, float infunce) {
 *	- used m.B for fleeing objects
 */
 static void ForceWallAvoidingSystem(Manifold &m, float infunce) {
-	glm::vec3 seek = m.A.Position() - m.B.Position();
+	glm::vec3 seek = m.A.get()->Position() - m.B.get()->Position();
 	if (glm::length(seek) > 0.0f) { seek = glm::normalize(seek); }
 	else { seek = glm::vec3(0.0f); }
 	seek *= infunce; //how much infunce 
-	m.B.setForceOnObject(seek);
+	m.B.get()->setForceOnObject(seek);
 }
 /* function applySeekSystem()
 * Description:
@@ -603,11 +644,11 @@ static void ForceWallAvoidingSystem(Manifold &m, float infunce) {
 *	- used m.B for seeking objects
 */
 static void applySeekSystem(Manifold &m, float infunce) {
-	glm::vec3 seek = m.A.Position() - m.B.Position();
+	glm::vec3 seek = m.A.get()->Position() - m.B.get()->Position();
 	if (glm::length(seek) > 0.0f) { seek = glm::normalize(seek); }
 	else { seek = glm::vec3(0.0f); }
 	seek *= infunce; //how much infunce 
-	m.B.setForceOnObject(m.B.ForceOnObject() + seek);
+	m.B.get()->setForceOnObject(m.B.get()->ForceOnObject() + seek);
 }
 /* function FleeFromDirection()
 * Description:
@@ -617,30 +658,30 @@ static void applySeekSystem(Manifold &m, float infunce) {
 */
 static void FleeFromDirection(Manifold &m, float infunce, std::string fleeDirection) {
 	glm::vec3 flee;
-	if		(fleeDirection == "x")  { flee = m.A.Position() - glm::vec3(m.A.Position().x + 1.0f, m.A.Position().y, m.A.Position().z); }
-	else if (fleeDirection == "-x") { flee = m.A.Position() - glm::vec3(m.A.Position().x - 1.0f, m.A.Position().y, m.A.Position().z); }
-	else if (fleeDirection == "y")  { flee = m.A.Position() - glm::vec3(m.A.Position().x, m.A.Position().y + 1.0f, m.A.Position().z); }
-	else if (fleeDirection == "-y") { flee = m.A.Position() - glm::vec3(m.A.Position().x, m.A.Position().y - 1.0f, m.A.Position().z); }
-	else if (fleeDirection == "z")  { flee = m.A.Position() - glm::vec3(m.A.Position().x, m.A.Position().y, m.A.Position().z + 1.0f); }
-	else if (fleeDirection == "-z") { flee = m.A.Position() - glm::vec3(m.A.Position().x, m.A.Position().y, m.A.Position().z - 1.0f); }
-	else { flee = m.A.Position() - m.A.Position(); }
+	if		(fleeDirection == "x")  { flee = m.A.get()->Position() - glm::vec3(m.A.get()->Position().x + 1.0f, m.A.get()->Position().y, m.A.get()->Position().z); }
+	else if (fleeDirection == "-x") { flee = m.A.get()->Position() - glm::vec3(m.A.get()->Position().x - 1.0f, m.A.get()->Position().y, m.A.get()->Position().z); }
+	else if (fleeDirection == "y")  { flee = m.A.get()->Position() - glm::vec3(m.A.get()->Position().x, m.A.get()->Position().y + 1.0f, m.A.get()->Position().z); }
+	else if (fleeDirection == "-y") { flee = m.A.get()->Position() - glm::vec3(m.A.get()->Position().x, m.A.get()->Position().y - 1.0f, m.A.get()->Position().z); }
+	else if (fleeDirection == "z")  { flee = m.A.get()->Position() - glm::vec3(m.A.get()->Position().x, m.A.get()->Position().y, m.A.get()->Position().z + 1.0f); }
+	else if (fleeDirection == "-z") { flee = m.A.get()->Position() - glm::vec3(m.A.get()->Position().x, m.A.get()->Position().y, m.A.get()->Position().z - 1.0f); }
+	else { flee = m.A.get()->Position() - m.A.get()->Position(); }
 
 	if (glm::length(flee) > 0.0f) { flee = glm::normalize(flee); }
 	else { flee = glm::vec3(0.0f); }
 	flee *= infunce; //how much infunce 
-	m.B.setForceOnObject(m.B.ForceOnObject() + flee);
+	m.B.get()->setForceOnObject(m.B.get()->ForceOnObject() + flee);
 }
 /* function applyAvoidingSystem()
 * Description:
 *   - this applys force to both objects to make them seperate
 */
 static void applyAvoidingSystem(Manifold &m, float infunce) {
-	glm::vec3 avoid = m.A.Position() - m.B.Position();
+	glm::vec3 avoid = m.A.get()->Position() - m.B.get()->Position();
 	if (glm::length(avoid) > 0.0f) { avoid = glm::normalize(avoid); }
 	else { avoid = glm::vec3(0.0f); }
 	avoid *= infunce; //how much infunce 
-	m.A.setForceOnObject(m.B.ForceOnObject() + avoid);
-	m.B.setForceOnObject(m.B.ForceOnObject() - avoid);
+	m.A.get()->setForceOnObject(m.B.get()->ForceOnObject() + avoid);
+	m.B.get()->setForceOnObject(m.B.get()->ForceOnObject() - avoid);
 }
 /* function applyRadialAvoidingSystem()
 * Description:
@@ -648,45 +689,45 @@ static void applyAvoidingSystem(Manifold &m, float infunce) {
 */
 static bool applyRadialAvoidingSystem(Manifold &m, float areaAvoidence, float infunce)
 {
-	float minimumSeparationX = ((m.A.Radius().x + m.B.Radius().x));
-	float minimumSeparationY = ((m.A.Radius().y + m.B.Radius().y));
-	float minimumSeparationZ = ((m.A.Radius().z + m.B.Radius().z));
-	float dist = glm::distance(m.A.Position(), m.B.Position());
+	float minimumSeparationX = ((m.A.get()->Radius().x + m.B.get()->Radius().x));
+	float minimumSeparationY = ((m.A.get()->Radius().y + m.B.get()->Radius().y));
+	float minimumSeparationZ = ((m.A.get()->Radius().z + m.B.get()->Radius().z));
+	float dist = glm::distance(m.A.get()->Position(), m.B.get()->Position());
 
 	if (dist > (minimumSeparationX+areaAvoidence)) { return false; }
 	else if (dist > (minimumSeparationY+areaAvoidence)) { return false; }
 	else if (dist > (minimumSeparationZ+areaAvoidence)) { return false; }
 	else {
-		glm::vec3 avoid = m.A.Position() - m.B.Position(); 
+		glm::vec3 avoid = m.A.get()->Position() - m.B.get()->Position(); 
 		if (glm::length(avoid) > 0.0f) { avoid = glm::normalize(avoid); }
 		else { avoid = glm::vec3(0.0f); }
 		if (avoid.y > 0.5) { avoid.x = avoid.x*3.0f; avoid.z = avoid.z*3.0f; }
 		else if (avoid.y < -0.5) { avoid.x = avoid.x*3.0f; avoid.z = avoid.z*3.0f; }
 		avoid *= infunce; //how much infunce 
-		m.A.setForceOnObject(m.B.ForceOnObject() + avoid);
-		m.B.setForceOnObject(m.B.ForceOnObject() - avoid);
+		m.A.get()->setForceOnObject(m.B.get()->ForceOnObject() + avoid);
+		m.B.get()->setForceOnObject(m.B.get()->ForceOnObject() - avoid);
 	}
 
 	return true;
 }
 static bool applyRadialFleeingSystem(Manifold &m, float areaAvoidence, float infunce)
 {
-	float minimumSeparationX = ((m.A.Radius().x + m.B.Radius().x));
-	float minimumSeparationY = ((m.A.Radius().y + m.B.Radius().y));
-	float minimumSeparationZ = ((m.A.Radius().z + m.B.Radius().z));
-	float dist = glm::distance(m.A.Position(), m.B.Position());
+	float minimumSeparationX = ((m.A.get()->Radius().x + m.B.get()->Radius().x));
+	float minimumSeparationY = ((m.A.get()->Radius().y + m.B.get()->Radius().y));
+	float minimumSeparationZ = ((m.A.get()->Radius().z + m.B.get()->Radius().z));
+	float dist = glm::distance(m.A.get()->Position(), m.B.get()->Position());
 
 	if (dist > (minimumSeparationX + areaAvoidence)) { return false; }
 	else if (dist > (minimumSeparationY + areaAvoidence)) { return false; }
 	else if (dist > (minimumSeparationZ + areaAvoidence)) { return false; }
 	else {
-		glm::vec3 avoid = m.A.Position() - m.B.Position();
+		glm::vec3 avoid = m.A.get()->Position() - m.B.get()->Position();
 		if (glm::length(avoid) > 0.0f) { avoid = glm::normalize(avoid); }
 		else { avoid = glm::vec3(0.0f); }
 		if (avoid.y > 0.5) { avoid.x = avoid.x*3.0f; avoid.z = avoid.z*3.0f; }
 		else if (avoid.y < -0.5) { avoid.x = avoid.x*3.0f; avoid.z = avoid.z*3.0f; }
 		avoid *= infunce; //how much infunce 
-		m.B.setForceOnObject(m.B.ForceOnObject() - avoid);
+		m.B.get()->setForceOnObject(m.B.get()->ForceOnObject() - avoid);
 	}
 
 	return true;
@@ -697,34 +738,34 @@ static bool applyRadialFleeingSystem(Manifold &m, float areaAvoidence, float inf
 *   - this checks to see if two objects are inside eachother
 */
 static bool CheckIfOnObject(Manifold &m, float OnObjRadius, bool DoSquareAndCircle) {
-	if (m.B.Viewable) {
+	if (m.B.get()->Viewable) {
 		//check in a square
-		if (m.A.Top().x < (m.B.Bottom().x + m.B.Radius().x*OnObjRadius) || m.A.Bottom().x > (m.B.Top().x - m.B.Radius().x*OnObjRadius)
-		 || m.A.Top().z < (m.B.Bottom().z + m.B.Radius().z*OnObjRadius) || m.A.Bottom().z > (m.B.Top().z - m.B.Radius().z*OnObjRadius)) 
+		if (m.A.get()->Top().x < (m.B.get()->Bottom().x + m.B.get()->Radius().x*OnObjRadius) || m.A.get()->Bottom().x > (m.B.get()->Top().x - m.B.get()->Radius().x*OnObjRadius)
+		 || m.A.get()->Top().z < (m.B.get()->Bottom().z + m.B.get()->Radius().z*OnObjRadius) || m.A.get()->Bottom().z > (m.B.get()->Top().z - m.B.get()->Radius().z*OnObjRadius)) 
 		{ return false; }
 		else if (DoSquareAndCircle) {
 			//if player is on the object
-			if (m.B.Position().y < ((m.A.Position().y + m.A.Radius().y) + m.B.Radius().y + (m.B.Radius().y*0.2f))
-				&& m.B.Position().y >(m.A.Position().y + (m.A.Radius().y + (m.B.Radius().y*0.2f)))
-				&& m.B.Velocity().y < 0.08f && m.B.Velocity().y > -0.08f)
+			if (m.B.get()->Position().y < ((m.A.get()->Position().y + m.A.get()->Radius().y) + m.B.get()->Radius().y + (m.B.get()->Radius().y*0.2f))
+				&& m.B.get()->Position().y >(m.A.get()->Position().y + (m.A.get()->Radius().y + (m.B.get()->Radius().y*0.2f)))
+				&& m.B.get()->Velocity().y < 0.08f && m.B.get()->Velocity().y > -0.08f)
 			{
-				m.B.setPosition(glm::vec3(m.B.Position().x, ((m.A.Position().y + m.A.Radius().y) + m.B.Radius().y), m.B.Position().z));
+				m.B.get()->setPosition(glm::vec3(m.B.get()->Position().x, ((m.A.get()->Position().y + m.A.get()->Radius().y) + m.B.get()->Radius().y), m.B.get()->Position().z));
 				return true;
 			}
 		}
 		//check in a circle
-		float minimumSeparationX = (m.A.Radius().x + m.B.Radius().x)*0.50f;
-		//float minimumSeparationY = m.A.Radius().y + (m.B.Radius().y + m.B.Radius().y*0.2f);//&& dist < minimumSeparationY
-		float minimumSeparationZ = (m.A.Radius().z + m.B.Radius().z)*0.50f;
-		//float dist = glm::distance(glm::vec3(m.A.Position().x, 01.0f, m.A.Position().z), glm::vec3(m.B.Position().x, 01.0f, m.B.Position().z));
-		float dist = glm::distance(m.A.Position(), m.B.Position());
+		float minimumSeparationX = (m.A.get()->Radius().x + m.B.get()->Radius().x)*0.50f;
+		//float minimumSeparationY = m.A.get()->Radius().y + (m.B.get()->Radius().y + m.B.get()->Radius().y*0.2f);//&& dist < minimumSeparationY
+		float minimumSeparationZ = (m.A.get()->Radius().z + m.B.get()->Radius().z)*0.50f;
+		//float dist = glm::distance(glm::vec3(m.A.get()->Position().x, 01.0f, m.A.get()->Position().z), glm::vec3(m.B.get()->Position().x, 01.0f, m.B.get()->Position().z));
+		float dist = glm::distance(m.A.get()->Position(), m.B.get()->Position());
 		if (dist < minimumSeparationX && dist < minimumSeparationZ) { 
 			//if player is on the object
-			if (m.B.Position().y < ((m.A.Position().y + m.A.Radius().y) + m.B.Radius().y + (m.B.Radius().y*0.2f))
-				&& m.B.Position().y > (m.A.Position().y + (m.A.Radius().y + (m.B.Radius().y*0.2f)))
-				&& m.B.Velocity().y < 0.08f && m.B.Velocity().y > -0.08f)
+			if (m.B.get()->Position().y < ((m.A.get()->Position().y + m.A.get()->Radius().y) + m.B.get()->Radius().y + (m.B.get()->Radius().y*0.2f))
+				&& m.B.get()->Position().y > (m.A.get()->Position().y + (m.A.get()->Radius().y + (m.B.get()->Radius().y*0.2f)))
+				&& m.B.get()->Velocity().y < 0.08f && m.B.get()->Velocity().y > -0.08f)
 			{
-				m.B.setPosition(glm::vec3(m.B.Position().x, ((m.A.Position().y + m.A.Radius().y) + m.B.Radius().y), m.B.Position().z));
+				m.B.get()->setPosition(glm::vec3(m.B.get()->Position().x, ((m.A.get()->Position().y + m.A.get()->Radius().y) + m.B.get()->Radius().y), m.B.get()->Position().z));
 				return true;
 			}
 		}
@@ -738,12 +779,12 @@ static bool CheckIfOnObject(Manifold &m, float OnObjRadius, bool DoSquareAndCirc
 */
 static bool ObjectInBox(Manifold &m) {
 	//If Object go outside the box
-	if		((m.A.Position().x + (m.A.Radius().x*0.5f)) > (m.B.Top().x))	{ return false; }
-	else if ((m.A.Position().x - (m.A.Radius().x*0.5f)) < (m.B.Bottom().x))	{ return false; }
-	else if ((m.A.Position().y + (m.A.Radius().y*0.5f)) > (m.B.Top().y))	{ return false; }
-	else if ((m.A.Position().y - (m.A.Radius().y*0.5f)) < (m.B.Bottom().y))	{ return false; }
-	else if ((m.A.Position().z + (m.A.Radius().z*0.5f)) > (m.B.Top().z))	{ return false; }
-	else if ((m.A.Position().z - (m.A.Radius().z*0.5f)) < (m.B.Bottom().z))	{ return false; }
+	if		((m.A.get()->Position().x + (m.A.get()->Radius().x*0.5f)) > (m.B.get()->Top().x))	{ return false; }
+	else if ((m.A.get()->Position().x - (m.A.get()->Radius().x*0.5f)) < (m.B.get()->Bottom().x))	{ return false; }
+	else if ((m.A.get()->Position().y + (m.A.get()->Radius().y*0.5f)) > (m.B.get()->Top().y))	{ return false; }
+	else if ((m.A.get()->Position().y - (m.A.get()->Radius().y*0.5f)) < (m.B.get()->Bottom().y))	{ return false; }
+	else if ((m.A.get()->Position().z + (m.A.get()->Radius().z*0.5f)) > (m.B.get()->Top().z))	{ return false; }
+	else if ((m.A.get()->Position().z - (m.A.get()->Radius().z*0.5f)) < (m.B.get()->Bottom().z))	{ return false; }
 	else { return true; }
 }
 /* function CheckIfObjectInBorderOfBox()
@@ -753,12 +794,12 @@ static bool ObjectInBox(Manifold &m) {
 */
 static bool CheckIfObjectInBorderOfBox(Manifold &m) {
 	//m.A is player //m.B is border
-	if ((m.A.Position().x < m.B.Bottom().x + m.A.Radius().x && m.A.Position().x > m.B.Bottom().x - m.A.Radius().x)
-	 || (m.A.Position().x > m.B.Top().x	-	 m.A.Radius().x && m.A.Position().x < m.B.Top().x +	m.A.Radius().x)) { return true; }
-	if ((m.A.Position().y < m.B.Bottom().y + m.A.Radius().y && m.A.Position().y > m.B.Bottom().y - m.A.Radius().y)
-	 || (m.A.Position().y > m.B.Top().y -	 m.A.Radius().y && m.A.Position().y < m.B.Top().y + m.A.Radius().y)) { return true; }
-	if ((m.A.Position().z < m.B.Bottom().z + m.A.Radius().z && m.A.Position().z > m.B.Bottom().z - m.A.Radius().z)
-	 || (m.A.Position().z > m.B.Top().z -	 m.A.Radius().z && m.A.Position().z < m.B.Top().z + m.A.Radius().z)) { return true; }
+	if ((m.A.get()->Position().x < m.B.get()->Bottom().x + m.A.get()->Radius().x && m.A.get()->Position().x > m.B.get()->Bottom().x - m.A.get()->Radius().x)
+	 || (m.A.get()->Position().x > m.B.get()->Top().x	-	 m.A.get()->Radius().x && m.A.get()->Position().x < m.B.get()->Top().x +	m.A.get()->Radius().x)) { return true; }
+	if ((m.A.get()->Position().y < m.B.get()->Bottom().y + m.A.get()->Radius().y && m.A.get()->Position().y > m.B.get()->Bottom().y - m.A.get()->Radius().y)
+	 || (m.A.get()->Position().y > m.B.get()->Top().y -	 m.A.get()->Radius().y && m.A.get()->Position().y < m.B.get()->Top().y + m.A.get()->Radius().y)) { return true; }
+	if ((m.A.get()->Position().z < m.B.get()->Bottom().z + m.A.get()->Radius().z && m.A.get()->Position().z > m.B.get()->Bottom().z - m.A.get()->Radius().z)
+	 || (m.A.get()->Position().z > m.B.get()->Top().z -	 m.A.get()->Radius().z && m.A.get()->Position().z < m.B.get()->Top().z + m.A.get()->Radius().z)) { return true; }
 	return false;
 }
 
@@ -769,7 +810,7 @@ static bool CheckIfObjectInBorderOfBox(Manifold &m) {
 *   - this checks to see it an objects are inside a specified range of eachother
 */
 static bool ObjectsWithinRange(Manifold &m, float range) {
-	glm::vec3 seek = (m.A.Position() - m.B.Position());
+	glm::vec3 seek = (m.A.get()->Position() - m.B.get()->Position());
 	if (glm::length(seek) > 0.0f && glm::length(seek) < range) { seek = glm::normalize(seek);  return true; }
 	else { seek = glm::vec3(0.0f); return false; }
 }
@@ -797,43 +838,43 @@ static void applyWanderingSystem(GameObject* obj, float infunce, float randPoseY
 static void applyGravitationalForces(Manifold &m, float gv)
 {//m.A is the ground //m.B is the Objects
 
-	if (m.B.Viewable) {
-		if (m.B.InAirCounter > 0.0f) { m.B.InAirCounter -= 0.01f; }
-		else { m.B.IsJumping = false; }
+	if (m.B.get()->Viewable) {
+		if (m.B.get()->InAirCounter > 0.0f) { m.B.get()->InAirCounter -= 0.01f; }
+		else { m.B.get()->IsJumping = false; }
 
 		//if the object is in the air; apply gravity
-		if (m.B.inAir) {
+		if (m.B.get()->inAir) {
 			//Jumping
-			if (m.B.IsJumping && m.B.InAirCounter > 0.0f) {
-				glm::vec3 gravity = glm::vec3(0.0f, (((-0.980f - gv) * (m.B.Mass())*0.15 + m.B.InAirCounter)), 0.0f);
-				glm::vec3 JumpDirectionForce = glm::vec3((radToDeg*m.B.ForwardDirection.x)*-0.001f, 0.0f, (radToDeg*m.B.ForwardDirection.z)*-0.001f);
+			if (m.B.get()->IsJumping && m.B.get()->InAirCounter > 0.0f) {
+				glm::vec3 gravity = glm::vec3(0.0f, (((-0.980f - gv) * (m.B.get()->Mass())*0.15 + m.B.get()->InAirCounter)), 0.0f);
+				glm::vec3 JumpDirectionForce = glm::vec3((radToDeg*m.B.get()->ForwardDirection.x)*-0.001f, 0.0f, (radToDeg*m.B.get()->ForwardDirection.z)*-0.001f);
 
-				m.B.setForceOnObject(m.B.ForceOnObject() + gravity + JumpDirectionForce);
+				m.B.get()->setForceOnObject(m.B.get()->ForceOnObject() + gravity + JumpDirectionForce);
 			}
 			//NOT Jumping //Falling
 			else {
-				glm::vec3 gravity = glm::vec3(0.0f, ((-0.980f * (m.B.Mass())*0.15) + gv), 0.0f);
-				glm::vec3 JumpDirectionForce = glm::vec3((radToDeg*m.B.ForwardDirection.x)*-0.001f, 0.0f, (radToDeg*m.B.ForwardDirection.z)*-0.001f);
-				m.B.setForceOnObject(m.B.ForceOnObject() + gravity);
+				glm::vec3 gravity = glm::vec3(0.0f, ((-0.980f * (m.B.get()->Mass())*0.15) + gv), 0.0f);
+				glm::vec3 JumpDirectionForce = glm::vec3((radToDeg*m.B.get()->ForwardDirection.x)*-0.001f, 0.0f, (radToDeg*m.B.get()->ForwardDirection.z)*-0.001f);
+				m.B.get()->setForceOnObject(m.B.get()->ForceOnObject() + gravity);
 			}
 		}
 
-		if (m.B.onObject == false) {
+		if (m.B.get()->onObject == false) {
 			//if object is lower then the ground
-			if ((m.A.Position().y + (m.B.Radius().y - (m.B.Radius().y*0.1f))) > m.B.Position().y) {
-				m.B.setPosition(glm::vec3(m.B.Position().x, (m.A.Position().y + m.B.Radius().y), m.B.Position().z));
-				if (m.B.Velocity().y < 0.0f) { m.B.setVelocity(glm::vec3(m.B.Velocity().x, m.B.Velocity().y*-0.450f, m.B.Velocity().z)); }
-				m.B.inAir = false;
+			if ((m.A.get()->Position().y + (m.B.get()->Radius().y - (m.B.get()->Radius().y*0.1f))) > m.B.get()->Position().y) {
+				m.B.get()->setPosition(glm::vec3(m.B.get()->Position().x, (m.A.get()->Position().y + m.B.get()->Radius().y), m.B.get()->Position().z));
+				if (m.B.get()->Velocity().y < 0.0f) { m.B.get()->setVelocity(glm::vec3(m.B.get()->Velocity().x, m.B.get()->Velocity().y*-0.450f, m.B.get()->Velocity().z)); }
+				m.B.get()->inAir = false;
 			}
 			//if the object is above the ground
-			else if (m.B.Position().y > (m.A.Position().y + (m.B.Radius().y + (m.B.Radius().y*0.2f)))) { m.B.inAir = true; }
+			else if (m.B.get()->Position().y > (m.A.get()->Position().y + (m.B.get()->Radius().y + (m.B.get()->Radius().y*0.2f)))) { m.B.get()->inAir = true; }
 			//if the object is on the ground
-			else if (m.B.Position().y < (m.A.Position().y + (m.B.Radius().y + (m.B.Radius().y*0.2f))) && m.B.Velocity().y < 0.1f) {
-				m.B.setPosition(glm::vec3(m.B.Position().x, (m.A.Position().y + m.B.Radius().y), m.B.Position().z));
-				m.B.inAir = false;
+			else if (m.B.get()->Position().y < (m.A.get()->Position().y + (m.B.get()->Radius().y + (m.B.get()->Radius().y*0.2f))) && m.B.get()->Velocity().y < 0.1f) {
+				m.B.get()->setPosition(glm::vec3(m.B.get()->Position().x, (m.A.get()->Position().y + m.B.get()->Radius().y), m.B.get()->Position().z));
+				m.B.get()->inAir = false;
 			}
 			//if the object is someplace
-			else { m.B.inAir = false; }
+			else { m.B.get()->inAir = false; }
 		}
 	}
 }

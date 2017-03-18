@@ -211,11 +211,13 @@ public:
 	virtual void GameObject::update(float deltaT);
 	virtual void GameObject::updateP(float deltaT);
 	virtual void GameObject::drawObject();
-	virtual void GameObject::drawTileSet(float m_positionX, float m_positionY, float m_tileOffsetX, float m_tileOffsetY);
+
 
 	bool GameObject::objectLoader(const char* filename);
 	bool GameObject::objectLoader(std::string filename);
 	void GameObject::objectLoader(GameObject * objPath);
+	void GameObject::objectLoader(std::shared_ptr<GameObject> * objPath);
+	
 	void GameObject::objectHitBox(GameObject * objPath);
 	void GameObject::objectLoaderHTR(GameObject * objPath);
 	void GameObject::morphTarget(GameObject * objPath, float dt);

@@ -12,6 +12,7 @@ in VertexData
 	vec2 texCoord;
 	vec4 colour;
 	vec3 eyePos;
+	vec3 vertex;
 } vIn;
 
 layout(location = 0) out vec4 FragColor; //FragColor response to GL_COLOR_ATTACHMENT0 [location = 0 so GL_COLOR_ATTACHMENT0]

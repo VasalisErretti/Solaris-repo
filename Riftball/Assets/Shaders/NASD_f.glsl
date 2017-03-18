@@ -61,7 +61,7 @@ void main()
 	vec3 diffuse = NdotL * diffuseIntensity * diffuseTexture.xyz; 
 	
 	//ambient
-	vec3 ambient = diffuseTexture.xyz * 0.1;
+	vec3 ambient = diffuseTexture.xyz * 0.3;
 
 
 	FragColor = vec4(diffuse + specular + ambient, 1.0); FragColor.w = 1.0;
