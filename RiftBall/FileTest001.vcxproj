@@ -164,10 +164,13 @@
     <ClInclude Include="Include\Shader.h" />
     <ClInclude Include="Include\FileLoader.h" />
     <ClInclude Include="Include\ShaderProgram.h" />
+    <ClInclude Include="Include\TileSet.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Shaders\default_f.glsl" />
     <None Include="Assets\Shaders\default_v.glsl" />
+    <None Include="Assets\Shaders\NASD_f.glsl" />
+    <None Include="Assets\Shaders\NASD_v.glsl" />
     <None Include="Assets\Shaders\passThru_f.glsl" />
     <None Include="Assets\Shaders\passThru_v.glsl" />
     <None Include="Assets\Shaders\text_f.glsl" />

@@ -58,6 +58,9 @@
     <ClInclude Include="Include\FrameBufferObject.h">
       <Filter>Other Functions</Filter>
     </ClInclude>
+    <ClInclude Include="Include\TileSet.h">
+      <Filter>Other Functions</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Shader">
@@ -96,6 +99,12 @@
       <Filter>Shader\Shaders</Filter>
     </None>
     <None Include="Assets\Shaders\text_f.glsl">
+      <Filter>Shader\Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\NASD_f.glsl">
+      <Filter>Shader\Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\NASD_v.glsl">
       <Filter>Shader\Shaders</Filter>
     </None>
   </ItemGroup>

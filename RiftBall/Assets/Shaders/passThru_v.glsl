@@ -24,12 +24,14 @@ uniform mat4 localTransform;
 
 void main()
 {
-	vOut.colour = vec4(vIn_colour, 1.0);
+	vOut.vertex = vIn_vertex;
 	vOut.texCoord = vIn_uv;
+	vOut.colour = vec4(vIn_colour, 1.0);
+
 	vOut.normal = (mat3(mvm) * mat3(localTransform) * vIn_normal); //real
 	vOut.eyePos = (u_mv * vec4(vIn_vertex, 1.0)).xyz; //real
 	
-	vOut.vertex = vIn_vertex;
+
 	//vOut.normal = (u_mv * vec4(vIn_normal, 0.0)).xyz;
 	//vOut.eyePos = mat3(mvm) * mat3(localTransform) * vIn_vertex;
 

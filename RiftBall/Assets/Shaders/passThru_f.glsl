@@ -7,6 +7,7 @@ uniform vec4 u_lightPos_02;
 
 uniform mat4 localTransform;
 uniform mat4 mvm; // modelview matrix
+uniform mat4 u_mv;
 
 // Fragment Shader Inputs
 in VertexData
@@ -28,11 +29,11 @@ void main()
 	float shininess = 10.0; //make this a uniform
 	vec3 N = normalize(vIn.normal);
 	vec3 E = normalize(-vIn.eyePos);
-	//vec3 L_01 = normalize(u_lightPos_01.xyz - vIn.eyePos);
-	//vec3 L_02 = normalize(u_lightPos_02.xyz - vIn.eyePos);
-	vec4 modelViewSpace = mvm * (vec4(localTransform * vec4(vIn.vertex, 1.0)));
-	vec3 L_01 = normalize(u_lightPos_01.xyz - modelViewSpace.xyz);
-	vec3 L_02 = normalize(u_lightPos_02.xyz - modelViewSpace.xyz);
+	vec3 L_01 = normalize(u_lightPos_01.xyz - vIn.eyePos);
+	vec3 L_02 = normalize(u_lightPos_02.xyz - vIn.eyePos);
+	//vec4 modelViewSpace = mvm * (vec4(localTransform * vec4(vIn.vertex, 1.0)));
+	//vec3 L_01 = normalize(u_lightPos_01.xyz - modelViewSpace.xyz);
+	//vec3 L_02 = normalize(u_lightPos_02.xyz - modelViewSpace.xyz);
 	vec3 H_01 = normalize(L_01 + E);
 	vec3 H_02 = normalize(L_02 + E);
 	vec4 textureColor = texture2D(tex1, vIn.texCoord.st);
@@ -67,8 +68,9 @@ void main()
 
 	FragColor = (out_Color_01 + out_Color_02)*0.50;
 	FragColor.w = 1.0;
-	if (textureColor.a < 0.9){ FragColor.a = (textureColor.a*0.5); }
-	if (textureColor.a < 0.3){ discard; }
+	FragColor.a = textureColor.a;
+	//if (textureColor.a < 0.9){ FragColor.a = (textureColor.a*0.5); }
+	//if (textureColor.a < 0.3){ discard; }
 	
 	
 }

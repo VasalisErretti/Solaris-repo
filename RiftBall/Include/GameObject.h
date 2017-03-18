@@ -8,7 +8,7 @@
 // 3rd Party Libraries
 #include <glm\glm\glm.hpp>
 #include <GL\glew.h>
-//#include <GL\glut.h>
+#include <GL\glut.h>
 #include <GL\freeglut.h>
 #include <glm\glm\gtx\transform.hpp>
 #include <glm\glm\gtc\type_ptr.hpp>
@@ -21,8 +21,6 @@
 struct Face
 {
 	Face() {}
-	// these are arrays of size 3 to represent 3 points of a triangle
-	// these values represent the indices of the points
 	unsigned int normals[3], vertices[3], textures[3];
 };
 
@@ -98,6 +96,30 @@ public:
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	}
+	void setTexture(int ID, GLuint _textureHandle) {
+		if (ID == 0) {
+			diffuseMap = std::make_shared<GLuint>(_textureHandle);
+			glGenTextures(ID, diffuseMap.get());
+			glBindTexture(GL_TEXTURE_2D, *diffuseMap.get());
+		}
+		else if (ID == 1) {
+			normalMap = std::make_shared<GLuint>(_textureHandle);
+			glGenTextures(ID, normalMap.get());
+			glBindTexture(GL_TEXTURE_2D, *normalMap.get());
+		}
+		else if (ID == 2) {
+			specularMap = std::make_shared<GLuint>(_textureHandle);
+			glGenTextures(ID, specularMap.get());
+			glBindTexture(GL_TEXTURE_2D, *specularMap.get());
+		}
+		else if (ID == 3) {}
+
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	}
 
 	void setPosition(glm::vec3 newPosition) { m_Position = newPosition; }
@@ -190,9 +212,12 @@ public:
 	virtual void GameObject::updateP(float deltaT);
 	virtual void GameObject::drawObject();
 
+
 	bool GameObject::objectLoader(const char* filename);
 	bool GameObject::objectLoader(std::string filename);
 	void GameObject::objectLoader(GameObject * objPath);
+	void GameObject::objectLoader(std::shared_ptr<GameObject> * objPath);
+	
 	void GameObject::objectHitBox(GameObject * objPath);
 	void GameObject::objectLoaderHTR(GameObject * objPath);
 	void GameObject::morphTarget(GameObject * objPath, float dt);
@@ -201,8 +226,9 @@ public:
 
 
 	std::shared_ptr<Material> material;
-	//std::shared_ptr<TTK::Texture2D> normalMap;
-	//std::shared_ptr<TTK::Texture2D> specularMap;
+	std::shared_ptr<GLuint> diffuseMap;
+	std::shared_ptr<GLuint> normalMap;
+	std::shared_ptr<GLuint> specularMap;
 };
 
 

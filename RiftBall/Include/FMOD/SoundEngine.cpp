@@ -111,16 +111,11 @@ bool Sound::Load(char* fileName, bool is3d, bool isLoop) {
 
 	return true;
 }
-
 FMOD::Channel* Sound::Play()
 {
-	if (!isPlayingF()) {
-		isPlaying = false;
-	}
+	if (!isPlayingF()) { isPlaying = false; }
 	//Play sound
-	if (!isPlaying) {
-		isPlaying = true;
-
+	if (!isPlaying) { isPlaying = true;
 		result = Sys.system->playSound(sound, 0, true, &channel); CheckResult(result);
 		if (is3d) {
 			result = channel->set3DAttributes(&pos, &vel); CheckResult(result);
@@ -155,7 +150,6 @@ void Sound::SetPosition(glm::vec3 m_position) {
 	vel = velocity;
 
 	if (is3d) { result = this->channel->set3DAttributes(&position, &velocity); CheckResult(result); }
-	else {}
 }
 
 void Sound::SetPosition(FMOD::Channel *channel, FMOD_VECTOR position) {
