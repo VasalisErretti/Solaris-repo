@@ -67,27 +67,25 @@ std::map<std::string, std::shared_ptr<Material>> materials;
 std::map<std::string, int> MenuObjectsAmount; std::map<std::string, std::shared_ptr<GameObject>> MenuObjects;
 std::map<std::string, int> GameObjectsAmount; std::map<std::string, std::shared_ptr<GameObject>> GameObjects;
 Sliders *Slider; Buttons *Button;
-GameObject AffectsOnPlayer[2][10];
+GameObject AffectsOnPlayer[4][10];
 //Framebuffer objects
 std::map<std::string, std::shared_ptr<FrameBufferObject>> FBOs;
 GLuint TextureNumbers[10]; GLuint PlayerTextures[6];
 Gamepad gamepad; Manifold m; MorphMath morphmath; RenderText SystemText;
 PlayerHealth PlayerHp[2]; PlayerInfo *PlayerValues;
+bool ControllerAPress[4] { false };
 //Random Variables//
 
 
 //defaults
-bool ApplyingGravity = true;
-bool CollisionBetweenObjects = true;
-bool IdleEnemiesRespawn = true;
-bool EnableShadows = true;
-float randomSpecialTime;
-glm::vec3 speedToWallDegradation = glm::vec3(0.80f, 0.50f, 0.80f);
-//camera viewport
-int cameralook = 0;// int cameraMode = 0;
+int cameralook = 0;//camera viewport
 //Bool's for the game///////////////////////////
 bool inMenu = true; bool inGame = false; bool inOptions = false;
 int inOptionsTab = 0; std::string lastMenu = "inMenu";
+bool ApplyingGravity = true; bool CollisionBetweenObjects = true;
+bool IdleEnemiesRespawn = true; bool EnableShadows = true;
+float randomSpecialTime;
+glm::vec3 speedToWallDegradation = glm::vec3(0.80f, 0.50f, 0.80f);
 
 
 //Sounds
@@ -114,14 +112,14 @@ void setBoardStart() {
 
 	for (int i = 0; i < GameObjectsAmount["Players_0"]; i++)
 	{
-		if (&GameObjects["Rifts_0" + to_string(i)] != NULL) {
+		if (&GameObjects["Players_0" + to_string(i)] != NULL) {
 			float multipliyer002 = 0.0f;
 			if (i > 1) { multipliyer002 += 20.0f; }
-			if (PlayerValues[i].PlayerTeam == 0) { GameObjects["Players_0" + to_string(i)].get()->setPosition(glm::vec3(20.0f, 0.0f, -10.0f + multipliyer002)); }
-			else if (PlayerValues[i].PlayerTeam == 1) { GameObjects["Players_0" + to_string(i)].get()->setPosition(glm::vec3(-20.0f, 0.0f, -10.0f + multipliyer002)); }
+			if (PlayerValues[i].PlayerTeam == 0) { GameObjects["Players_0" + to_string(i)].get()->setPosition(glm::vec3(20.0f, 0.0f, -10.0f + multipliyer002 + Random(-10.0f, 10.0f))); }
+			else if (PlayerValues[i].PlayerTeam == 1) { GameObjects["Players_0" + to_string(i)].get()->setPosition(glm::vec3(-20.0f, 0.0f, -10.0f + multipliyer002 + Random(-10.0f, 10.0f))); }
 
-			GameObjects["Rifts_0" + to_string(i)].get()->setVelocity(glm::vec3(0.0f));
-			GameObjects["Rifts_0" + to_string(i)].get()->setForceOnObject(glm::vec3(0.0f));
+			GameObjects["Players_0" + to_string(i)].get()->setVelocity(glm::vec3(0.0f));
+			GameObjects["Players_0" + to_string(i)].get()->setForceOnObject(glm::vec3(0.0f));
 		}
 	}
 
@@ -179,51 +177,148 @@ void exitProgram() {
 */
 void WhatCameraIsLookingAt(int PlayerLookAt)//int CameraLookAt
 {
-	if (cameralook == 0)
+	if (PlayerLookAt == 0)
 	{
-		glViewport(0, 0, (windowWidth / 2), windowHeight);
-		projectionMatrix[0] = glm::perspective(45.0f, (windowWidth / windowHeight)*1.0f, 0.1f, 10000.f);
-		modelViewMatrix[0] = glm::mat4x4(1.0f);
+		if (GameObjectsAmount["Players_0"] > 2) {
+			for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
+				for (int j = 0; j < GameObjectsAmount["Players_0"]; j++) {
+					if ((i != j) && (PlayerValues[i].PlayerTeam == 0) && (PlayerValues[i].PlayerTeam == PlayerValues[j].PlayerTeam)) {
+						glViewport(0, 0, (windowWidth / 2), windowHeight);
+						projectionMatrix[0] = glm::perspective(45.0f, (windowWidth / windowHeight)*1.0f, 0.1f, 10000.f);
+						modelViewMatrix[0] = glm::mat4x4(1.0f);
 
-		if (PlayerValues[PlayerLookAt].cameraMode == 0) {
-			glm::mat4x4 transform = glm::lookAt(
-				glm::vec3((GameObjects["Players_0" + to_string(0)].get()->Position().x + 50.0f), 50.0f, (GameObjects["Players_0" + to_string(0)].get()->Position().z)),
-				glm::vec3((GameObjects["Players_0" + to_string(0)].get()->Position().x), 1.0f, (GameObjects["Players_0" + to_string(0)].get()->Position().z)),
-				glm::vec3(0.0f, 1.0f, 0.0f));
-			modelViewMatrix[0] = transform * modelViewMatrix[0];
-			PlayerValues[PlayerLookAt].cameraPosition = glm::vec3((GameObjects["Players_0" + to_string(0)].get()->Position().x - 50.0f), 50.0f, (GameObjects["Players_0" + to_string(0)].get()->Position().z));
+						glm::vec3 CameraLocation = morphmath.Lerp(
+							glm::vec3((GameObjects["Players_0" + to_string(i)].get()->Position().x + 50.0f), 50.0f, (GameObjects["Players_0" + to_string(i)].get()->Position().z)),
+							glm::vec3((GameObjects["Players_0" + to_string(j)].get()->Position().x + 50.0f), 50.0f, (GameObjects["Players_0" + to_string(j)].get()->Position().z)),
+							0.5f);
+						glm::vec3 CameraLookAt = morphmath.Lerp(
+							glm::vec3((GameObjects["Players_0" + to_string(i)].get()->Position().x), 1.0f, (GameObjects["Players_0" + to_string(i)].get()->Position().z)),
+							glm::vec3((GameObjects["Players_0" + to_string(j)].get()->Position().x), 1.0f, (GameObjects["Players_0" + to_string(j)].get()->Position().z)),
+							0.5f);
+
+						if (PlayerValues[i].cameraMode == 0) {
+							glm::mat4x4 transform = glm::lookAt(
+								CameraLocation,
+								CameraLookAt,
+								glm::vec3(0.0f, 1.0f, 0.0f));
+							modelViewMatrix[0] = transform * modelViewMatrix[0];
+							PlayerValues[i].cameraPosition = CameraLocation;
+							PlayerValues[j].cameraPosition = CameraLocation;
+						}
+						else if (PlayerValues[i].cameraMode == 1) {
+							glm::mat4x4 transform = glm::lookAt(
+								PlayerValues[PlayerLookAt].cameraPosition,
+								PlayerValues[PlayerLookAt].cameraPosition + PlayerValues[PlayerLookAt].forwardVector,
+								glm::vec3(0.0f, 1.0f, 0.0f));
+							modelViewMatrix[0] = transform * modelViewMatrix[0];
+						}
+
+						cameraViewMatrix[0] = glm::mat4(glm::translate(CameraLocation)) * modelViewMatrix[0];
+					}
+				}
+			}
 		}
-		else if (PlayerValues[PlayerLookAt].cameraMode == 1) {
-			glm::mat4x4 transform = glm::lookAt(
-				PlayerValues[PlayerLookAt].cameraPosition,
-				PlayerValues[PlayerLookAt].cameraPosition + PlayerValues[PlayerLookAt].forwardVector,
-				glm::vec3(0.0f, 1.0f, 0.0f));
-			modelViewMatrix[0] = transform * modelViewMatrix[0];
+		else {
+			for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
+				if (PlayerValues[i].PlayerTeam == 0) {
+					glViewport(0, 0, (windowWidth / 2), windowHeight);
+					projectionMatrix[0] = glm::perspective(45.0f, (windowWidth / windowHeight)*1.0f, 0.1f, 10000.f);
+					modelViewMatrix[0] = glm::mat4x4(1.0f);
+
+					glm::vec3 CameraLocation = glm::vec3((GameObjects["Players_0" + to_string(i)].get()->Position().x + 50.0f), 50.0f, (GameObjects["Players_0" + to_string(i)].get()->Position().z));
+					glm::vec3 CameraLookAt = glm::vec3((GameObjects["Players_0" + to_string(i)].get()->Position().x), 1.0f, (GameObjects["Players_0" + to_string(i)].get()->Position().z));
+
+					if (PlayerValues[i].cameraMode == 0) {
+						glm::mat4x4 transform = glm::lookAt(
+							CameraLocation,
+							CameraLookAt,
+							glm::vec3(0.0f, 1.0f, 0.0f));
+						modelViewMatrix[0] = transform * modelViewMatrix[0];
+						PlayerValues[i].cameraPosition = CameraLocation;
+					}
+					else if (PlayerValues[i].cameraMode == 1) {
+						glm::mat4x4 transform = glm::lookAt(
+							PlayerValues[PlayerLookAt].cameraPosition,
+							PlayerValues[PlayerLookAt].cameraPosition + PlayerValues[PlayerLookAt].forwardVector,
+							glm::vec3(0.0f, 1.0f, 0.0f));
+						modelViewMatrix[0] = transform * modelViewMatrix[0];
+					}
+
+					cameraViewMatrix[0] = glm::mat4(glm::translate(CameraLocation)) * modelViewMatrix[0];
+				}
+			}
 		}
-		cameraViewMatrix[0] = glm::mat4(glm::translate(PlayerValues[PlayerLookAt].cameraPosition)) * modelViewMatrix[0];
 	}
-	else if (cameralook == 1)
-	{
-		glViewport((windowWidth/2), 0, (windowWidth / 2), windowHeight);
-		projectionMatrix[1] = glm::perspective(45.0f, (windowWidth/windowHeight)*1.0f, 0.1f, 10000.f);
-		modelViewMatrix[1] = glm::mat4x4(1.0f);
+	else if (PlayerLookAt == 1) {
+		if (GameObjectsAmount["Players_0"] > 2) {
+			for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
+				for (int j = 0; j < GameObjectsAmount["Players_0"]; j++) {
+					if ((i != j) && (PlayerValues[i].PlayerTeam == 1) && (PlayerValues[i].PlayerTeam == PlayerValues[j].PlayerTeam)) {
+						glViewport((windowWidth / 2), 0, (windowWidth / 2), windowHeight);
+						projectionMatrix[1] = glm::perspective(45.0f, (windowWidth / windowHeight)*1.0f, 0.1f, 10000.f);
+						modelViewMatrix[1] = glm::mat4x4(1.0f);
 
-		if (PlayerValues[PlayerLookAt].cameraMode == 0) {
-			glm::mat4x4 transform = glm::lookAt(
-				glm::vec3((GameObjects["Players_0" + to_string(1)].get()->Position().x - 50.0f), 50.0f, (GameObjects["Players_0" + to_string(1)].get()->Position().z)),
-				glm::vec3((GameObjects["Players_0" + to_string(1)].get()->Position().x), 1.0f, (GameObjects["Players_0" + to_string(1)].get()->Position().z)),
-				glm::vec3(0.0f, 1.0f, 0.0f));
-			modelViewMatrix[1] = transform * modelViewMatrix[1];
-			PlayerValues[PlayerLookAt].cameraPosition = glm::vec3((GameObjects["Players_0" + to_string(1)].get()->Position().x - 50.0f), 50.0f, (GameObjects["Players_0" + to_string(1)].get()->Position().z));
+						glm::vec3 CameraLocation = morphmath.Lerp(
+							glm::vec3((GameObjects["Players_0" + to_string(i)].get()->Position().x - 50.0f), 50.0f, (GameObjects["Players_0" + to_string(i)].get()->Position().z)),
+							glm::vec3((GameObjects["Players_0" + to_string(j)].get()->Position().x - 50.0f), 50.0f, (GameObjects["Players_0" + to_string(j)].get()->Position().z)),
+							0.5f);
+						glm::vec3 CameraLookAt = morphmath.Lerp(
+							glm::vec3((GameObjects["Players_0" + to_string(i)].get()->Position().x), 1.0f, (GameObjects["Players_0" + to_string(i)].get()->Position().z)),
+							glm::vec3((GameObjects["Players_0" + to_string(j)].get()->Position().x), 1.0f, (GameObjects["Players_0" + to_string(j)].get()->Position().z)),
+							0.5f);
+
+						if (PlayerValues[i].cameraMode == 0) {
+							glm::mat4x4 transform = glm::lookAt(
+								CameraLocation,
+								CameraLookAt,
+								glm::vec3(0.0f, 1.0f, 0.0f));
+							modelViewMatrix[1] = transform * modelViewMatrix[1];
+							PlayerValues[i].cameraPosition = CameraLocation;
+							PlayerValues[j].cameraPosition = CameraLocation;
+						}
+						else if (PlayerValues[i].cameraMode == 1) {
+							glm::mat4x4 transform = glm::lookAt(
+								PlayerValues[PlayerLookAt].cameraPosition,
+								PlayerValues[PlayerLookAt].cameraPosition + PlayerValues[PlayerLookAt].forwardVector,
+								glm::vec3(0.0f, 1.0f, 0.0f));
+							modelViewMatrix[1] = transform * modelViewMatrix[1];
+						}
+
+						cameraViewMatrix[1] = glm::mat4(glm::translate(CameraLocation)) * modelViewMatrix[1];
+					}
+				}
+			}
 		}
-		else if (PlayerValues[PlayerLookAt].cameraMode == 1) {
-			glm::mat4x4 transform = glm::lookAt(
-				PlayerValues[PlayerLookAt].cameraPosition,
-				PlayerValues[PlayerLookAt].cameraPosition + PlayerValues[PlayerLookAt].forwardVector,
-				glm::vec3(0.0f, 1.0f, 0.0f));
-			modelViewMatrix[1] = transform * modelViewMatrix[1];
+		else {
+			for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
+				if (PlayerValues[i].PlayerTeam == 1) {
+					glViewport((windowWidth / 2), 0, (windowWidth / 2), windowHeight);
+					projectionMatrix[1] = glm::perspective(45.0f, (windowWidth / windowHeight)*1.0f, 0.1f, 10000.f);
+					modelViewMatrix[1] = glm::mat4x4(1.0f);
+
+					glm::vec3 CameraLocation = glm::vec3((GameObjects["Players_0" + to_string(i)].get()->Position().x - 50.0f), 50.0f, (GameObjects["Players_0" + to_string(i)].get()->Position().z));
+					glm::vec3 CameraLookAt = glm::vec3((GameObjects["Players_0" + to_string(i)].get()->Position().x), 1.0f, (GameObjects["Players_0" + to_string(i)].get()->Position().z));
+
+					if (PlayerValues[i].cameraMode == 0) {
+						glm::mat4x4 transform = glm::lookAt(
+							CameraLocation,
+							CameraLookAt,
+							glm::vec3(0.0f, 1.0f, 0.0f));
+						modelViewMatrix[1] = transform * modelViewMatrix[1];
+						PlayerValues[i].cameraPosition = CameraLocation;
+					}
+					else if (PlayerValues[i].cameraMode == 1) {
+						glm::mat4x4 transform = glm::lookAt(
+							PlayerValues[PlayerLookAt].cameraPosition,
+							PlayerValues[PlayerLookAt].cameraPosition + PlayerValues[PlayerLookAt].forwardVector,
+							glm::vec3(0.0f, 1.0f, 0.0f));
+						modelViewMatrix[1] = transform * modelViewMatrix[1];
+					}
+
+					cameraViewMatrix[1] = glm::mat4(glm::translate(CameraLocation)) * modelViewMatrix[1];
+				}
+			}
 		}
-		cameraViewMatrix[1] = glm::mat4(glm::translate(PlayerValues[PlayerLookAt].cameraPosition)) * modelViewMatrix[1];
 	}
 }
 void WhatCameraIsLookingAt()//int CameraLookAt
@@ -508,13 +603,20 @@ void ControllerDelayButton(int portNumber, float deltaTasSeconds)
 					input.mi.dwExtraInfo = NULL;
 					input.mi.time = 0;
 					SendInput(1, &input, sizeof(INPUT));
-
-					bool pressedASlider = false;
-					for (int i = 0; i < MenuObjectsAmount["HUD_Sliders_0"]; i++) {
-						//move nob along the slider
-						if (Slider[i].moveNob(MPosToOPosX, MPosToOPosY)) { MenuObjects["HUD_Slider_Button_0" + to_string(i)]->setPosition(glm::vec3(MPosToOPosX, 0.02f, Slider[i].SBar_Pos.z)); pressedASlider = true; }
+					if (inOptionsTab == 3) {
+						bool pressedASlider = false;
+						for (int i = 0; i < MenuObjectsAmount["HUD_Sliders_0"]; i++) {
+							//move nob along the slider
+							if (Slider[i].moveNob(MPosToOPosX, MPosToOPosY)) { MenuObjects["HUD_Slider_Button_0" + to_string(i)]->setPosition(glm::vec3(MPosToOPosX, 0.02f, Slider[i].SBar_Pos.z)); pressedASlider = true; }
+						}
+						if (!pressedASlider) { PlayerValues[portNumber].MenuSwitchCounter = 0.10f; }
 					}
-					if (!pressedASlider) { PlayerValues[portNumber].MenuSwitchCounter = 0.40f; }
+					if (inOptionsTab == 4) {
+						PlayerValues[portNumber].MenuSwitchCounter = 0.50f;
+						ControllerAPress[portNumber] = true;
+						std::cout << "[" << portNumber << "]";
+					}
+					else { PlayerValues[portNumber].MenuSwitchCounter = 0.50f; }
 				}
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_B)) {
 					std::cout << "[B]";
@@ -526,7 +628,12 @@ void ControllerDelayButton(int portNumber, float deltaTasSeconds)
 					input.mi.time = 0;
 					SendInput(1, &input, sizeof(INPUT));
 
-					PlayerValues[portNumber].MenuSwitchCounter = 1.0f;
+					if (inOptions) {
+						if (inOptionsTab == 4) { inOptions = false; inMenu = true; }
+						else if (inOptionsTab != 0) { inOptionsTab = 0; }
+						else { inOptions = false; inMenu = true; }
+						PlayerValues[portNumber].MenuSwitchCounter = 1.0f;
+					}
 				}
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_X)) { std::cout << "[X]"; }
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_Y)) { std::cout << "[Y]"; }
@@ -536,14 +643,32 @@ void ControllerDelayButton(int portNumber, float deltaTasSeconds)
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_RIGHT)) { std::cout << "[DPAD_RIGHT]"; }
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_START)) {
 					std::cout << "[START]";
-					setBoardStart();
-					inMenu = false; inGame = true;
-					PlayerValues[portNumber].MenuSwitchCounter = 1.0f;
+					if (inMenu) {
+						setBoardStart();
+						inMenu = false; inGame = true;
+						PlayerValues[portNumber].MenuSwitchCounter = 1.0f;
+					}
+					if (inOptions) {
+						if (inOptionsTab == 4) {
+
+							int OnTeamZero = 0;
+							for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
+								if (PlayerValues[i].PlayerTeam == 0) { OnTeamZero += 1; }
+							}
+							if (((GameObjectsAmount["Players_0"] == 2) && (OnTeamZero == 1)) || ((GameObjectsAmount["Players_0"] == 4) && (OnTeamZero == 2))) {
+								inOptions = false; inGame = true;
+								setBoardStart();
+								PlayerValues[portNumber].MenuSwitchCounter = 1.0f;
+							}
+
+						}
+					}
 				}
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_BACK)) {
 					std::cout << "[BACK]";
 					if (inOptions) {
-						if (inOptionsTab != 0) { inOptionsTab = 0; }
+						if (inOptionsTab == 4) { inOptions = false; inMenu = true; }
+						else if (inOptionsTab != 0) { inOptionsTab = 0; }
 						else { inOptions = false; inMenu = true; }
 						PlayerValues[portNumber].MenuSwitchCounter = 1.0f;
 					}
@@ -842,8 +967,8 @@ void MenuScreen(float deltaTasSeconds)
 
 	if (mouseDown[0]) {
 		mouseDown[0] = false;
-		if (Button[0].button(MPosToOPosX, MPosToOPosY)) { setBoardStart(); inGame = true; inMenu = false; }
-		if (Button[1].button(MPosToOPosX, MPosToOPosY)) { inOptions = true; inMenu = false; }
+		if (Button[0].button(MPosToOPosX, MPosToOPosY)) { inOptionsTab = 4; inOptions = true; inMenu = false; }//setBoardStart(); inGame = true;
+		if (Button[1].button(MPosToOPosX, MPosToOPosY)) { inOptionsTab = 0; inOptions = true; inMenu = false; }
 		if (Button[2].button(MPosToOPosX, MPosToOPosY)) { exitProgram(); }
 	}
 	if (mouseDown[1]) {
@@ -905,6 +1030,39 @@ void InOptionDraw(int Inum)
 			if (MenuObjects["HUD_Slider_Bar_0" + to_string(i)]->Viewable) { MenuObjects["HUD_Slider_Bar_0" + to_string(i)]->drawObject(); }
 		}
 	}
+	//Colour select
+	else if (inOptionsTab == 4) {
+		if (MenuObjects["HUD_Planes_0" + to_string(inOptionsTab + 1)]->Viewable) { MenuObjects["HUD_Planes_0" + to_string(inOptionsTab + 1)]->drawObject(); }
+		if (MenuObjects["HUD_Buttons_0" + to_string(3)]->Viewable) { MenuObjects["HUD_Buttons_0" + to_string(3)]->drawObject(); }
+
+
+
+		bool ColourSelected[6];
+		for (int i = 0; i < 6; i++) { ColourSelected[i] = false; }
+		for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) { ColourSelected[PlayerValues[i].PlayerColour] = true; }
+		if (ColourSelected[0]) { MenuObjects["HUD_Buttons_0" + to_string(7)].get()->setScale(glm::vec3(10.0f*0.9f, 1.0f, 8.0f*1.6f)); }
+		else { MenuObjects["HUD_Buttons_0" + to_string(7)].get()->setScale(glm::vec3(9.0f*0.9f, 1.0f, 7.0f*1.6f)); }
+		if (ColourSelected[2]) { MenuObjects["HUD_Buttons_0" + to_string(8)].get()->setScale(glm::vec3(10.0f*0.9f, 1.0f, 8.0f*1.6f)); }
+		else { MenuObjects["HUD_Buttons_0" + to_string(8)].get()->setScale(glm::vec3(9.0f*0.9f, 1.0f, 7.0f*1.6f)); }
+		if (ColourSelected[4]) { MenuObjects["HUD_Buttons_0" + to_string(9)].get()->setScale(glm::vec3(10.0f*0.9f, 1.0f, 8.0f*1.6f)); }
+		else { MenuObjects["HUD_Buttons_0" + to_string(9)].get()->setScale(glm::vec3(9.0f*0.9f, 1.0f, 7.0f*1.6f)); }
+		if (ColourSelected[1]) { MenuObjects["HUD_Buttons_0" + to_string(10)].get()->setScale(glm::vec3(10.0f*0.9f, 1.0f, 8.0f*1.6f)); }
+		else { MenuObjects["HUD_Buttons_0" + to_string(10)].get()->setScale(glm::vec3(9.0f*0.9f, 1.0f, 7.0f*1.6f)); }
+		if (ColourSelected[3]) { MenuObjects["HUD_Buttons_0" + to_string(11)].get()->setScale(glm::vec3(10.0f*0.9f, 1.0f, 8.0f*1.6f)); }
+		else { MenuObjects["HUD_Buttons_0" + to_string(11)].get()->setScale(glm::vec3(9.0f*0.9f, 1.0f, 7.0f*1.6f)); }
+		if (ColourSelected[5]) { MenuObjects["HUD_Buttons_0" + to_string(12)].get()->setScale(glm::vec3(10.0f*0.9f, 1.0f, 8.0f*1.6f)); }
+		else { MenuObjects["HUD_Buttons_0" + to_string(12)].get()->setScale(glm::vec3(9.0f*0.9f, 1.0f, 7.0f*1.6f)); }
+
+		for (unsigned int i = 7; i <= 14; i++) {
+			if (MenuObjects["HUD_Buttons_0" + to_string(i)]->Viewable) { MenuObjects["HUD_Buttons_0" + to_string(i)]->drawObject(); }
+		}
+
+
+		for (int i = 0; i <= GameObjectsAmount["Players_0"]; i++) {
+		
+		}
+
+	}
 
 	//passThroughMaterial->shader->unbind();
 
@@ -939,6 +1097,50 @@ void OptionScreen(float deltaTasSeconds)
 				if (Slider[i].moveNob(MPosToOPosX, MPosToOPosY)) { MenuObjects["HUD_Slider_Button_0" + to_string(i)]->setPosition(glm::vec3(MPosToOPosX, 0.02f, Slider[i].SBar_Pos.z)); }
 			}
 		}
+		//Player select screen
+		else if (inOptionsTab == 4) {
+			//Back
+			if (Button[3].button(MPosToOPosX, MPosToOPosY)) { inOptions = false; inMenu = true; }
+
+
+			bool ColourSelected[6];
+			for (int i = 0; i < 6; i++) { ColourSelected[i] = false; }
+			for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) { ColourSelected[PlayerValues[i].PlayerColour] = true; }
+
+
+			for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
+				if (ControllerAPress[i] == true) {
+					ControllerAPress[i] = false;
+					std::cout << "[" << i << "]";
+					//Colour select
+					int TeamSelect = 0;
+					if (Button[7].button(MPosToOPosX, MPosToOPosY)  && !ColourSelected[0]) { PlayerValues[i].PlayerColour = 0; TeamSelect = 0; }
+					if (Button[8].button(MPosToOPosX, MPosToOPosY)  && !ColourSelected[2]) { PlayerValues[i].PlayerColour = 2; TeamSelect = 0; }
+					if (Button[9].button(MPosToOPosX, MPosToOPosY)  && !ColourSelected[4]) { PlayerValues[i].PlayerColour = 4; TeamSelect = 0; }
+					if (Button[10].button(MPosToOPosX, MPosToOPosY) && !ColourSelected[1]) { PlayerValues[i].PlayerColour = 1; TeamSelect = 1; }
+					if (Button[11].button(MPosToOPosX, MPosToOPosY) && !ColourSelected[3]) { PlayerValues[i].PlayerColour = 3; TeamSelect = 1; }
+					if (Button[12].button(MPosToOPosX, MPosToOPosY) && !ColourSelected[5]) { PlayerValues[i].PlayerColour = 5; TeamSelect = 1; }
+					
+
+					PlayerValues[i].PlayerTeam = TeamSelect;
+					PlayerValues[i].PlayerTexture = PlayerTextures[PlayerValues[i].PlayerColour];
+					GameObjects["Players_0" + to_string(i)].get()->setTexture(PlayerTextures[PlayerValues[i].PlayerColour]);
+				}
+			}
+
+
+			if (Button[13].button(MPosToOPosX, MPosToOPosY)) {
+				GameObjectsAmount["Players_0"] = 2;
+				MenuObjects["HUD_Buttons_0" + to_string(13)].get()->setScale(glm::vec3(10.0f*0.9f, 1.0f, 8.0f*1.6f));
+				MenuObjects["HUD_Buttons_0" + to_string(14)].get()->setScale(glm::vec3(9.0f*0.9f, 1.0f, 7.0f*1.6f));
+			}
+			if (Button[14].button(MPosToOPosX, MPosToOPosY)) {
+				GameObjectsAmount["Players_0"] = 4;
+				MenuObjects["HUD_Buttons_0" + to_string(13)].get()->setScale(glm::vec3(9.0f*0.9f, 1.0f, 7.0f*1.6f));
+				MenuObjects["HUD_Buttons_0" + to_string(14)].get()->setScale(glm::vec3(10.0f*0.9f, 1.0f, 8.0f*1.6f));
+			}
+			//setBoardStart(); inOptions = false; inGame = true;
+		}
 	}
 	if (mouseDown[1]) {
 		mouseDown[1] = false;
@@ -964,6 +1166,8 @@ void OptionScreen(float deltaTasSeconds)
 		}
 		PlayerHp[0].CurrentHealth = PlayerHp[1].CurrentHealth = static_cast<int>(Slider[2].SNob_Precent.x);
 	}
+	else if (inOptionsTab == 4) {
+	}
 }
 
 /* function InGameDraw()
@@ -978,12 +1182,12 @@ void InGameDraw(int Inum)
 
 
 	passThroughMaterial->shader->bind();
-	cameralook = Inum; //window
+	cameralook = Inum;
 	WhatCameraIsLookingAt(Inum); //Resising Window
 
 	//Draw scene //cameraViewMatrix //modelViewMatrix
-	SendUniformsToShaders(passThroughMaterial, PlayerValues[Inum].PlayerTeam);
-	SendUniformsToShaders(NASDMaterial, PlayerValues[Inum].PlayerTeam);
+	SendUniformsToShaders(passThroughMaterial, Inum);
+	SendUniformsToShaders(NASDMaterial, Inum);
 
 	//Score
 	if (changeInHealth(PlayerHp[0])) {
@@ -1090,9 +1294,6 @@ void InGameDraw(int Inum)
 	}
 	
 
-
-
-
 	//for (auto itr = GameObjects.begin(); itr != GameObjects.end(); itr++) {
 	//	auto GameObjects = itr->second;
 	//	if (GameObjects->Viewable) {
@@ -1101,13 +1302,6 @@ void InGameDraw(int Inum)
 	//		GameObjects->drawObject();
 	//	}
 	//}
-
-
-
-	//passThroughMaterial->shader->unbind();
-
-	cameralook = 3; //window
-	WhatCameraIsLookingAt(); //Resising Window
 }
 
 /* function GameField()
@@ -2221,15 +2415,17 @@ void MousePassiveMotionCallbackFunction(int x, int y) //while a mouse button isn
 		for (int j = 0; j < GameObjectsAmount["Players_0"]; j++) {
 			if (PlayerValues[j].MenuSwitchCounter > 0.0f) { PlayerValues[j].MenuSwitchCounter -= deltaTasSecs; }
 			else {
-				bool pressedA = false;
-				for (int i = 0; i < MenuObjectsAmount["HUD_Sliders_0"]; i++) {
-					//move nob along the slider
-					if (Slider[i].moveNob(MPosToOPosX, MPosToOPosY)) {
-						MenuObjects["HUD_Slider_Button_0" + to_string(i)]->setPosition(glm::vec3(MPosToOPosX, 0.02f, Slider[i].SBar_Pos.z));
-						pressedA = true;
+				if (inOptionsTab == 3) {
+					bool pressedA = false;
+					for (int i = 0; i < MenuObjectsAmount["HUD_Sliders_0"]; i++) {
+						//move nob along the slider
+						if (Slider[i].moveNob(MPosToOPosX, MPosToOPosY)) {
+							MenuObjects["HUD_Slider_Button_0" + to_string(i)]->setPosition(glm::vec3(MPosToOPosX, 0.02f, Slider[i].SBar_Pos.z));
+							pressedA = true;
+						}
 					}
+					if (pressedA) { PlayerValues[j].MenuSwitchCounter = 0.10f; }
 				}
-				if (pressedA) { PlayerValues[j].MenuSwitchCounter = 0.50f; }
 			}
 		}
 	}
@@ -2334,6 +2530,8 @@ void InitializeTextPlane()
 	MenuObjects["HUD_Planes_0" + to_string(2)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Controls.png").c_str())));
 	MenuObjects["HUD_Planes_0" + to_string(3)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Power_Ups.png").c_str())));
 	MenuObjects["HUD_Planes_0" + to_string(4)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Options.png").c_str())));
+	MenuObjects["HUD_Planes_0" + to_string(5)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Player_Select.png").c_str())));
+	//
 
 	////////////////	//Button
 	MenuObjects["HUD_Buttons_0" + to_string(0)].get()->objectLoader(ObjectPath + "PlainForText.obj");
@@ -2359,12 +2557,31 @@ void InitializeTextPlane()
 	MenuObjects["HUD_Buttons_0" + to_string(5)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Options_Buttons//Power_Ups_Button.png").c_str())));
 	MenuObjects["HUD_Buttons_0" + to_string(6)].get()->setPosition(glm::vec3(0.0f, 0.01f, 21.0f));
 	MenuObjects["HUD_Buttons_0" + to_string(6)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Options_Buttons//Config_Button.png").c_str())));
+
+	MenuObjects["HUD_Buttons_0" + to_string(7)].get()->setPosition(glm::vec3(-9.0f, 0.01f, -3.0f));
+	MenuObjects["HUD_Buttons_0" + to_string(7)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//Blue//PlayerSelect_B_01.png").c_str())));
+	MenuObjects["HUD_Buttons_0" + to_string(8)].get()->setPosition(glm::vec3(-9.0f, 0.01f, 9.0f));
+	MenuObjects["HUD_Buttons_0" + to_string(8)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//Blue//PlayerSelect_B_02.png").c_str())));
+	MenuObjects["HUD_Buttons_0" + to_string(9)].get()->setPosition(glm::vec3(-9.0f, 0.01f, 21.0f));
+	MenuObjects["HUD_Buttons_0" + to_string(9)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//Blue//PlayerSelect_B_03.png").c_str())));
+	MenuObjects["HUD_Buttons_0" + to_string(10)].get()->setPosition(glm::vec3(9.0f, 0.01f, -3.0f));
+	MenuObjects["HUD_Buttons_0" + to_string(10)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//Red//PlayerSelect_R_01.png").c_str())));
+	MenuObjects["HUD_Buttons_0" + to_string(11)].get()->setPosition(glm::vec3(9.0f, 0.01f, 9.0f));
+	MenuObjects["HUD_Buttons_0" + to_string(11)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//Red//PlayerSelect_R_02.png").c_str())));
+	MenuObjects["HUD_Buttons_0" + to_string(12)].get()->setPosition(glm::vec3(9.0f, 0.01f, 21.0f));
+	MenuObjects["HUD_Buttons_0" + to_string(12)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//Red//PlayerSelect_R_03.png").c_str())));
+	
+	MenuObjects["HUD_Buttons_0" + to_string(13)].get()->setPosition(glm::vec3(-9.0f, 0.01f, -15.0f));
+	MenuObjects["HUD_Buttons_0" + to_string(13)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//PlayerSelect//2player.png").c_str())));
+	MenuObjects["HUD_Buttons_0" + to_string(14)].get()->setPosition(glm::vec3(9.0f, 0.01f, -15.0f));
+	MenuObjects["HUD_Buttons_0" + to_string(14)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//PlayerSelect//4player.png").c_str())));
 	for (int i = 0; i < MenuObjectsAmount["HUD_Buttons_0"]; i++) {
 		Button[i].SBut_Top = MenuObjects["HUD_Buttons_0" + to_string(i)]->Top();
 		Button[i].SBut_Bot = MenuObjects["HUD_Buttons_0" + to_string(i)]->Bottom();
 		Button[i].SBut_Pos = MenuObjects["HUD_Buttons_0" + to_string(i)]->Position();
 		Button[i].SBut_Rad = (MenuObjects["HUD_Buttons_0" + to_string(i)]->Radius() / 2.0f);
 	}
+
 
 	////////////////	//Slider
 	MenuObjects["HUD_Slider_Bar_0" + to_string(0)].get()->objectLoader(ObjectPath + "PlainForText.obj");
@@ -2540,9 +2757,9 @@ void InitializeObjects()
 	GameObjects["Borders_0" + to_string(0)].get()->setColour(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
 
 	//PlayerTextures
-	for (int i = 0; i < 6; i += 2) {
-		PlayerTextures[i] = ilutGLLoadImage(_strdup((ImagePath + "Player//Blue//B_blitzbot_diff_0" + to_string(i + 1) + ".png").c_str()));
-		PlayerTextures[i + 1] = ilutGLLoadImage(_strdup((ImagePath + "Player//Red//R_blitzbot_diff_0" + to_string(i + 1) + ".png").c_str()));
+	for (int i = 0; i < 3; i++) {
+		PlayerTextures[(i*2)] = ilutGLLoadImage(_strdup((ImagePath + "Player//Blue//B_blitzbot_diff_0" + to_string(i + 1) + ".png").c_str()));
+		PlayerTextures[(i*2)+1] = ilutGLLoadImage(_strdup((ImagePath + "Player//Red//R_blitzbot_diff_0" + to_string(i + 1) + ".png").c_str()));
 	}
 	GameObjects["Players_0" + to_string(0)].get()->objectLoader(ObjectPath + "Player//blitzbot.obj");
 	GameObjects["Players_0" + to_string(0)].get()->setMaterial(NASDMaterial);
@@ -2552,10 +2769,34 @@ void InitializeObjects()
 	GameObjects["Players_0" + to_string(0)].get()->setSizeOfHitBox(glm::vec3(10.0f, 2.50f, 10.0f)); //HitBox
 	GameObjects["Players_0" + to_string(0)].get()->setPosition(glm::vec3(15.0f, -1.0f, 0.0f)); //Position of Object
 	GameObjects["Players_0" + to_string(0)].get()->setTexture(PlayerTextures[0]);
+	//ShockWave
+	GameObjects["Shockwave_0" + to_string(0)].get()->objectLoader(ObjectPath + "Player//ShockWave.obj");
+	GameObjects["Shockwave_0" + to_string(0)].get()->setMaterial(NASDMaterial);
+	GameObjects["Shockwave_0" + to_string(0)].get()->Viewable = false;
+	GameObjects["Shockwave_0" + to_string(0)].get()->setMass(5.0f);
 	for (int i = 1; i < GameObjectsAmount["Players_0"]; i++) {
 		GameObjects["Players_0" + to_string(i)].get()->objectLoader(&GameObjects["Players_0" + to_string(0)]);
 		GameObjects["Players_0" + to_string(i)].get()->setPosition(glm::vec3(-15.0f, -1.0f, 0.0f)); //Position of Object
+		GameObjects["Shockwave_0" + to_string(i)].get()->objectLoader(&GameObjects["Shockwave_0" + to_string(0)]);
+	}
 
+	//set player team textures
+	for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
+		
+		if (PlayerValues[i].PlayerTeam == 0) {
+			PlayerValues[i].PlayerColour = 0;
+			PlayerValues[i].PlayerTexture = PlayerTextures[0];
+			GameObjects["Players_0" + to_string(i)].get()->setTexture(PlayerTextures[0]);
+			GameObjects["Shockwave_0" + to_string(i)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//ShockWave_01.png").c_str())));
+		}
+		else if (PlayerValues[i].PlayerTeam == 1) {
+			PlayerValues[i].PlayerColour = 1;
+			PlayerValues[i].PlayerTexture = PlayerTextures[1];
+			GameObjects["Players_0" + to_string(i)].get()->setTexture(PlayerTextures[1]);
+			GameObjects["Shockwave_0" + to_string(i)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//ShockWave_02.png").c_str())));
+		}
+
+		//camera
 		if (PlayerValues[i].PlayerTeam == 0) {
 			PlayerValues[i].cameraTransform = glm::lookAt(
 				glm::vec3((GameObjects["Players_0" + to_string(0)].get()->Position().x + 50.0f), 50.0f, (GameObjects["Players_0" + to_string(0)].get()->Position().z)),
@@ -2570,25 +2811,6 @@ void InitializeObjects()
 		}
 		PlayerValues[i].cameraPosition = glm::vec3((GameObjects["Players_0" + to_string(i)].get()->Position().x - 50.0f), 50.0f, (GameObjects["Players_0" + to_string(i)].get()->Position().z));
 
-	}
-
-	//ShockWave
-	GameObjects["Shockwave_0" + to_string(0)].get()->objectLoader(ObjectPath + "Player//ShockWave.obj");
-	GameObjects["Shockwave_0" + to_string(0)].get()->setMaterial(NASDMaterial);
-	GameObjects["Shockwave_0" + to_string(0)].get()->Viewable = false;
-	GameObjects["Shockwave_0" + to_string(0)].get()->setMass(5.0f);
-	GameObjects["Shockwave_0" + to_string(1)].get()->objectLoader(&GameObjects["Shockwave_0" + to_string(0)]);
-
-	//set player team textures
-	for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
-		if (PlayerValues[i].PlayerTeam == 0) {
-			GameObjects["Players_0" + to_string(i)].get()->setTexture(PlayerTextures[0]);
-			GameObjects["Shockwave_0" + to_string(i)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//ShockWave_01.png").c_str())));
-		}
-		else if (PlayerValues[i].PlayerTeam == 1) {
-			GameObjects["Players_0" + to_string(i)].get()->setTexture(PlayerTextures[1]);
-			GameObjects["Shockwave_0" + to_string(i)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//ShockWave_02.png").c_str())));
-		}
 	}
 
 	
@@ -2831,10 +3053,11 @@ void InitializeObjects()
 
 }
 
+/**/
 void InitializeVariables() {
 	//Menu Objects Amounts
-	MenuObjectsAmount["HUD_Planes_0"] = 5;
-	MenuObjectsAmount["HUD_Buttons_0"] = 7;
+	MenuObjectsAmount["HUD_Planes_0"] = 6;
+	MenuObjectsAmount["HUD_Buttons_0"] = 15;
 	MenuObjectsAmount["HUD_Sliders_0"] = 10;
 	for (int i = 0; i < MenuObjectsAmount["HUD_Planes_0"]; i++) { MenuObjects["HUD_Planes_0" + to_string(i)] = std::make_shared<GameObject>(); }
 	for (int i = 0; i < MenuObjectsAmount["HUD_Buttons_0"]; i++) { MenuObjects["HUD_Buttons_0" + to_string(i)] = std::make_shared<GameObject>(); }
@@ -2854,7 +3077,7 @@ void InitializeVariables() {
 	GameObjectsAmount["Affects_0"] = 5;
 	GameObjectsAmount["Specials_0"] = 10;
 	GameObjectsAmount["Enemies_0"] = 12;
-	GameObjectsAmount["Players_0"] = 2;
+	GameObjectsAmount["Players_0"] = 4;
 	GameObjectsAmount["Rifts_0"] = 2;
 	for (int i = 0; i < GameObjectsAmount["Objects_0"]; i++) { GameObjects["Objects_0" + to_string(i)] = std::make_shared<GameObject>(); }
 	for (int i = 0; i < GameObjectsAmount["Borders_0"]; i++) { GameObjects["Borders_0" + to_string(i)] = std::make_shared<GameObject>(); }
@@ -2875,10 +3098,12 @@ void InitializeVariables() {
 
 		if (i % 2 == 0) {
 			PlayerValues[i].PlayerTeam			 = 0;
+			PlayerValues[i].PlayerColour		 = 0;
 			PlayerValues[i].forwardVector		 = glm::vec3(-1.0f, 0.0f, 0.0f);
 		}
 		else {
 			PlayerValues[i].PlayerTeam			 = 1;
+			PlayerValues[i].PlayerColour		 = 1;
 			PlayerValues[i].forwardVector		 = glm::vec3(1.0f, 0.0f, 0.0f);
 		}
 

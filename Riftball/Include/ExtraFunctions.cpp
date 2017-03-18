@@ -396,6 +396,7 @@ static bool changeInHealth(PlayerHealth Pnum) {
 
 struct PlayerInfo {
 	//PlayerValues[i].
+
 	//camera
 	int cameraMode;
 	glm::mat4x4 cameraTransform;
@@ -404,6 +405,8 @@ struct PlayerInfo {
 	glm::vec3 rightVector;
 	//
 	int PlayerTeam;
+	int PlayerColour;
+	GLuint PlayerTexture;
 	float MenuSwitchCounter;
 	//Shock wave attributes
 	bool Right_TRIGGERED;
