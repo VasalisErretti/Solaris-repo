@@ -56,14 +56,13 @@ int ShaderProgram::linkProgram()
 		glGetShaderInfoLog(handle, logLength, &logLength, &log[0]);
 
 		// Output log to screen
-		std::cout << log << std::endl;
+		std::cout << "[ERROR.3]" << log << std::endl;
 	}
 	else
 	{
 		std::cout << "[ERROR.2] Shader program failed to link: handle not set. " << std::endl;
-		return 0;
 	}
-	return 0;
+	//return 0;
 }
 
 void ShaderProgram::bind()

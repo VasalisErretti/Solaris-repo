@@ -1,6 +1,6 @@
 #include "Shader.h"
 #include <iostream>
-#include <GL\glew.h>
+#include <GLEW\glew.h>
 
 static char* readTextFromFile(const char *fileName);
 
@@ -63,7 +63,7 @@ unsigned int Shader::loadShaderFromFile(std::string fileName, GLenum type)
 	glGetShaderInfoLog(handle, logLength, &logLength, &log[0]);
 
 	// Output log to screen
-	std::cout << log << std::endl;
+	std::cout << "[ERROR.3]" << log << std::endl;
 
 	return 0;
 }
@@ -80,8 +80,8 @@ void Shader::destroy()
 }
 
 static char* readTextFromFile(const char *fileName) {
-
-	std::cout << "[FO.2] File opened. [" << fileName << "]" << std::endl;
+	std::cout << ".";
+	//std::cout << "[FO.2] File opened. [" << fileName << "]" << std::endl;
 
 	static char* text;
 
@@ -104,7 +104,7 @@ static char* readTextFromFile(const char *fileName) {
 			return text;
 		}
 		else {
-			std::cout << "[FO.1] File not opened. [" << fileName << "]" << std::endl;
+			std::cout << "[FF.1] [" << fileName << "]" << std::endl;
 			return nullptr;
 		}
 	}

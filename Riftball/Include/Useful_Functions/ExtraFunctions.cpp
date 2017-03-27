@@ -1,6 +1,7 @@
+#pragma once
+
 #include <GL\glew.h>
 #include "GameObject.h"
-
 #include <string>
 #include <iomanip> //setfill //setw
 #include <map> //text
@@ -375,8 +376,7 @@ static const float radToDeg = (180.0f / 3.14159f);
 *   - this is generates a random number between two variables
 */
 template <typename T>
-static T Random(T a, T b)
-{
+static T Random(T a, T b) {
 	return ((T(rand()) / T(RAND_MAX)) * abs(b - a) + std::fminf(a, b));
 }
 
@@ -404,6 +404,7 @@ struct PlayerInfo {
 	glm::vec3 forwardVector;
 	glm::vec3 rightVector;
 	//
+	bool ControllerActive;
 	int PlayerTeam;
 	int PlayerColour;
 	GLuint PlayerTexture;
@@ -414,6 +415,7 @@ struct PlayerInfo {
 	bool ShockWave;
 	float ShockWaveCounter;
 	float ShockWaveChargeUp;
+	float SWMaxWeight;
 	//Sprint attributes
 	float SprintSpeed;
 	float SprintCounter;
@@ -425,6 +427,12 @@ struct PlayerInfo {
 	float* AbilityLength;
 };
 
+struct Camera {
+	glm::mat4 orthoMatrix;//not in use
+	glm::mat4 viewMatrix;
+	glm::mat4 projMatrix;
+	glm::mat4 viewProjMatrix;
+};
 //////////////////////////////////////////////////////////////////////
 
 

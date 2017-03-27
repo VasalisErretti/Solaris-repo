@@ -2,63 +2,78 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="Src\Main.cpp" />
-    <ClCompile Include="Include\Shader.cpp">
-      <Filter>Shader</Filter>
-    </ClCompile>
-    <ClCompile Include="Include\HTRLoader.cpp">
-      <Filter>HTR_Loader</Filter>
-    </ClCompile>
     <ClCompile Include="Include\GameObject.cpp">
       <Filter>Game Object</Filter>
-    </ClCompile>
-    <ClCompile Include="Include\ExtraFunctions.cpp">
-      <Filter>Other Functions</Filter>
     </ClCompile>
     <ClCompile Include="Include\FMOD\SoundEngine.cpp">
       <Filter>Sound Engine</Filter>
     </ClCompile>
-    <ClCompile Include="Include\ShaderProgram.cpp">
+    <ClCompile Include="Include\Shader_Functions\Shader.cpp">
       <Filter>Shader</Filter>
     </ClCompile>
-    <ClCompile Include="Include\FrameBufferObject.cpp">
+    <ClCompile Include="Include\Shader_Functions\ShaderProgram.cpp">
+      <Filter>Shader</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\Useful_Functions\ExtraFunctions.cpp">
+      <Filter>Other Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\Useful_Functions\FrameBufferObject.cpp">
+      <Filter>Other Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\Useful_Functions\Sort_and_Search.cpp">
+      <Filter>Other Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\Other_Functions\HTRLoader.cpp">
+      <Filter>HTR_Loader</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\Useful_Functions\ParticleEmitterSoA.cpp">
+      <Filter>Other Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\Useful_Functions\VertexBufferObject.cpp">
       <Filter>Other Functions</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Include\Shader.h">
-      <Filter>Shader</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\HTRLoader.h">
-      <Filter>HTR_Loader</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\JointTypes.h">
-      <Filter>HTR_Loader</Filter>
-    </ClInclude>
     <ClInclude Include="Include\GameObject.h">
       <Filter>Game Object</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\MorphMath.h">
-      <Filter>Other Functions</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\GamePadControls.h">
-      <Filter>Other Functions</Filter>
     </ClInclude>
     <ClInclude Include="Include\FMOD\SoundEngine.h">
       <Filter>Sound Engine</Filter>
     </ClInclude>
-    <ClInclude Include="Include\FileLoader.h">
-      <Filter>Game Object</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\ShaderProgram.h">
+    <ClInclude Include="Include\Shader_Functions\Material.h">
       <Filter>Shader</Filter>
     </ClInclude>
-    <ClInclude Include="Include\Material.h">
+    <ClInclude Include="Include\Shader_Functions\Shader.h">
       <Filter>Shader</Filter>
     </ClInclude>
-    <ClInclude Include="Include\FrameBufferObject.h">
+    <ClInclude Include="Include\Shader_Functions\ShaderProgram.h">
+      <Filter>Shader</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Useful_Functions\FrameBufferObject.h">
       <Filter>Other Functions</Filter>
     </ClInclude>
-    <ClInclude Include="Include\TileSet.h">
+    <ClInclude Include="Include\Useful_Functions\GamePadControls.h">
+      <Filter>Other Functions</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Useful_Functions\MorphMath.h">
+      <Filter>Other Functions</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Useful_Functions\Sort_and_Search.h">
+      <Filter>Other Functions</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Other_Functions\FileLoader.h">
+      <Filter>HTR_Loader</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Other_Functions\HTRLoader.h">
+      <Filter>HTR_Loader</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Other_Functions\JointTypes.h">
+      <Filter>HTR_Loader</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Useful_Functions\ParticleEmitterSoA.h">
+      <Filter>Other Functions</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Useful_Functions\VertexBufferObject.h">
       <Filter>Other Functions</Filter>
     </ClInclude>
   </ItemGroup>
@@ -78,34 +93,43 @@
     <Filter Include="Other Functions">
       <UniqueIdentifier>{a8dbd533-60c8-4c34-9a4e-c446b4570aed}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Shader\Shaders">
-      <UniqueIdentifier>{15ebb1f1-7a60-4e47-82da-9f88caa5e250}</UniqueIdentifier>
+    <Filter Include="Shader\Fragment Shaders">
+      <UniqueIdentifier>{e98a5de6-d2b8-4b5b-9129-659c242fa53c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shader\Vertex Shaders">
+      <UniqueIdentifier>{d9789a8e-045c-46bc-878f-ecef34b512a1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shader\Geometry Shaders">
+      <UniqueIdentifier>{3d5da48f-ed2c-475e-9331-c28e96011f1b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\Shaders\particles_g.glsl">
+      <Filter>Shader\Geometry Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\normals_g.glsl">
+      <Filter>Shader\Geometry Shaders</Filter>
+    </None>
     <None Include="Assets\Shaders\default_f.glsl">
-      <Filter>Shader\Shaders</Filter>
-    </None>
-    <None Include="Assets\Shaders\default_v.glsl">
-      <Filter>Shader\Shaders</Filter>
-    </None>
-    <None Include="Assets\Shaders\passThru_f.glsl">
-      <Filter>Shader\Shaders</Filter>
-    </None>
-    <None Include="Assets\Shaders\passThru_v.glsl">
-      <Filter>Shader\Shaders</Filter>
-    </None>
-    <None Include="Assets\Shaders\text_v.glsl">
-      <Filter>Shader\Shaders</Filter>
-    </None>
-    <None Include="Assets\Shaders\text_f.glsl">
-      <Filter>Shader\Shaders</Filter>
+      <Filter>Shader\Fragment Shaders</Filter>
     </None>
     <None Include="Assets\Shaders\NASD_f.glsl">
-      <Filter>Shader\Shaders</Filter>
+      <Filter>Shader\Fragment Shaders</Filter>
     </None>
-    <None Include="Assets\Shaders\NASD_v.glsl">
-      <Filter>Shader\Shaders</Filter>
+    <None Include="Assets\Shaders\passThru_f.glsl">
+      <Filter>Shader\Fragment Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\text_f.glsl">
+      <Filter>Shader\Fragment Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\passThru_v.glsl">
+      <Filter>Shader\Vertex Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\text_v.glsl">
+      <Filter>Shader\Vertex Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\default_v.glsl">
+      <Filter>Shader\Vertex Shaders</Filter>
     </None>
   </ItemGroup>
 </Project>

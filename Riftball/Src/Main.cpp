@@ -25,16 +25,19 @@
 
 // User Libraries
 #include "GameObject.h"
-#include "MorphMath.h"
-#include "GamePadControls.h"
-#include "Shader.h"
-#include "ShaderProgram.h"
-#include "ExtraFunctions.cpp"
-#include "HTRLoader.h"
-#include "FMOD/SoundEngine.h"
-#include "FileLoader.h"
-#include "Material.h"
-#include "FrameBufferObject.h"
+#include "Useful_Functions\MorphMath.h"
+#include "Useful_Functions\GamePadControls.h"
+#include "Useful_Functions\ExtraFunctions.cpp"
+#include "FMOD\SoundEngine.h"
+#include "Other_Functions\FileLoader.h" //not in use atm
+
+// Tutoral Libraries
+#include "Shader_Functions\Shader.h"
+#include "Shader_Functions\ShaderProgram.h"
+#include "Shader_Functions\Material.h"
+#include "Useful_Functions\FrameBufferObject.h"
+#include "Useful_Functions\ParticleEmitterSoA.h"
+
 
 
 //temp
@@ -42,58 +45,53 @@ static float TestFloat = 0.0f; static float TestFloatIncrementAmount = 01.0f;
 //////////////////////////////////////////////////////////////////////
 
 // Create Shader
-Shader *shader;
-Shader *TextShader;
-glm::vec3 lightPosition_01(0.0f, 100.0f, 0.0f);
-glm::vec3 lightPosition_02(0.0f, -30.0f, 0.0f);
-// Monitor our Projections
-glm::mat4x4 projectionMatrix[4]; glm::mat4x4 orthoMatrix[4];
-glm::mat4x4 modelViewMatrix[4]; glm::mat4x4 cameraViewMatrix[4];
+Shader *shader; Shader *TextShader;
+glm::vec3 lightPosition(0.0f, 100.0f, 0.0f);
 
 // Defines Core variables//
 #define FRAMES_PER_SECOND 60
 const int FRAME_DELAY = 1000 / FRAMES_PER_SECOND; // Miliseconds per frame
 float deltaTasSecs;
-int windowWidth = (16*80); int windowHeight = (9*80);
-int mousepositionX; int mousepositionY;
-int screenpositionX; int screenpositionY;
-//mouse position to object position
-float MPosToOPosX; float MPosToOPosY;
-//key input //check if a key is down or up
-bool keyDown[256]; bool mouseDown[3];
-
-//Materials// //Game Objects//
+int windowWidth = (16*80); int windowHeight = (9*80); //set window dimentions
+int mousepositionX; int mousepositionY; //
+int screenpositionX; int screenpositionY; //
+float MPosToOPosX; float MPosToOPosY; //mouse position to object position
+bool keyDown[256];  //key input
+bool ControllerAPress[4]{ false }; bool mouseDown[3];//check if a key is down or up
+//Materials
 std::map<std::string, std::shared_ptr<Material>> materials;
+//Game Objects//
 std::map<std::string, int> MenuObjectsAmount; std::map<std::string, std::shared_ptr<GameObject>> MenuObjects;
 std::map<std::string, int> GameObjectsAmount; std::map<std::string, std::shared_ptr<GameObject>> GameObjects;
 Sliders *Slider; Buttons *Button;
-GameObject AffectsOnPlayer[4][10];
+//Particals
+ParticleEmitterSoA particleEmitter;
 //Framebuffer objects
 std::map<std::string, std::shared_ptr<FrameBufferObject>> FBOs;
-GLuint TextureNumbers[10]; GLuint PlayerTextures[6];
+//Sounds
+Sound powerup[9]; FMOD::Channel *powChannel[3];//Powerup sounds
+Sound Fx[3]; FMOD::Channel *FxChannel[3];//Fx sounds
+
+
+
+
+
+//textures
+std::map<std::string, GLuint> Textures;
+GLuint TextureNumbers[10]; GLuint PlayerTextures[12]; GLuint PlayerSelectColour[7];
+GLuint ParticleTexture;
+//structures
 Gamepad gamepad; Manifold m; MorphMath morphmath; RenderText SystemText;
-PlayerHealth PlayerHp[2]; PlayerInfo *PlayerValues;
-bool ControllerAPress[4] { false };
-//Random Variables//
-
-
-//defaults
-int cameralook = 0;//camera viewport
-//Bool's for the game///////////////////////////
+PlayerHealth PlayerHp[2]; PlayerInfo *PlayerValues; Camera cameras[4];
+//Bool's
 bool inMenu = true; bool inGame = false; bool inOptions = false;
 int inOptionsTab = 0; std::string lastMenu = "inMenu";
 bool ApplyingGravity = true; bool CollisionBetweenObjects = true;
 bool IdleEnemiesRespawn = true; bool EnableShadows = true;
 float randomSpecialTime;
 glm::vec3 speedToWallDegradation = glm::vec3(0.80f, 0.50f, 0.80f);
+int cameralook = 0;//camera in use
 
-
-//Sounds
-std::map<std::string, int> GameSoundAmount;
-std::map<std::string, std::shared_ptr<Sound>> GameSounds;
-std::map<std::string, std::shared_ptr<FMOD::Channel>> GameSoundChannels;
-Sound powerup[9]; FMOD::Channel *powChannel;
-Sound Fx[3]; FMOD::Channel *FxChannel[3];
 
 
 //////////////////////////////////////////////////////////////////////
@@ -179,13 +177,12 @@ void WhatCameraIsLookingAt(int PlayerLookAt)//int CameraLookAt
 {
 	if (PlayerLookAt == 0)
 	{
-		if (GameObjectsAmount["Players_0"] > 2) {
+		if (GameObjectsAmount["Players_0"] == 4) {
 			for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
 				for (int j = 0; j < GameObjectsAmount["Players_0"]; j++) {
 					if ((i != j) && (PlayerValues[i].PlayerTeam == 0) && (PlayerValues[i].PlayerTeam == PlayerValues[j].PlayerTeam)) {
 						glViewport(0, 0, (windowWidth / 2), windowHeight);
-						projectionMatrix[0] = glm::perspective(45.0f, (windowWidth / windowHeight)*1.0f, 0.1f, 10000.f);
-						modelViewMatrix[0] = glm::mat4x4(1.0f);
+						cameras[0].projMatrix = glm::perspective(45.0f, (windowWidth / windowHeight)*1.0f, 0.01f, 100000.f);
 
 						glm::vec3 CameraLocation = morphmath.Lerp(
 							glm::vec3((GameObjects["Players_0" + to_string(i)].get()->Position().x + 50.0f), 50.0f, (GameObjects["Players_0" + to_string(i)].get()->Position().z)),
@@ -201,7 +198,7 @@ void WhatCameraIsLookingAt(int PlayerLookAt)//int CameraLookAt
 								CameraLocation,
 								CameraLookAt,
 								glm::vec3(0.0f, 1.0f, 0.0f));
-							modelViewMatrix[0] = transform * modelViewMatrix[0];
+							cameras[0].viewMatrix = transform;
 							PlayerValues[i].cameraPosition = CameraLocation;
 							PlayerValues[j].cameraPosition = CameraLocation;
 						}
@@ -210,10 +207,9 @@ void WhatCameraIsLookingAt(int PlayerLookAt)//int CameraLookAt
 								PlayerValues[PlayerLookAt].cameraPosition,
 								PlayerValues[PlayerLookAt].cameraPosition + PlayerValues[PlayerLookAt].forwardVector,
 								glm::vec3(0.0f, 1.0f, 0.0f));
-							modelViewMatrix[0] = transform * modelViewMatrix[0];
+							cameras[0].viewMatrix = transform;
 						}
-
-						cameraViewMatrix[0] = glm::mat4(glm::translate(CameraLocation)) * modelViewMatrix[0];
+						//cameraViewMatrix[0] = glm::mat4(glm::translate(CameraLocation)) * modelViewMatrix[0];
 					}
 				}
 			}
@@ -222,8 +218,7 @@ void WhatCameraIsLookingAt(int PlayerLookAt)//int CameraLookAt
 			for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
 				if (PlayerValues[i].PlayerTeam == 0) {
 					glViewport(0, 0, (windowWidth / 2), windowHeight);
-					projectionMatrix[0] = glm::perspective(45.0f, (windowWidth / windowHeight)*1.0f, 0.1f, 10000.f);
-					modelViewMatrix[0] = glm::mat4x4(1.0f);
+					cameras[0].projMatrix = glm::perspective(45.0f, (windowWidth / windowHeight)*1.0f, 0.01f, 100000.f);
 
 					glm::vec3 CameraLocation = glm::vec3((GameObjects["Players_0" + to_string(i)].get()->Position().x + 50.0f), 50.0f, (GameObjects["Players_0" + to_string(i)].get()->Position().z));
 					glm::vec3 CameraLookAt = glm::vec3((GameObjects["Players_0" + to_string(i)].get()->Position().x), 1.0f, (GameObjects["Players_0" + to_string(i)].get()->Position().z));
@@ -233,30 +228,28 @@ void WhatCameraIsLookingAt(int PlayerLookAt)//int CameraLookAt
 							CameraLocation,
 							CameraLookAt,
 							glm::vec3(0.0f, 1.0f, 0.0f));
-						modelViewMatrix[0] = transform * modelViewMatrix[0];
 						PlayerValues[i].cameraPosition = CameraLocation;
+						cameras[0].viewMatrix = transform;
 					}
 					else if (PlayerValues[i].cameraMode == 1) {
 						glm::mat4x4 transform = glm::lookAt(
 							PlayerValues[PlayerLookAt].cameraPosition,
 							PlayerValues[PlayerLookAt].cameraPosition + PlayerValues[PlayerLookAt].forwardVector,
 							glm::vec3(0.0f, 1.0f, 0.0f));
-						modelViewMatrix[0] = transform * modelViewMatrix[0];
+						cameras[0].viewMatrix = transform;
 					}
-
-					cameraViewMatrix[0] = glm::mat4(glm::translate(CameraLocation)) * modelViewMatrix[0];
+					//cameraViewMatrix[0] = glm::mat4(glm::translate(CameraLocation)) * modelViewMatrix[0];
 				}
 			}
 		}
 	}
 	else if (PlayerLookAt == 1) {
-		if (GameObjectsAmount["Players_0"] > 2) {
+		if (GameObjectsAmount["Players_0"] == 4) {
 			for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
 				for (int j = 0; j < GameObjectsAmount["Players_0"]; j++) {
 					if ((i != j) && (PlayerValues[i].PlayerTeam == 1) && (PlayerValues[i].PlayerTeam == PlayerValues[j].PlayerTeam)) {
 						glViewport((windowWidth / 2), 0, (windowWidth / 2), windowHeight);
-						projectionMatrix[1] = glm::perspective(45.0f, (windowWidth / windowHeight)*1.0f, 0.1f, 10000.f);
-						modelViewMatrix[1] = glm::mat4x4(1.0f);
+						cameras[1].projMatrix = glm::perspective(45.0f, (windowWidth / windowHeight)*1.0f, 0.01f, 100000.f);
 
 						glm::vec3 CameraLocation = morphmath.Lerp(
 							glm::vec3((GameObjects["Players_0" + to_string(i)].get()->Position().x - 50.0f), 50.0f, (GameObjects["Players_0" + to_string(i)].get()->Position().z)),
@@ -272,7 +265,7 @@ void WhatCameraIsLookingAt(int PlayerLookAt)//int CameraLookAt
 								CameraLocation,
 								CameraLookAt,
 								glm::vec3(0.0f, 1.0f, 0.0f));
-							modelViewMatrix[1] = transform * modelViewMatrix[1];
+							cameras[1].viewMatrix = transform;
 							PlayerValues[i].cameraPosition = CameraLocation;
 							PlayerValues[j].cameraPosition = CameraLocation;
 						}
@@ -281,10 +274,9 @@ void WhatCameraIsLookingAt(int PlayerLookAt)//int CameraLookAt
 								PlayerValues[PlayerLookAt].cameraPosition,
 								PlayerValues[PlayerLookAt].cameraPosition + PlayerValues[PlayerLookAt].forwardVector,
 								glm::vec3(0.0f, 1.0f, 0.0f));
-							modelViewMatrix[1] = transform * modelViewMatrix[1];
+							cameras[1].viewMatrix = transform;
 						}
-
-						cameraViewMatrix[1] = glm::mat4(glm::translate(CameraLocation)) * modelViewMatrix[1];
+						//cameraViewMatrix[1] = glm::mat4(glm::translate(CameraLocation)) * modelViewMatrix[1];
 					}
 				}
 			}
@@ -293,8 +285,7 @@ void WhatCameraIsLookingAt(int PlayerLookAt)//int CameraLookAt
 			for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
 				if (PlayerValues[i].PlayerTeam == 1) {
 					glViewport((windowWidth / 2), 0, (windowWidth / 2), windowHeight);
-					projectionMatrix[1] = glm::perspective(45.0f, (windowWidth / windowHeight)*1.0f, 0.1f, 10000.f);
-					modelViewMatrix[1] = glm::mat4x4(1.0f);
+					cameras[1].projMatrix = glm::perspective(45.0f, (windowWidth / windowHeight)*1.0f, 0.01f, 100000.f);
 
 					glm::vec3 CameraLocation = glm::vec3((GameObjects["Players_0" + to_string(i)].get()->Position().x - 50.0f), 50.0f, (GameObjects["Players_0" + to_string(i)].get()->Position().z));
 					glm::vec3 CameraLookAt = glm::vec3((GameObjects["Players_0" + to_string(i)].get()->Position().x), 1.0f, (GameObjects["Players_0" + to_string(i)].get()->Position().z));
@@ -304,7 +295,7 @@ void WhatCameraIsLookingAt(int PlayerLookAt)//int CameraLookAt
 							CameraLocation,
 							CameraLookAt,
 							glm::vec3(0.0f, 1.0f, 0.0f));
-						modelViewMatrix[1] = transform * modelViewMatrix[1];
+						cameras[1].viewMatrix = transform;
 						PlayerValues[i].cameraPosition = CameraLocation;
 					}
 					else if (PlayerValues[i].cameraMode == 1) {
@@ -312,45 +303,47 @@ void WhatCameraIsLookingAt(int PlayerLookAt)//int CameraLookAt
 							PlayerValues[PlayerLookAt].cameraPosition,
 							PlayerValues[PlayerLookAt].cameraPosition + PlayerValues[PlayerLookAt].forwardVector,
 							glm::vec3(0.0f, 1.0f, 0.0f));
-						modelViewMatrix[1] = transform * modelViewMatrix[1];
+						cameras[1].viewMatrix = transform;
 					}
-
-					cameraViewMatrix[1] = glm::mat4(glm::translate(CameraLocation)) * modelViewMatrix[1];
+					//cameraViewMatrix[1] = glm::mat4(glm::translate(CameraLocation)) * modelViewMatrix[1];
 				}
 			}
 		}
 	}
+
+	cameras[0].viewProjMatrix = cameras[0].projMatrix * cameras[0].viewMatrix;
+	cameras[1].viewProjMatrix = cameras[1].projMatrix * cameras[1].viewMatrix;
 }
 void WhatCameraIsLookingAt()//int CameraLookAt
 {
 	if (cameralook == 2 || cameralook == 0)
 	{
 		glViewport(0, 0, windowWidth, windowHeight);
-		projectionMatrix[2] = glm::perspective(45.0f, (windowWidth / windowHeight)*1.0f, 0.1f, 10000.f);
-		modelViewMatrix[2] = glm::mat4x4(1.0f);
+		cameras[2].projMatrix = glm::perspective(45.0f, (windowWidth / windowHeight)*1.0f, 0.1f, 10000.f);
 
 		glm::mat4x4 transform = glm::lookAt(
 			glm::vec3(0.0f, 50.0f, 0.0f),//eye
 			glm::vec3(0.01f, 0.01f, 0.01f),//center
 			glm::vec3(0.0f, 0.0f, -1.0f));//up
-		modelViewMatrix[2] = transform * modelViewMatrix[2];
+		cameras[2].viewMatrix = transform;
 		glm::vec3 cameraPos = glm::vec3(0.0f, 50.0f, 0.0f);
-		cameraViewMatrix[2] = glm::mat4(glm::translate(cameraPos)) * modelViewMatrix[2];
+		//cameraViewMatrix[2] = glm::mat4(glm::translate(cameraPos)) * modelViewMatrix[2];
 	}
 	else if (cameralook == 3 || cameralook == 1)
 	{
 		glViewport(0, 0, windowWidth, windowHeight);
-		projectionMatrix[3] = glm::ortho<float>(-windowWidth*0.50f, windowWidth*0.50f, -windowHeight*0.50f, windowHeight*0.50f);
-		modelViewMatrix[3] = glm::mat4x4(1.0f);
+		cameras[3].projMatrix = glm::ortho<float>(-windowWidth*0.50f, windowWidth*0.50f, -windowHeight*0.50f, windowHeight*0.50f);
 
 		glm::mat4x4 transform = glm::lookAt(
 			glm::vec3(0.0f, 0.0f, 10.0f),//eye
 			glm::vec3(0.01f, 0.01f, 0.01f),//center
 			glm::vec3(0.0f, 1.0f, 0.0f));//up
-		modelViewMatrix[3] = transform * modelViewMatrix[3];
+		cameras[3].viewMatrix = transform;
 		glm::vec3 cameraPos = glm::vec3(0.0f, 50.0f, 0.0f);
-		cameraViewMatrix[3] = glm::mat4(glm::translate(cameraPos)) * modelViewMatrix[3];
+		//cameraViewMatrix[3] = glm::mat4(glm::translate(cameraPos)) * modelViewMatrix[3];
 	}
+	cameras[2].viewProjMatrix = cameras[2].projMatrix * cameras[2].viewMatrix;
+	cameras[3].viewProjMatrix = cameras[3].projMatrix * cameras[3].viewMatrix;
 }
 
 
@@ -505,7 +498,7 @@ void ControllerDelayButton(int portNumber, float deltaTasSeconds)
 				else if (PlayerValues[portNumber].Right_TRIGGERED == true) {
 					//holding [RIGHT_TRIGGERED]
 					if (gamepad.rightTrigger > 0.2) {
-						PlayerValues[portNumber].ShockWaveChargeUp += deltaTasSeconds;
+						if (PlayerValues[portNumber].ShockWaveChargeUp < 0.25f) { PlayerValues[portNumber].ShockWaveChargeUp += (deltaTasSeconds*5.0f); }
 						//std::cout << "	[C](" << portNumber << ")[" << PShockWaveChargeUp[portNumber] << "]" << std::endl;
 					}
 					//[RIGHT_TRIGGERED] released
@@ -515,6 +508,7 @@ void ControllerDelayButton(int portNumber, float deltaTasSeconds)
 						PlayerValues[portNumber].ShockWave = true;
 						PlayerValues[portNumber].ShockWaveCounter = 0.250f;
 						PlayerValues[portNumber].MenuSwitchCounter = 0.60f;
+						PlayerValues[portNumber].SWMaxWeight = 0.0f;
 						std::cout << "[RIGHT_TRIGGERED][+]";
 					}
 					GameObjects["Players_0" + to_string(portNumber)].get()->setVelocity(GameObjects["Players_0" + to_string(portNumber)].get()->Velocity()*0.5f);
@@ -595,7 +589,6 @@ void ControllerDelayButton(int portNumber, float deltaTasSeconds)
 			if (PlayerValues[portNumber].MenuSwitchCounter > 0.0f) { PlayerValues[portNumber].MenuSwitchCounter -= deltaTasSeconds; }
 			else {
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_A)) {
-					std::cout << "[A]";
 					INPUT input;
 					input.type = INPUT_MOUSE;
 					input.mi.dwFlags = (MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP);
@@ -611,15 +604,14 @@ void ControllerDelayButton(int portNumber, float deltaTasSeconds)
 						}
 						if (!pressedASlider) { PlayerValues[portNumber].MenuSwitchCounter = 0.10f; }
 					}
-					if (inOptionsTab == 4) {
+					else if (inOptionsTab == 4 ) {
 						PlayerValues[portNumber].MenuSwitchCounter = 0.50f;
 						ControllerAPress[portNumber] = true;
-						std::cout << "[" << portNumber << "]";
+						PlayerValues[portNumber].ControllerActive = true;
 					}
 					else { PlayerValues[portNumber].MenuSwitchCounter = 0.50f; }
 				}
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_B)) {
-					std::cout << "[B]";
 					INPUT input;
 					input.type = INPUT_MOUSE;
 					input.mi.dwFlags = (MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP);
@@ -629,7 +621,10 @@ void ControllerDelayButton(int portNumber, float deltaTasSeconds)
 					SendInput(1, &input, sizeof(INPUT));
 
 					if (inOptions) {
-						if (inOptionsTab == 4) { inOptions = false; inMenu = true; }
+						if (inOptionsTab == 4 && PlayerValues[portNumber].ControllerActive) {
+							PlayerValues[portNumber].ControllerActive = false;
+							//inOptions = false; inMenu = true; 
+						}
 						else if (inOptionsTab != 0) { inOptionsTab = 0; }
 						else { inOptions = false; inMenu = true; }
 						PlayerValues[portNumber].MenuSwitchCounter = 1.0f;
@@ -637,25 +632,53 @@ void ControllerDelayButton(int portNumber, float deltaTasSeconds)
 				}
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_X)) { std::cout << "[X]"; }
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_Y)) { std::cout << "[Y]"; }
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_UP)) { std::cout << "[DPAD_UP]"; }
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_DOWN)) { std::cout << "[DPAD_DOWN]"; }
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_LEFT)) { std::cout << "[DPAD_LEFT]"; }
-				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_RIGHT)) { std::cout << "[DPAD_RIGHT]"; }
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_UP)) {
+					if (inOptionsTab == 4 && PlayerValues[portNumber].ControllerActive) {
+						if (PlayerValues[portNumber].PlayerColour % 2 == 0) { PlayerValues[portNumber].PlayerColour = 1; }
+						else { PlayerValues[portNumber].PlayerColour = 0; }
+						PlayerValues[portNumber].MenuSwitchCounter = 0.50f;
+					}
+				}
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_DOWN)) {
+					if (inOptionsTab == 4 && PlayerValues[portNumber].ControllerActive) {
+						if (PlayerValues[portNumber].PlayerColour % 2 == 0) { PlayerValues[portNumber].PlayerColour = 1; }
+						else { PlayerValues[portNumber].PlayerColour = 0; }
+						PlayerValues[portNumber].MenuSwitchCounter = 0.50f;
+					}
+				}
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_LEFT)) {
+					if (inOptionsTab == 4 && PlayerValues[portNumber].ControllerActive) {
+						if (PlayerValues[portNumber].PlayerColour > 1) { PlayerValues[portNumber].PlayerColour -= 2; }
+						else { PlayerValues[portNumber].PlayerColour += 4; }
+						PlayerValues[portNumber].MenuSwitchCounter = 0.50f;
+					}
+				}
+				if (gamepad.IsPressed(XINPUT_GAMEPAD_DPAD_RIGHT)) {
+					if (inOptionsTab == 4 && PlayerValues[portNumber].ControllerActive) {
+						if (PlayerValues[portNumber].PlayerColour < 4) { PlayerValues[portNumber].PlayerColour += 2; }
+						else { PlayerValues[portNumber].PlayerColour -= 4; }
+						PlayerValues[portNumber].MenuSwitchCounter = 0.50f;
+					}
+				}
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_START)) {
-					std::cout << "[START]";
 					if (inMenu) {
-						setBoardStart();
-						inMenu = false; inGame = true;
-						PlayerValues[portNumber].MenuSwitchCounter = 1.0f;
+						inOptionsTab = 4; inOptions = true; inMenu = false;
+						//setBoardStart();
+						//inMenu = false; inGame = true;
+						//PlayerValues[portNumber].MenuSwitchCounter = 1.0f;
 					}
 					if (inOptions) {
 						if (inOptionsTab == 4) {
-
 							int OnTeamZero = 0;
+							int ActivePlayers = 0;
 							for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
 								if (PlayerValues[i].PlayerTeam == 0) { OnTeamZero += 1; }
+								if (PlayerValues[i].ControllerActive) { ActivePlayers += 1; }
 							}
-							if (((GameObjectsAmount["Players_0"] == 2) && (OnTeamZero == 1)) || ((GameObjectsAmount["Players_0"] == 4) && (OnTeamZero == 2))) {
+							if (ActivePlayers == 2) { GameObjectsAmount["Players_0"] = 2; }
+							else if (ActivePlayers == 4) { GameObjectsAmount["Players_0"] = 4; }
+
+							if (((ActivePlayers == 2) && (OnTeamZero == 1)) || ((ActivePlayers == 4) && (OnTeamZero == 2))) {
 								inOptions = false; inGame = true;
 								setBoardStart();
 								PlayerValues[portNumber].MenuSwitchCounter = 1.0f;
@@ -665,7 +688,6 @@ void ControllerDelayButton(int portNumber, float deltaTasSeconds)
 					}
 				}
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_BACK)) {
-					std::cout << "[BACK]";
 					if (inOptions) {
 						if (inOptionsTab == 4) { inOptions = false; inMenu = true; }
 						else if (inOptionsTab != 0) { inOptionsTab = 0; }
@@ -911,12 +933,10 @@ void KeyBoardDelayButton(float deltaTasSeconds) {
 
 //////////////////////////////////////////////////////////////////////
 void SendUniformsToShaders(std::shared_ptr<Material> SendMe, int Inum) {
-	SendMe->mat4Uniforms["mvm"] = modelViewMatrix[Inum];
-	SendMe->mat4Uniforms["prm"] = projectionMatrix[Inum];
-	SendMe->mat4Uniforms["u_mvp"] = (modelViewMatrix[Inum] * projectionMatrix[Inum]);
-	SendMe->mat4Uniforms["u_mv"] = modelViewMatrix[Inum];
-	SendMe->mat4Uniforms["u_lightPos_01"] = (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_01));
-	SendMe->mat4Uniforms["u_lightPos_02"] = (modelViewMatrix[Inum] * glm::translate(glm::mat4(1.0f), lightPosition_02));
+	SendMe->mat4Uniforms["u_mvp"] = cameras[Inum].viewProjMatrix;
+	SendMe->mat4Uniforms["u_mv"] = cameras[Inum].viewMatrix;
+	SendMe->mat4Uniforms["u_mp"] = cameras[Inum].projMatrix;
+	SendMe->mat4Uniforms["u_lightPos"] = (cameras[Inum].viewMatrix * glm::translate(glm::mat4(1.0f), lightPosition));
 	SendMe->sendUniforms();
 }
 
@@ -961,7 +981,7 @@ void MenuScreen(float deltaTasSeconds)
 	FMOD_VECTOR drumPos; drumPos.x = 0; drumPos.y = 0; drumPos.z = 0;
 	FMOD_VECTOR drumVel; drumVel.x = 12.0f; drumVel.y = 0.0f; drumVel.z = 0.0f;
 
-	powerup[5].SetPosition(powChannel, drumPos, drumVel);
+	powerup[5].SetPosition(powChannel[0], drumPos, drumVel);
 	Fx[0].SetPosition(FxChannel[0], drumPos, drumVel);
 	Fx[1].SetPosition(FxChannel[1], drumPos, drumVel);
 
@@ -1034,34 +1054,23 @@ void InOptionDraw(int Inum)
 	else if (inOptionsTab == 4) {
 		if (MenuObjects["HUD_Planes_0" + to_string(inOptionsTab + 1)]->Viewable) { MenuObjects["HUD_Planes_0" + to_string(inOptionsTab + 1)]->drawObject(); }
 		if (MenuObjects["HUD_Buttons_0" + to_string(3)]->Viewable) { MenuObjects["HUD_Buttons_0" + to_string(3)]->drawObject(); }
+	
 
+		for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
+			if (PlayerValues[i].ControllerActive) {
+				MenuObjects["HUD_Buttons_0" + to_string(7 + i)].get()->setTexture(PlayerSelectColour[PlayerValues[i].PlayerColour]);
 
-
-		bool ColourSelected[6];
-		for (int i = 0; i < 6; i++) { ColourSelected[i] = false; }
-		for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) { ColourSelected[PlayerValues[i].PlayerColour] = true; }
-		if (ColourSelected[0]) { MenuObjects["HUD_Buttons_0" + to_string(7)].get()->setScale(glm::vec3(10.0f*0.9f, 1.0f, 8.0f*1.6f)); }
-		else { MenuObjects["HUD_Buttons_0" + to_string(7)].get()->setScale(glm::vec3(9.0f*0.9f, 1.0f, 7.0f*1.6f)); }
-		if (ColourSelected[2]) { MenuObjects["HUD_Buttons_0" + to_string(8)].get()->setScale(glm::vec3(10.0f*0.9f, 1.0f, 8.0f*1.6f)); }
-		else { MenuObjects["HUD_Buttons_0" + to_string(8)].get()->setScale(glm::vec3(9.0f*0.9f, 1.0f, 7.0f*1.6f)); }
-		if (ColourSelected[4]) { MenuObjects["HUD_Buttons_0" + to_string(9)].get()->setScale(glm::vec3(10.0f*0.9f, 1.0f, 8.0f*1.6f)); }
-		else { MenuObjects["HUD_Buttons_0" + to_string(9)].get()->setScale(glm::vec3(9.0f*0.9f, 1.0f, 7.0f*1.6f)); }
-		if (ColourSelected[1]) { MenuObjects["HUD_Buttons_0" + to_string(10)].get()->setScale(glm::vec3(10.0f*0.9f, 1.0f, 8.0f*1.6f)); }
-		else { MenuObjects["HUD_Buttons_0" + to_string(10)].get()->setScale(glm::vec3(9.0f*0.9f, 1.0f, 7.0f*1.6f)); }
-		if (ColourSelected[3]) { MenuObjects["HUD_Buttons_0" + to_string(11)].get()->setScale(glm::vec3(10.0f*0.9f, 1.0f, 8.0f*1.6f)); }
-		else { MenuObjects["HUD_Buttons_0" + to_string(11)].get()->setScale(glm::vec3(9.0f*0.9f, 1.0f, 7.0f*1.6f)); }
-		if (ColourSelected[5]) { MenuObjects["HUD_Buttons_0" + to_string(12)].get()->setScale(glm::vec3(10.0f*0.9f, 1.0f, 8.0f*1.6f)); }
-		else { MenuObjects["HUD_Buttons_0" + to_string(12)].get()->setScale(glm::vec3(9.0f*0.9f, 1.0f, 7.0f*1.6f)); }
-
-		for (unsigned int i = 7; i <= 14; i++) {
+				if (PlayerValues[i].PlayerColour % 2 == 0) { PlayerValues[i].PlayerTeam = 0; }
+				else { PlayerValues[i].PlayerTeam = 1; }
+				PlayerValues[i].PlayerTexture = PlayerTextures[PlayerValues[i].PlayerColour];
+				GameObjects["Players_0" + to_string(i)].get()->setTexture(PlayerTextures[PlayerValues[i].PlayerColour]);
+				GameObjects["Shockwave_0" + to_string(i)].get()->setTexture(PlayerTextures[PlayerValues[i].PlayerColour+6]);
+			}
+			else { MenuObjects["HUD_Buttons_0" + to_string(7 + i)].get()->setTexture(PlayerSelectColour[6]); }
+		}
+		for (unsigned int i = 7; i <= 10; i++) {
 			if (MenuObjects["HUD_Buttons_0" + to_string(i)]->Viewable) { MenuObjects["HUD_Buttons_0" + to_string(i)]->drawObject(); }
 		}
-
-
-		for (int i = 0; i <= GameObjectsAmount["Players_0"]; i++) {
-		
-		}
-
 	}
 
 	//passThroughMaterial->shader->unbind();
@@ -1102,42 +1111,9 @@ void OptionScreen(float deltaTasSeconds)
 			//Back
 			if (Button[3].button(MPosToOPosX, MPosToOPosY)) { inOptions = false; inMenu = true; }
 
-
-			bool ColourSelected[6];
-			for (int i = 0; i < 6; i++) { ColourSelected[i] = false; }
-			for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) { ColourSelected[PlayerValues[i].PlayerColour] = true; }
-
-
 			for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
-				if (ControllerAPress[i] == true) {
-					ControllerAPress[i] = false;
-					std::cout << "[" << i << "]";
-					//Colour select
-					int TeamSelect = 0;
-					if (Button[7].button(MPosToOPosX, MPosToOPosY)  && !ColourSelected[0]) { PlayerValues[i].PlayerColour = 0; TeamSelect = 0; }
-					if (Button[8].button(MPosToOPosX, MPosToOPosY)  && !ColourSelected[2]) { PlayerValues[i].PlayerColour = 2; TeamSelect = 0; }
-					if (Button[9].button(MPosToOPosX, MPosToOPosY)  && !ColourSelected[4]) { PlayerValues[i].PlayerColour = 4; TeamSelect = 0; }
-					if (Button[10].button(MPosToOPosX, MPosToOPosY) && !ColourSelected[1]) { PlayerValues[i].PlayerColour = 1; TeamSelect = 1; }
-					if (Button[11].button(MPosToOPosX, MPosToOPosY) && !ColourSelected[3]) { PlayerValues[i].PlayerColour = 3; TeamSelect = 1; }
-					if (Button[12].button(MPosToOPosX, MPosToOPosY) && !ColourSelected[5]) { PlayerValues[i].PlayerColour = 5; TeamSelect = 1; }
-					
-
-					PlayerValues[i].PlayerTeam = TeamSelect;
-					PlayerValues[i].PlayerTexture = PlayerTextures[PlayerValues[i].PlayerColour];
-					GameObjects["Players_0" + to_string(i)].get()->setTexture(PlayerTextures[PlayerValues[i].PlayerColour]);
-				}
-			}
-
-
-			if (Button[13].button(MPosToOPosX, MPosToOPosY)) {
-				GameObjectsAmount["Players_0"] = 2;
-				MenuObjects["HUD_Buttons_0" + to_string(13)].get()->setScale(glm::vec3(10.0f*0.9f, 1.0f, 8.0f*1.6f));
-				MenuObjects["HUD_Buttons_0" + to_string(14)].get()->setScale(glm::vec3(9.0f*0.9f, 1.0f, 7.0f*1.6f));
-			}
-			if (Button[14].button(MPosToOPosX, MPosToOPosY)) {
-				GameObjectsAmount["Players_0"] = 4;
-				MenuObjects["HUD_Buttons_0" + to_string(13)].get()->setScale(glm::vec3(9.0f*0.9f, 1.0f, 7.0f*1.6f));
-				MenuObjects["HUD_Buttons_0" + to_string(14)].get()->setScale(glm::vec3(10.0f*0.9f, 1.0f, 8.0f*1.6f));
+				if (PlayerValues[i].ControllerActive) { }
+				if (ControllerAPress[i] == true) { ControllerAPress[i] = false; }
 			}
 			//setBoardStart(); inOptions = false; inGame = true;
 		}
@@ -1176,18 +1152,17 @@ void OptionScreen(float deltaTasSeconds)
 */
 void InGameDraw(int Inum)
 {
-	auto defaultMaterial = materials["default"];
-	auto passThroughMaterial = materials["passThrough"];
-	auto NASDMaterial = materials["NASD"];
-
-
-	passThroughMaterial->shader->bind();
 	cameralook = Inum;
 	WhatCameraIsLookingAt(Inum); //Resising Window
 
-	//Draw scene //cameraViewMatrix //modelViewMatrix
-	SendUniformsToShaders(passThroughMaterial, Inum);
-	SendUniformsToShaders(NASDMaterial, Inum);
+	//Draw scene
+	SendUniformsToShaders(materials["default"], Inum);
+	SendUniformsToShaders(materials["passThrough"], Inum);
+	SendUniformsToShaders(materials["NASD"], Inum);
+	SendUniformsToShaders(materials["normals"], Inum);
+	SendUniformsToShaders(materials["particles"], Inum);
+	materials["passThrough"]->shader->bind();
+	//GameObjects["Players_00"]->material = materials["normals"];
 
 	//Score
 	if (changeInHealth(PlayerHp[0])) {
@@ -1262,21 +1237,57 @@ void InGameDraw(int Inum)
 				GameObjects["Shadows_0" + to_string(0)].get()->setRotation(GameObjects["Players_0" + to_string(i)].get()->Angle());
 				GameObjects["Shadows_0" + to_string(0)].get()->drawObject();
 			}
+			
+			//Short Circuit [6]
+			if (GameObjects["Players_0" + to_string(i)].get()->inShock) {
+				GameObjects["Affects_0" + to_string(1)].get()->setPosition(GameObjects["Players_0" + to_string(i)].get()->Position());
+				GameObjects["Affects_0" + to_string(2)].get()->setPosition(GameObjects["Players_0" + to_string(i)].get()->Position());
+				GameObjects["Affects_0" + to_string(1)].get()->Viewable = true;
+				GameObjects["Affects_0" + to_string(2)].get()->Viewable = true;
+				GameObjects["Affects_0" + to_string(1)].get()->setRotation(glm::vec3(0.0f, GameObjects["Affects_0" + to_string(1)].get()->Angle().y - (deltaTasSecs*316.0f), 0.0f));
+				GameObjects["Affects_0" + to_string(2)].get()->setRotation(glm::vec3(0.0f, GameObjects["Affects_0" + to_string(2)].get()->Angle().y + (deltaTasSecs*147.0f), 0.0f));
+			}
+			else if (!GameObjects["Players_0" + to_string(i)].get()->inShock) {
+				GameObjects["Affects_0" + to_string(1)].get()->Viewable = false;
+				GameObjects["Affects_0" + to_string(2)].get()->Viewable = false;
+			}
+			//Flipped [9]
+			if (PlayerValues[i].FlipedControllers) {
+				PlayerValues[i].AbilityCounter[9] += deltaTasSecs;
+				GameObjects["Affects_0" + to_string(3)].get()->setPosition(GameObjects["Players_0" + to_string(i)].get()->Position());
+				GameObjects["Affects_0" + to_string(4)].get()->setPosition(GameObjects["Players_0" + to_string(i)].get()->Position());
+				GameObjects["Affects_0" + to_string(3)].get()->Viewable = true;
+				GameObjects["Affects_0" + to_string(4)].get()->Viewable = true;
+				GameObjects["Affects_0" + to_string(3)].get()->setRotation(glm::vec3(0.0f, GameObjects["Affects_0" + to_string(3)].get()->Angle().y + (deltaTasSecs*147.0f), 0.0f));
+				GameObjects["Affects_0" + to_string(4)].get()->setRotation(glm::vec3(0.0f, GameObjects["Affects_0" + to_string(4)].get()->Angle().y - (deltaTasSecs*316.0f), 0.0f));
+				if (PlayerValues[i].AbilityCounter[9] > PlayerValues[i].AbilityLength[9]) {
+					PlayerValues[i].AbilityCounter[9] = 0.0f;
+					PlayerValues[i].FlipedControllers = false;
+					GameObjects["Affects_0" + to_string(3)].get()->Viewable = false;
+					GameObjects["Affects_0" + to_string(4)].get()->Viewable = false;
+				}
+			}
+			//Affects
 			for (int j = 0; j < GameObjectsAmount["Affects_0"]; j++) {
-				if (AffectsOnPlayer[i][j].Viewable) {
-					if (AffectsOnPlayer[i][j].textureHandle_hasTransparency == true) { disableCulling(); }
+				if (GameObjects["Affects_0" + to_string(j)].get()->Viewable) {
+					if (GameObjects["Affects_0" + to_string(j)].get()->textureHandle_hasTransparency == true) { disableCulling(); }
 					else { enableCulling(); }
-					AffectsOnPlayer[i][j].drawObject();
+					GameObjects["Affects_0" + to_string(j)].get()->drawObject();
 				}
 			}
 		}
-		//ShockWaves
+	}
+	//Shockwave
+	glDepthMask(GL_FALSE);
+	for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
 		if (GameObjects["Shockwave_0" + to_string(i)].get()->Viewable) {
 			if (GameObjects["Shockwave_0" + to_string(i)].get()->textureHandle_hasTransparency == true) { disableCulling(); }
 			else { enableCulling(); }
 			GameObjects["Shockwave_0" + to_string(i)].get()->drawObject();
 		}
 	}
+	glDepthMask(GL_TRUE);
+
 	for (int i = 0; i < GameObjectsAmount["Rifts_0"]; i++) {
 		if (GameObjects["Rifts_0" + to_string(i)]->Viewable) {
 			//Rifts
@@ -1293,6 +1304,14 @@ void InGameDraw(int Inum)
 		}
 	}
 	
+
+	//glDepthMask(GL_FALSE);
+	//glDepthMask(GL_TRUE);
+
+	
+	particleEmitter.initialPosition = glm::vec3(0.0, 0.0, 0.0);
+	particleEmitter.update(deltaTasSecs/10.0f);
+	particleEmitter.draw(&cameras[Inum]);
 
 	//for (auto itr = GameObjects.begin(); itr != GameObjects.end(); itr++) {
 	//	auto GameObjects = itr->second;
@@ -1313,7 +1332,7 @@ void GameScreen(float deltaTasSeconds)
 	Sound::Sys.Update();
 	//Intialize the crowd sound to play when the game starts
 	FxChannel[1] = Fx[1].Play();
-	FxChannel[1]->setVolume(0.1f);
+	FxChannel[1]->setVolume(0.1);
 
 	for (int i = 0; i < 2; i++) {
 		Sound::Sys.listenerPos[i].x = GameObjects["Players_0" + to_string(i)].get()->Position().x*10.0f;
@@ -1513,14 +1532,14 @@ void GameScreen(float deltaTasSeconds)
 					if (m.B->SpecialAttribute() == 0) {}
 					//Seeker Swarm
 					else if (m.B->SpecialAttribute() == 1) {
-						powerup[0].Play();
+						powChannel[0] = powerup[0].Play();
 						m.B->Viewable = false;
 						PlayerValues[i].AbilityAffected[1] = true;
 						PlayerValues[i].AbilityCounter[1] = 0.0f;
 					}
 					//Toss-Up
 					else if (m.B->SpecialAttribute() == 2) {
-						powerup[1].Play();
+						powChannel[0] = powerup[1].Play();
 						m.B->Viewable = false;
 						for (int ij = 0; ij < GameObjectsAmount["Enemies_0"]; ij++) {
 							float ranPosY = static_cast<float>(rand() % 1000 + 100); //100 to 1100
@@ -1529,48 +1548,48 @@ void GameScreen(float deltaTasSeconds)
 					}
 					//Health Up
 					else if (m.B->SpecialAttribute() == 3) {
-						powerup[2].Play();
+						powChannel[0] = powerup[2].Play();
 						m.B->Viewable = false;
-						PlayerHp[i].CurrentHealth += 10;
+						PlayerHp[PlayerValues[i].PlayerTeam].CurrentHealth += 10;
 					}
 					//Boost
 					else if (m.B->SpecialAttribute() == 4) {
-						powerup[3].Play();
+						powChannel[0] = powerup[3].Play();
 						m.B->Viewable = false;
 						PlayerValues[i].AbilityAffected[4] = true;
 						PlayerValues[i].AbilityCounter[4] = 0.0f;
 					}
 					//Flee
 					else if (m.B->SpecialAttribute() == 5) {
-						powerup[4].Play();
+						powChannel[0] = powerup[4].Play();
 						m.B->Viewable = false;
 						PlayerValues[i].AbilityAffected[5] = true;
 						PlayerValues[i].AbilityCounter[5] = 0.0f;
 					}
 					//Short Circuit
 					else if (m.B->SpecialAttribute() == 6) {
-						powerup[5].Play();
+						powChannel[0] = powerup[5].Play();
 						m.B->Viewable = false;
 						PlayerValues[i].AbilityAffected[6] = true;
 						PlayerValues[i].AbilityCounter[6] = 0.0f;
 					}
 					//Super Shockwave
 					else if (m.B->SpecialAttribute() == 7) {
-						powerup[6].Play();
+						powChannel[0] = powerup[6].Play();
 						m.B->Viewable = false;
 						PlayerValues[i].AbilityAffected[7] = true;
 						PlayerValues[i].AbilityCounter[7] = 0.0f;
 					}
 					//Invincibility
 					else if (m.B->SpecialAttribute() == 8) {
-						powerup[7].Play();
+						powChannel[0] = powerup[7].Play();
 						m.B->Viewable = false;
 						PlayerValues[i].AbilityAffected[8] = true;
 						PlayerValues[i].AbilityCounter[8] = 0.0f;
 					}
 					//Flipped
 					else if (m.B->SpecialAttribute() == 9) {
-						powerup[8].Play();
+						powChannel[0] = powerup[8].Play();
 						m.B->Viewable = false;
 						PlayerValues[i].AbilityAffected[9] = true;
 						PlayerValues[i].AbilityCounter[9] = 0.0f;
@@ -1835,151 +1854,102 @@ void GameScreen(float deltaTasSeconds)
 		//apply gravity relative to object[0]
 		for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) { m.B = GameObjects["Players_0" + to_string(i)]; applyGravitationalForces(m, -01.0f); GameObjects["Players_0" + to_string(i)] = m.B; }
 		for (int i = 0; i < GameObjectsAmount["Enemies_0"]; i++) { m.B = GameObjects["Enemies_0" + to_string(i)]; applyGravitationalForces(m, -5.0f); GameObjects["Enemies_0" + to_string(i)] = m.B; }
-		for (int i = 0; i < GameObjectsAmount["Specials_0"]; i++) { m.B = GameObjects["Specials_0" + to_string(i)]; applyGravitationalForces(m, -3.0f); GameObjects["Specials_0" + to_string(i)] = m.B; }
+		for (int i = 0; i < GameObjectsAmount["Specials_0"]; i++) { m.B = GameObjects["Specials_0" + to_string(i)]; applyGravitationalForces(m, -2.0f); GameObjects["Specials_0" + to_string(i)] = m.B; }
 	}
 
 	
 	bool enableAbilitys = true;
 	//Applys all over-time abilitys
 	if (enableAbilitys) {
-		for (int ijp = 0; ijp < GameObjectsAmount["Players_0"]; ijp++) {
+		for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
 
 			//Enemies seek towers [1]
-			if (PlayerValues[ijp].AbilityAffected[1] && PlayerValues[ijp].AbilityCounter[1] < PlayerValues[ijp].AbilityLength[1]) {
-				PlayerValues[ijp].AbilityCounter[1] += deltaTasSeconds;
-				if (PlayerValues[ijp].PlayerTeam == 0) { m.A = GameObjects["Rifts_0" + to_string(1)]; }
-				else if (PlayerValues[ijp].PlayerTeam == 1) { m.A = GameObjects["Rifts_0" + to_string(0)]; }
+			if (PlayerValues[i].AbilityAffected[1] && PlayerValues[i].AbilityCounter[1] < PlayerValues[i].AbilityLength[1]) {
+				PlayerValues[i].AbilityCounter[1] += deltaTasSeconds;
+				if (PlayerValues[i].PlayerTeam == 0) { m.A = GameObjects["Rifts_0" + to_string(1)]; }
+				else if (PlayerValues[i].PlayerTeam == 1) { m.A = GameObjects["Rifts_0" + to_string(0)]; }
 				for (int j = 0; j < GameObjectsAmount["Enemies_0"]; j++) {
 					m.B = GameObjects["Enemies_0" + to_string(j)];
 					applySeekSystem(m, 3.0f);
 					GameObjects["Enemies_0" + to_string(j)] = m.B;
 				}
 			}
-			else { PlayerValues[ijp].AbilityAffected[1] = false; }
+			else { PlayerValues[i].AbilityAffected[1] = false; }
 
 			//Boost [4]
-			if (PlayerValues[ijp].AbilityAffected[4] && PlayerValues[ijp].AbilityCounter[4] < PlayerValues[ijp].AbilityLength[4]) {
-				PlayerValues[ijp].AbilityCounter[4] += deltaTasSeconds;
-				GameObjects["Players_0" + to_string(ijp)].get()->SprintSpeed = PlayerValues[ijp].SprintSpeed;
+			if (PlayerValues[i].AbilityAffected[4] && PlayerValues[i].AbilityCounter[4] < PlayerValues[i].AbilityLength[4]) {
+				PlayerValues[i].AbilityCounter[4] += deltaTasSeconds;
+				GameObjects["Players_0" + to_string(i)].get()->SprintSpeed = PlayerValues[i].SprintSpeed;
 			}
 			else {
-				GameObjects["Players_0" + to_string(ijp)].get()->SprintSpeed = 1.0f;
-				PlayerValues[ijp].AbilityAffected[4] = false;
+				GameObjects["Players_0" + to_string(i)].get()->SprintSpeed = 1.0f;
+				PlayerValues[i].AbilityAffected[4] = false;
 			}
 
 			//Flee [5]
-			if (PlayerValues[ijp].AbilityAffected[5] && PlayerValues[ijp].AbilityCounter[5] < PlayerValues[ijp].AbilityLength[5]) {
-				PlayerValues[ijp].AbilityCounter[5] += deltaTasSeconds;
-				m.A = GameObjects["Players_0" + to_string(ijp)];
+			if (PlayerValues[i].AbilityAffected[5] && PlayerValues[i].AbilityCounter[5] < PlayerValues[i].AbilityLength[5]) {
+				PlayerValues[i].AbilityCounter[5] += deltaTasSeconds;
+				m.A = GameObjects["Players_0" + to_string(i)];
 				for (int i = 0; i < GameObjectsAmount["Enemies_0"]; i++) {
 					m.B = GameObjects["Enemies_0" + to_string(i)];
 					applyRadialFleeingSystem(m, 20.0f, 10.0f);
 					GameObjects["Enemies_0" + to_string(i)] = m.B;
 				}
 			}
-			else { PlayerValues[ijp].AbilityAffected[5] = false; }
+			else { PlayerValues[i].AbilityAffected[5] = false; }
 
 			//Short Circuit [6]
-			if (PlayerValues[ijp].AbilityAffected[6] && PlayerValues[ijp].AbilityCounter[6] < PlayerValues[ijp].AbilityLength[6]) {
-				PlayerValues[ijp].AbilityCounter[6] += deltaTasSeconds;
-				if (PlayerValues[ijp].PlayerTeam == 0) {
-					for (int ijp2 = 0; ijp2 < GameObjectsAmount["Players_0"]; ijp2++) {
-						if (PlayerValues[ijp2].PlayerTeam == 1) {
-							GameObjects["Players_0" + to_string(ijp2)].get()->inShock = true;
+			if (PlayerValues[i].AbilityAffected[6] && PlayerValues[i].AbilityCounter[6] < PlayerValues[i].AbilityLength[6]) {
+				PlayerValues[i].AbilityCounter[6] += deltaTasSeconds;
+				if (PlayerValues[i].PlayerTeam == 0) {
+					for (int j = 0; j < GameObjectsAmount["Players_0"]; j++) {
+						if (PlayerValues[j].PlayerTeam == 1) {
+							GameObjects["Players_0" + to_string(j)].get()->inShock = true;
 						}
 					}
 				}
-				else if (PlayerValues[ijp].PlayerTeam == 1) {
-					for (int ijp2 = 0; ijp2 < GameObjectsAmount["Players_0"]; ijp2++) {
-						if (PlayerValues[ijp2].PlayerTeam == 0) {
-							GameObjects["Players_0" + to_string(ijp2)].get()->inShock = true;
+				else if (PlayerValues[i].PlayerTeam == 1) {
+					for (int j = 0; j < GameObjectsAmount["Players_0"]; j++) {
+						if (PlayerValues[j].PlayerTeam == 0) {
+							GameObjects["Players_0" + to_string(j)].get()->inShock = true;
 						}
 					}
 				}
 			}
-			else { PlayerValues[ijp].AbilityAffected[6] = false; }
+			else { PlayerValues[i].AbilityAffected[6] = false; }
 
 			//Super Shockwave [7] //not done yet
-			if (PlayerValues[ijp].AbilityAffected[7] && PlayerValues[ijp].AbilityCounter[7] < PlayerValues[ijp].AbilityLength[7]) {
-				PlayerValues[ijp].AbilityCounter[7] += deltaTasSeconds;
+			if (PlayerValues[i].AbilityAffected[7] && PlayerValues[i].AbilityCounter[7] < PlayerValues[i].AbilityLength[7]) {
+				PlayerValues[i].AbilityCounter[7] += deltaTasSeconds;
 			}
-			else { PlayerValues[ijp].AbilityAffected[7] = false; }
+			else { PlayerValues[i].AbilityAffected[7] = false; }
 
 			//Invincibility [8] 
-			if (PlayerValues[ijp].AbilityAffected[8] && PlayerValues[ijp].AbilityCounter[8] < PlayerValues[ijp].AbilityLength[8]) {
-				PlayerValues[ijp].AbilityCounter[8] += deltaTasSeconds;
+			if (PlayerValues[i].AbilityAffected[8] && PlayerValues[i].AbilityCounter[8] < PlayerValues[i].AbilityLength[8]) {
+				PlayerValues[i].AbilityCounter[8] += deltaTasSeconds;
 			}
-			else { PlayerValues[ijp].AbilityAffected[8] = false; }
+			else { PlayerValues[i].AbilityAffected[8] = false; }
 
 			//Flipped [9]
-			if (PlayerValues[ijp].AbilityAffected[9] && PlayerValues[ijp].AbilityCounter[9] < PlayerValues[ijp].AbilityLength[9]) {
-				PlayerValues[ijp].AbilityCounter[9] += deltaTasSeconds;
-				if (PlayerValues[ijp].PlayerTeam == 0) {
-					for (int ijp2 = 0; ijp2 < GameObjectsAmount["Players_0"]; ijp2++) {
-						if (PlayerValues[ijp2].PlayerTeam == 1) {
-							PlayerValues[ijp2].FlipedControllers = true;
+			if (PlayerValues[i].AbilityAffected[9] && PlayerValues[i].AbilityCounter[9] < PlayerValues[i].AbilityLength[9]) {
+				PlayerValues[i].AbilityCounter[9] += deltaTasSeconds;
+				if (PlayerValues[i].PlayerTeam == 0) {
+					for (int j = 0; j < GameObjectsAmount["Players_0"]; j++) {
+						if (PlayerValues[j].PlayerTeam == 1) {
+							PlayerValues[j].FlipedControllers = true;
 						}
 					}
 				}
-				else if (PlayerValues[ijp].PlayerTeam == 1) {
-					for (int ijp2 = 0; ijp2 < GameObjectsAmount["Players_0"]; ijp2++) {
-						if (PlayerValues[ijp2].PlayerTeam == 0) {
-							PlayerValues[ijp2].FlipedControllers = true;
+				else if (PlayerValues[i].PlayerTeam == 1) {
+					for (int j = 0; j < GameObjectsAmount["Players_0"]; j++) {
+						if (PlayerValues[j].PlayerTeam == 0) {
+							PlayerValues[j].FlipedControllers = true;
 						}
 					}
 				}
 			}
-			else { PlayerValues[ijp].AbilityAffected[9] = false; }
+			else { PlayerValues[i].AbilityAffected[9] = false; }
 
-		}//end for
-		/////////////////////////////////
-		for (int ijp = 0; ijp < GameObjectsAmount["Players_0"]; ijp++) {
-
-			//Short Circuit [6]
-			if (GameObjects["Players_0" + to_string(ijp)].get()->inShock) {
-				AffectsOnPlayer[ijp][1].setPosition(GameObjects["Players_0" + to_string(ijp)].get()->Position());
-				AffectsOnPlayer[ijp][2].setPosition(GameObjects["Players_0" + to_string(ijp)].get()->Position());
-
-				AffectsOnPlayer[ijp][1].Viewable = true;
-				AffectsOnPlayer[ijp][2].Viewable = true;
-
-				AffectsOnPlayer[ijp][1].setRotation(glm::vec3(0.0f, AffectsOnPlayer[ijp][1].Angle().y - (deltaTasSeconds*316.0f), 0.0f));
-				AffectsOnPlayer[ijp][2].setRotation(glm::vec3(0.0f, AffectsOnPlayer[ijp][2].Angle().y + (deltaTasSeconds*147.0f), 0.0f));
-			}
-			else if (!GameObjects["Players_0" + to_string(ijp)].get()->inShock) {
-				AffectsOnPlayer[ijp][1].setPosition(GameObjects["Players_0" + to_string(ijp)].get()->Position());
-				AffectsOnPlayer[ijp][1].Viewable = false;
-				AffectsOnPlayer[ijp][2].setPosition(GameObjects["Players_0" + to_string(ijp)].get()->Position());
-				AffectsOnPlayer[ijp][2].Viewable = false;
-			}
-
-			//Flipped [9]
-			if (PlayerValues[ijp].FlipedControllers) {
-				PlayerValues[ijp].AbilityCounter[9] += deltaTasSeconds;
-				AffectsOnPlayer[ijp][3].setPosition(GameObjects["Players_0" + to_string(ijp)].get()->Position());
-				AffectsOnPlayer[ijp][4].setPosition(GameObjects["Players_0" + to_string(ijp)].get()->Position());
-
-				AffectsOnPlayer[ijp][3].Viewable = true;
-				AffectsOnPlayer[ijp][4].Viewable = true;
-
-				AffectsOnPlayer[ijp][3].setRotation(glm::vec3(0.0f, AffectsOnPlayer[ijp][3].Angle().y + (deltaTasSeconds*147.0f), 0.0f));
-				AffectsOnPlayer[ijp][4].setRotation(glm::vec3(0.0f, AffectsOnPlayer[ijp][4].Angle().y - (deltaTasSeconds*316.0f), 0.0f));
-				if (PlayerValues[ijp].AbilityCounter[9] > PlayerValues[ijp].AbilityLength[9]) {
-					PlayerValues[ijp].AbilityCounter[9] = 0.0f;
-					PlayerValues[ijp].FlipedControllers = false;
-					AffectsOnPlayer[ijp][3].setPosition(GameObjects["Players_0" + to_string(ijp)].get()->Position());
-					AffectsOnPlayer[ijp][4].setPosition(GameObjects["Players_0" + to_string(ijp)].get()->Position());
-					AffectsOnPlayer[ijp][3].Viewable = false;
-					AffectsOnPlayer[ijp][4].Viewable = false;
-				}
-			}
-
-			//Set Position
-			for (int j = 0; j < GameObjectsAmount["Affects_0"]; j++) {
-				if (AffectsOnPlayer[ijp][j].Viewable) {
-					AffectsOnPlayer[ijp][j].setPosition(GameObjects["Players_0" + to_string(ijp)].get()->Position());
-				}
-			}
 		}//end for
 	}//end enableAbilitys
 
@@ -1990,25 +1960,23 @@ void GameScreen(float deltaTasSeconds)
 		if (PlayerValues[i].ShockWave) {
 				GameObjects["Shockwave_0" + to_string(i)].get()->Viewable = true;
 				if (PlayerValues[i].ShockWaveCounter > 0.0f) { PlayerValues[i].ShockWaveCounter -= deltaTasSeconds; }
-				else { PlayerValues[i].ShockWave = false; PlayerValues[i].ShockWaveChargeUp = 0.0f; }
+				else { PlayerValues[i].ShockWave = false; PlayerValues[i].ShockWaveChargeUp = 0.0f; PlayerValues[i].SWMaxWeight = 0.0f; }
 
-				float ForceWeight;
 				float ForceWeight_Addition = 70.0f + ((2.4f * (0.80f + PlayerValues[i].ShockWaveChargeUp))*(2.4f * (0.80f + PlayerValues[i].ShockWaveChargeUp))*(2.4f * (0.80f + PlayerValues[i].ShockWaveChargeUp)));
 				float ForceWeight_Minius = ((1.1f * (0.60f + PlayerValues[i].ShockWaveChargeUp))*(1.1f * (0.60f + PlayerValues[i].ShockWaveChargeUp))*(1.1f * (0.60f + PlayerValues[i].ShockWaveChargeUp))*(1.1f * (0.60f + PlayerValues[i].ShockWaveChargeUp)));
+				if (PlayerValues[i].SWMaxWeight < 350.0f) { PlayerValues[i].SWMaxWeight = (ForceWeight_Addition - ForceWeight_Minius); }
 
-				if (1000.0f <= ForceWeight_Addition - (ForceWeight_Addition / 2)) { ForceWeight = 1000.0f; }
-				else if (ForceWeight_Minius < (ForceWeight_Addition / 2)) { ForceWeight = ForceWeight_Addition - ForceWeight_Minius; }
-
-				float ForceModifier = -(40.0f + 1.5f*ForceWeight);
+				float ForceModifier = -(40.0f + 1.5f * PlayerValues[i].SWMaxWeight);
 
 				glm::vec3 sizeofShockWave;
-				morphmath.Lerp(glm::vec3(5.0f, 5.0f, 5.0f), glm::vec3(5.0f + (ForceWeight*0.1f), 5.0f + (ForceWeight*0.1f), 5.0f + (ForceWeight*0.1f)), PlayerValues[i].ShockWaveCounter);
-
+				sizeofShockWave = morphmath.Lerp(glm::vec3(5.0f, 5.0f, 5.0f), glm::vec3(5.0f + (PlayerValues[i].SWMaxWeight*0.1f), 5.0f + (PlayerValues[i].SWMaxWeight*0.1f), 5.0f + (PlayerValues[i].SWMaxWeight*0.1f)), 0.25f);
+				sizeofShockWave.y = 1.0f;
 
 				GameObjects["Shockwave_0" + to_string(i)].get()->setPosition(GameObjects["Players_0" + to_string(i)].get()->Position());
-				GameObjects["Shockwave_0" + to_string(i)].get()->setScale(glm::vec3(sizeofShockWave.x, 01.0f, sizeofShockWave.z));
-				GameObjects["Shockwave_0" + to_string(i)].get()->setRotation(glm::vec3(0.0f, PlayerValues[i].ShockWaveChargeUp*(180.0f / 3.14159f), 0.0f));
-				GameObjects["Shockwave_0" + to_string(i)].get()->setSizeOfHitBox(glm::vec3(sizeofShockWave.x, 05.0f, sizeofShockWave.z));
+				GameObjects["Shockwave_0" + to_string(i)].get()->setRotation(glm::vec3(0.0f, (GameObjects["Shockwave_0" + to_string(i)].get()->Angle().y + deltaTasSeconds*150.0f), 0.0f));
+				GameObjects["Shockwave_0" + to_string(i)].get()->setScale(sizeofShockWave);
+				sizeofShockWave.y = 100.0f;
+				GameObjects["Shockwave_0" + to_string(i)].get()->setSizeOfHitBox(sizeofShockWave);
 
 				m.A = GameObjects["Shockwave_0" + to_string(i)];
 				//collision to Enemies
@@ -2025,21 +1993,21 @@ void GameScreen(float deltaTasSeconds)
 				}//end for
 			}//end if
 		else if (PlayerValues[i].ShockWave == false && PlayerValues[i].ShockWaveChargeUp > 0.250f) {
+				
 				GameObjects["Shockwave_0" + to_string(i)].get()->Viewable = true;
-				float ForceWeight;
 				float ForceWeight_Addition = 70.0f + ((2.4f * (0.80f + PlayerValues[i].ShockWaveChargeUp))*(2.4f * (0.80f + PlayerValues[i].ShockWaveChargeUp))*(2.4f * (0.80f + PlayerValues[i].ShockWaveChargeUp)));
 				float ForceWeight_Minius = ((1.1f * (0.60f + PlayerValues[i].ShockWaveChargeUp))*(1.1f * (0.60f + PlayerValues[i].ShockWaveChargeUp))*(1.1f * (0.60f + PlayerValues[i].ShockWaveChargeUp))*(1.1f * (0.60f + PlayerValues[i].ShockWaveChargeUp)));
 				
-				if (1000.0f <= ForceWeight_Addition - (ForceWeight_Addition / 2)) { ForceWeight = 1000.0f; }
-				else if (ForceWeight_Minius < (ForceWeight_Addition / 2)) { ForceWeight = ForceWeight_Addition - ForceWeight_Minius; }
+				if (PlayerValues[i].SWMaxWeight < 350.0f) { PlayerValues[i].ShockWaveChargeUp += (deltaTasSeconds*5.0f); PlayerValues[i].SWMaxWeight = (ForceWeight_Addition - ForceWeight_Minius); }
+				else { PlayerValues[i].SWMaxWeight; }
 
 				glm::vec3 sizeofShockWave;
-				sizeofShockWave = morphmath.Lerp(glm::vec3(5.0f, 5.0f, 5.0f), glm::vec3(5.0f + (ForceWeight*0.1f), 5.0f + (ForceWeight*0.1f), 5.0f + (ForceWeight*0.1f)), 0.25f);
-				
-				sizeofShockWave.y = 01.0f;
+				sizeofShockWave = morphmath.Lerp(glm::vec3(5.0f, 5.0f, 5.0f), glm::vec3(5.0f + (PlayerValues[i].SWMaxWeight*0.1f), 5.0f + (PlayerValues[i].SWMaxWeight*0.1f), 5.0f + (PlayerValues[i].SWMaxWeight*0.1f)), 0.25f);
+				sizeofShockWave.y = 1.0f;
+
 				GameObjects["Shockwave_0" + to_string(i)].get()->setPosition(GameObjects["Players_0" + to_string(i)].get()->Position());
-				GameObjects["Shockwave_0" + to_string(i)].get()->setScale(glm::vec3(sizeofShockWave.x, 01.0f + (0.50f*PlayerValues[i].ShockWaveChargeUp), sizeofShockWave.z));
-				GameObjects["Shockwave_0" + to_string(i)].get()->setRotation(glm::vec3(0.0f, PlayerValues[i].ShockWaveChargeUp * (180.0f / 3.14159f), 0.0f));
+				GameObjects["Shockwave_0" + to_string(i)].get()->setScale(sizeofShockWave);
+				GameObjects["Shockwave_0" + to_string(i)].get()->setRotation(glm::vec3(0.0f, (GameObjects["Shockwave_0" + to_string(i)].get()->Angle().y + deltaTasSeconds*150.0f), 0.0f));
 			}
 		else { GameObjects["Shockwave_0" + to_string(i)].get()->Viewable = false; }
 	}//end for
@@ -2093,18 +2061,17 @@ void GameScreen(float deltaTasSeconds)
 
 	if (randomSpecialTime <= 0.0f)
 	{
-
-		float ranPosZ = (rand() % 80 - 40) + ((rand() % 100 - 50)*0.01f); //-39.50 to 40.50
-		float ranPosY = (rand() % 20 + 10) + ((rand() % 100 - 50)*0.01f); //  9.50 to 30.50
-		float ranPosX = (rand() % 80 - 40) + ((rand() % 100 - 50)*0.01f); //-39.50 to 40.50
-		int ranSpec = (rand() % 9 + 1); //1 to 9
+		float ranPosZ = Random(-40.0f, 40.0f);
+		float ranPosY = Random(20.0f, 100.0f);
+		float ranPosX = Random(-40.0f, 40.0f);
+		int ranSpec = static_cast<int>(Random(1.0f, 9.0f)); //1 to 9
 		if (ranSpec == 7) { ranSpec = 6; }
 
 		GameObjects["Specials_0" + to_string(ranSpec)].get()->setVelocity(glm::vec3(0.0f, 0.0f, 0.0f));
 		GameObjects["Specials_0" + to_string(ranSpec)].get()->setPosition(glm::vec3(ranPosX, ranPosY, ranPosZ));
 		GameObjects["Specials_0" + to_string(ranSpec)].get()->Viewable = true;
 
-		randomSpecialTime = (rand() % 60 + 30) + ((rand() % 100 - 50)*0.01f); //-29.50 to 90.50
+		randomSpecialTime = Random(10.0f, 30.0f);
 	}
 	else { randomSpecialTime -= deltaTasSeconds; }
 
@@ -2118,16 +2085,14 @@ void GameScreen(float deltaTasSeconds)
 	//Updating Targets
 	for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) { if (GameObjects["Players_0" + to_string(i)].get()->Viewable) { GameObjects["Players_0" + to_string(i)].get()->updateP(deltaTasSeconds); } }
 	for (int i = 0; i < GameObjectsAmount["Enemies_0"]; i++) { if (GameObjects["Enemies_0" + to_string(i)].get()->Viewable) { GameObjects["Enemies_0" + to_string(i)].get()->update(deltaTasSeconds); } }
-	
-
-
-
 	for (int i = 0; i < GameObjectsAmount["Specials_0"]; i++){ 
 		if (GameObjects["Specials_0" + to_string(i)].get()->Viewable) {
+			GameObjects["Specials_0" + to_string(i)].get()->update(deltaTasSeconds);
 			GameObjects["Specials_0" + to_string(i)].get()->setRotation(glm::vec3(0.0f, GameObjects["Specials_0" + to_string(i)].get()->Angle().y + (deltaTasSeconds*73.0f), 0.0f));
-			GameObjects["Specials_0" + to_string(i)].get()->update(deltaTasSeconds); 
 		}
 	}
+
+
 
 }
 
@@ -2147,7 +2112,7 @@ void DisplayCallbackFunction(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //Clear the screen
 	if (inMenu) { InMenuDraw(2); }
 	else if (inOptions) { InOptionDraw(inOptionsTab); }
-	else if (inGame) { for (int i = 0; i < 2; i++) { InGameDraw(i); } }
+	else if (inGame) { for (int i = 0; i <= 1; i++) { InGameDraw(i); } }
 	else {}
 
 	glutSwapBuffers();
@@ -2240,9 +2205,11 @@ void KeyboardCallbackFunction(unsigned char key, int x, int y)
 			}
 			break;
 		case '0':
-			GameObjects["Specials_0" + to_string(static_cast<int>(TestFloat))].get()->Viewable = true;
-			GameObjects["Specials_0" + to_string(static_cast<int>(TestFloat))].get()->setPosition(glm::vec3(0.0f, 20.0f, 0.0f));
-			GameObjects["Specials_0" + to_string(static_cast<int>(TestFloat))].get()->setVelocity(glm::vec3(0.0f, 0.0f, 0.0f));
+			if (TestFloat < 10 && TestFloat > 0) {
+				GameObjects["Specials_0" + to_string(static_cast<int>(TestFloat))].get()->Viewable = true;
+				GameObjects["Specials_0" + to_string(static_cast<int>(TestFloat))].get()->setPosition(glm::vec3(0.0f, 20.0f, 0.0f));
+				GameObjects["Specials_0" + to_string(static_cast<int>(TestFloat))].get()->setVelocity(glm::vec3(0.0f, 0.0f, 0.0f));
+			}
 			break;
 		case '1':
 			FxChannel[0] = Fx[0].Play();
@@ -2434,12 +2401,144 @@ void MousePassiveMotionCallbackFunction(int x, int y) //while a mouse button isn
 //////////////////////////////////////////////////////////////////////
 
 
+void InitializeParticles() {
+	//they are being drawn inversely proportional from the player the the center of the map
+	particleEmitter.lifeRange		 = glm::vec3(01.0, 05.0, 00.0);
+	particleEmitter.initialForceMin	 = glm::vec3(-1.0, 05.0, -1.0);
+	particleEmitter.initialForceMax	 = glm::vec3(01.0, 15.0, 01.0);
+
+	particleEmitter.material		 = materials["particles"];
+	particleEmitter.texture			 = ParticleTexture;
+
+	particleEmitter.initialize(1000);
+	particleEmitter.play();
+}
+
+/**/
+void InitializeVariables() {
+	//Menu Objects Amounts
+	MenuObjectsAmount["HUD_Planes_0"] = 7;
+	MenuObjectsAmount["HUD_Messages_0"] = 1;
+	MenuObjectsAmount["HUD_Buttons_0"] = 11;
+	MenuObjectsAmount["HUD_Sliders_0"] = 10;
+	for (int i = 0; i < MenuObjectsAmount["HUD_Planes_0"]; i++) { MenuObjects["HUD_Planes_0" + to_string(i)] = std::make_shared<GameObject>(); }
+	for (int i = 0; i < MenuObjectsAmount["HUD_Messages_0"]; i++) { MenuObjects["HUD_Messages_0" + to_string(i)] = std::make_shared<GameObject>(); }
+	for (int i = 0; i < MenuObjectsAmount["HUD_Buttons_0"]; i++) { MenuObjects["HUD_Buttons_0" + to_string(i)] = std::make_shared<GameObject>(); }
+	for (int i = 0; i < MenuObjectsAmount["HUD_Sliders_0"]; i++) {
+		MenuObjects["HUD_Slider_Bar_0" + to_string(i)] = std::make_shared<GameObject>();
+		MenuObjects["HUD_Slider_Button_0" + to_string(i)] = std::make_shared<GameObject>();
+	}
+	Slider = new Sliders[MenuObjectsAmount["HUD_Sliders_0"]];
+	Button = new Buttons[MenuObjectsAmount["HUD_Buttons_0"]];
+
+
+	//Game Objects amounts
+	GameObjectsAmount["Borders_0"] = 1;
+	GameObjectsAmount["Objects_0"] = 10;
+	GameObjectsAmount["HUD_Score_Planes_0"] = 8;
+	GameObjectsAmount["Shadows_0"] = 1;
+	GameObjectsAmount["Affects_0"] = 5;
+	GameObjectsAmount["Specials_0"] = 10;
+	GameObjectsAmount["Enemies_0"] = 12;
+	GameObjectsAmount["Players_0"] = 4;
+	GameObjectsAmount["Rifts_0"] = 2;
+	for (int i = 0; i < GameObjectsAmount["Objects_0"]; i++) { GameObjects["Objects_0" + to_string(i)] = std::make_shared<GameObject>(); }
+	for (int i = 0; i < GameObjectsAmount["Borders_0"]; i++) { GameObjects["Borders_0" + to_string(i)] = std::make_shared<GameObject>(); }
+	for (int i = 0; i < GameObjectsAmount["HUD_Score_Planes_0"]; i++) { GameObjects["HUD_Score_Planes_0" + to_string(i)] = std::make_shared<GameObject>(); }
+	for (int i = 0; i < GameObjectsAmount["Shadows_0"]; i++) { GameObjects["Shadows_0" + to_string(i)] = std::make_shared<GameObject>(); }
+	for (int i = 0; i < GameObjectsAmount["Affects_0"]; i++) { GameObjects["Affects_0" + to_string(i)] = std::make_shared<GameObject>(); }
+	for (int i = 0; i < GameObjectsAmount["Specials_0"]; i++) { GameObjects["Specials_0" + to_string(i)] = std::make_shared<GameObject>(); }
+	for (int i = 0; i < GameObjectsAmount["Enemies_0"]; i++) { GameObjects["Enemies_0" + to_string(i)] = std::make_shared<GameObject>(); }
+	for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
+		GameObjects["Players_0" + to_string(i)] = std::make_shared<GameObject>();
+		GameObjects["Shockwave_0" + to_string(i)] = std::make_shared<GameObject>();
+	}
+	for (int i = 0; i < GameObjectsAmount["Rifts_0"]; i++) { GameObjects["Rifts_0" + to_string(i)] = std::make_shared<GameObject>(); }
+
+
+	PlayerValues = new PlayerInfo[GameObjectsAmount["Players_0"]];
+	for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
+
+		PlayerValues[i].ControllerActive = false;
+
+		if (i % 2 == 0) {
+			PlayerValues[i].PlayerTeam = 0;
+			PlayerValues[i].PlayerColour = 0;
+			PlayerValues[i].forwardVector = glm::vec3(-1.0f, 0.0f, 0.0f);
+		}
+		else {
+			PlayerValues[i].PlayerTeam = 1;
+			PlayerValues[i].PlayerColour = 1;
+			PlayerValues[i].forwardVector = glm::vec3(1.0f, 0.0f, 0.0f);
+		}
+
+		//camera
+		if (PlayerValues[i].PlayerTeam == 0) {
+			PlayerValues[i].cameraTransform = glm::lookAt(
+				glm::vec3(50.0f, 50.0f, 0.0f),
+				glm::vec3(0.0f, 1.0f, 0.0f),
+				glm::vec3(0.0f, 1.0f, 0.0f));
+		}
+		else {
+			PlayerValues[i].cameraTransform = glm::lookAt(
+				glm::vec3(-50.0f, 50.0f, 0.0f),
+				glm::vec3(0.0f, 1.0f, 0.0f),
+				glm::vec3(0.0f, 1.0f, 0.0f));
+		}
+		PlayerValues[i].cameraPosition = glm::vec3(0.0f);
+		PlayerValues[i].rightVector = glm::vec3(1.0f);
+		PlayerValues[i].cameraMode = 0;
+
+		PlayerValues[i].MenuSwitchCounter = 0.0f;
+		//Shock wave attributes
+		PlayerValues[i].Right_TRIGGERED = false;
+		PlayerValues[i].Left_TRIGGERED = false;
+		PlayerValues[i].ShockWave = false;
+		PlayerValues[i].ShockWaveCounter = 0.0f;
+		PlayerValues[i].ShockWaveChargeUp = 0.0f;
+		//Sprint attributes
+		PlayerValues[i].SprintSpeed = 1.5f;
+		PlayerValues[i].SprintCounter = 0.0f;
+		PlayerValues[i].SprintCoolDown = 2.0f;
+		//Abilitys
+		PlayerValues[i].FlipedControllers = false;
+		PlayerValues[i].AbilityAffected = new bool[GameObjectsAmount["Specials_0"]];
+		PlayerValues[i].AbilityCounter = new float[GameObjectsAmount["Specials_0"]];
+		PlayerValues[i].AbilityLength = new float[GameObjectsAmount["Specials_0"]];
+		//setting abilitys
+		for (int j = 0; j < GameObjectsAmount["Specials_0"]; j++) {
+			PlayerValues[i].AbilityAffected[j] = false;
+			PlayerValues[i].AbilityCounter[j] = 5.0f;
+			PlayerValues[i].AbilityLength[j] = 5.0f;
+		}
+		//Seeker Swarm = 1
+		//Toss-Up = 2
+		//Health Up = 3
+		//Boost = 4
+		//Flee = 5
+		//Short Circuit = 6
+		PlayerValues[i].AbilityLength[6] = 1.0f;
+		//Super Shockwave = 7
+		//Invincibility = 8
+		//Flipped = 9
+	}
+	//health
+	for (int i = 0; i < 2; i++) {
+		PlayerHp[i].MaxHealth = 99;
+		PlayerHp[i].MinHealth = 0;
+		PlayerHp[i].CurrentHealth = 50;
+		PlayerHp[i].PreviousHealth = 0;
+	}
+}
+
+/**/
 void InitializeFrameBufferObjects()
 {
 	FBOs["One"] = std::make_shared<FrameBufferObject>();
 	FBOs["One"]->createFrameBuffer(windowWidth, windowHeight, 1, true);
 }
 
+/**/
 void InitializeShaders()
 {
 	std::string shaderPath;
@@ -2450,7 +2549,8 @@ void InitializeShaders()
 	else { std::cout << "[ERROR] Could not find [Shaders]" << std::endl; }
 
 	//Load vertex shaders
-	Shader v_passThrough, v_textShader;
+	Shader v_default, v_passThrough, v_textShader;
+	v_default.loadShaderFromFile(shaderPath + "default_v.glsl", GL_VERTEX_SHADER);
 	v_passThrough.loadShaderFromFile(shaderPath + "passThru_v.glsl", GL_VERTEX_SHADER);
 	v_textShader.loadShaderFromFile(shaderPath + "text_v.glsl", GL_VERTEX_SHADER);
 	//Load fragment shaders
@@ -2459,25 +2559,41 @@ void InitializeShaders()
 	f_passThrough.loadShaderFromFile(shaderPath + "passThru_f.glsl", GL_FRAGMENT_SHADER);
 	f_NASD.loadShaderFromFile(shaderPath + "NASD_f.glsl", GL_FRAGMENT_SHADER);
 	f_textShader.loadShaderFromFile(shaderPath + "text_f.glsl", GL_FRAGMENT_SHADER);
+	// Load Geometry Shaders
+	Shader g_normals, g_particles;
+	g_normals.loadShaderFromFile(shaderPath + "normals_g.glsl", GL_GEOMETRY_SHADER);
+	g_particles.loadShaderFromFile(shaderPath + "particles_g.glsl", GL_GEOMETRY_SHADER);
 
 
 	//Default material that all objects use
 	materials["default"] = std::make_shared<Material>();
-	materials["default"]->shader->attachShader(v_passThrough);
+	materials["default"]->shader->attachShader(v_default);
 	materials["default"]->shader->attachShader(f_default);
 	materials["default"]->shader->linkProgram();
-
 	//passThrough material that all objects use
 	materials["passThrough"] = std::make_shared<Material>();
-	materials["passThrough"]->shader->attachShader(v_passThrough);
+	materials["passThrough"]->shader->attachShader(v_default);
 	materials["passThrough"]->shader->attachShader(f_passThrough);
 	materials["passThrough"]->shader->linkProgram();
-
 	//NASD material that all objects use
 	materials["NASD"] = std::make_shared<Material>();
-	materials["NASD"]->shader->attachShader(v_passThrough);
+	materials["NASD"]->shader->attachShader(v_default);
 	materials["NASD"]->shader->attachShader(f_NASD);
 	materials["NASD"]->shader->linkProgram();
+
+
+	// Default lambert material with normal visualization  geometry shader
+	materials["normals"] = std::make_shared<Material>();
+	materials["normals"]->shader->attachShader(v_passThrough); // Vertex Shader
+	materials["normals"]->shader->attachShader(f_NASD); // Fragment Shader
+	materials["normals"]->shader->attachShader(g_normals); // Geometry Shader!
+	materials["normals"]->shader->linkProgram();
+	// Unlit texture material with point-to-quad geometry shader
+	materials["particles"] = std::make_shared<Material>();
+	materials["particles"]->shader->attachShader(v_passThrough);
+	materials["particles"]->shader->attachShader(g_particles); // Geometry Shader!
+	materials["particles"]->shader->attachShader(f_NASD);
+	materials["particles"]->shader->linkProgram();
 
 
 	//text material that all objects use
@@ -2531,7 +2647,20 @@ void InitializeTextPlane()
 	MenuObjects["HUD_Planes_0" + to_string(3)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Power_Ups.png").c_str())));
 	MenuObjects["HUD_Planes_0" + to_string(4)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Options.png").c_str())));
 	MenuObjects["HUD_Planes_0" + to_string(5)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Player_Select.png").c_str())));
+	MenuObjects["HUD_Planes_0" + to_string(6)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Game_Mode.png").c_str())));
 	//
+
+	MenuObjects["HUD_Messages_0" + to_string(0)].get()->objectLoader(ObjectPath + "PlainForText.obj");
+	MenuObjects["HUD_Messages_0" + to_string(0)].get()->setMaterial(passThroughMaterial);
+	MenuObjects["HUD_Messages_0" + to_string(0)].get()->setMass(0.0f);
+	MenuObjects["HUD_Messages_0" + to_string(0)].get()->Viewable = true;
+	MenuObjects["HUD_Messages_0" + to_string(0)].get()->setScale(glm::vec3(39.0f*0.9f, 1.0f, 39.0f*1.6f));
+	MenuObjects["HUD_Messages_0" + to_string(0)].get()->setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+	for (int i = 1; i < MenuObjectsAmount["HUD_Messages_0"]; i++) {
+		MenuObjects["HUD_Messages_0" + to_string(i)].get()->objectLoader(&MenuObjects["HUD_Messages_0" + to_string(0)]);
+	}
+	MenuObjects["HUD_Messages_0" + to_string(0)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//PlayerSelect//Press_Start_to_Start.png").c_str())));
+
 
 	////////////////	//Button
 	MenuObjects["HUD_Buttons_0" + to_string(0)].get()->objectLoader(ObjectPath + "PlainForText.obj");
@@ -2558,23 +2687,20 @@ void InitializeTextPlane()
 	MenuObjects["HUD_Buttons_0" + to_string(6)].get()->setPosition(glm::vec3(0.0f, 0.01f, 21.0f));
 	MenuObjects["HUD_Buttons_0" + to_string(6)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Options_Buttons//Config_Button.png").c_str())));
 
+
+	for (int i = 0; i < 3; i++) {
+		PlayerSelectColour[(i * 2)] = ilutGLLoadImage(_strdup((ImagePath + "Player//Blue//PlayerSelect_B_0" + to_string(i + 1) + ".png").c_str()));
+		PlayerSelectColour[(i * 2) + 1] = ilutGLLoadImage(_strdup((ImagePath + "Player//Red//PlayerSelect_R_0" + to_string(i + 1) + ".png").c_str()));
+	}
+	PlayerSelectColour[6] = ilutGLLoadImage(_strdup((ImagePath + "Menu//PlayerSelect//Press_A_to_Join.png").c_str()));
 	MenuObjects["HUD_Buttons_0" + to_string(7)].get()->setPosition(glm::vec3(-9.0f, 0.01f, -3.0f));
-	MenuObjects["HUD_Buttons_0" + to_string(7)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//Blue//PlayerSelect_B_01.png").c_str())));
-	MenuObjects["HUD_Buttons_0" + to_string(8)].get()->setPosition(glm::vec3(-9.0f, 0.01f, 9.0f));
-	MenuObjects["HUD_Buttons_0" + to_string(8)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//Blue//PlayerSelect_B_02.png").c_str())));
-	MenuObjects["HUD_Buttons_0" + to_string(9)].get()->setPosition(glm::vec3(-9.0f, 0.01f, 21.0f));
-	MenuObjects["HUD_Buttons_0" + to_string(9)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//Blue//PlayerSelect_B_03.png").c_str())));
-	MenuObjects["HUD_Buttons_0" + to_string(10)].get()->setPosition(glm::vec3(9.0f, 0.01f, -3.0f));
-	MenuObjects["HUD_Buttons_0" + to_string(10)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//Red//PlayerSelect_R_01.png").c_str())));
-	MenuObjects["HUD_Buttons_0" + to_string(11)].get()->setPosition(glm::vec3(9.0f, 0.01f, 9.0f));
-	MenuObjects["HUD_Buttons_0" + to_string(11)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//Red//PlayerSelect_R_02.png").c_str())));
-	MenuObjects["HUD_Buttons_0" + to_string(12)].get()->setPosition(glm::vec3(9.0f, 0.01f, 21.0f));
-	MenuObjects["HUD_Buttons_0" + to_string(12)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//Red//PlayerSelect_R_03.png").c_str())));
-	
-	MenuObjects["HUD_Buttons_0" + to_string(13)].get()->setPosition(glm::vec3(-9.0f, 0.01f, -15.0f));
-	MenuObjects["HUD_Buttons_0" + to_string(13)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//PlayerSelect//2player.png").c_str())));
-	MenuObjects["HUD_Buttons_0" + to_string(14)].get()->setPosition(glm::vec3(9.0f, 0.01f, -15.0f));
-	MenuObjects["HUD_Buttons_0" + to_string(14)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//PlayerSelect//4player.png").c_str())));
+	MenuObjects["HUD_Buttons_0" + to_string(7)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//PlayerSelect//Press_A_to_Join.png").c_str())));
+	MenuObjects["HUD_Buttons_0" + to_string(8)].get()->setPosition(glm::vec3(9.0f, 0.01f, -3.0f));
+	MenuObjects["HUD_Buttons_0" + to_string(8)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//PlayerSelect//Press_A_to_Join.png").c_str())));
+	MenuObjects["HUD_Buttons_0" + to_string(9)].get()->setPosition(glm::vec3(-9.0f, 0.01f, 9.0f));
+	MenuObjects["HUD_Buttons_0" + to_string(9)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//PlayerSelect//Press_A_to_Join.png").c_str())));
+	MenuObjects["HUD_Buttons_0" + to_string(10)].get()->setPosition(glm::vec3(9.0f, 0.01f, 9.0f));
+	MenuObjects["HUD_Buttons_0" + to_string(10)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//PlayerSelect//Press_A_to_Join.png").c_str())));
 	for (int i = 0; i < MenuObjectsAmount["HUD_Buttons_0"]; i++) {
 		Button[i].SBut_Top = MenuObjects["HUD_Buttons_0" + to_string(i)]->Top();
 		Button[i].SBut_Bot = MenuObjects["HUD_Buttons_0" + to_string(i)]->Bottom();
@@ -2633,42 +2759,37 @@ void InitializeSounds() {
 		Sound::Sys.listenerPos[i].x = 0.0f; Sound::Sys.listenerPos[i].y = 0.0f; Sound::Sys.listenerPos[i].z = 0.0f;
 	}
 
-
-
 	//Power up sound effects
 
 	//Seeker Swarm = 0
-	powerup[0].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_seeker.wav").c_str()), TRUE, FALSE);
+	powerup[0].Load(_strdup((SoundPath + "PowerUps//Voicerecording_seeker.wav").c_str()), TRUE, FALSE);
 	//Toss-Up = 1
-	powerup[1].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_toss.wav").c_str()), TRUE, FALSE);
+	powerup[1].Load(_strdup((SoundPath + "PowerUps//Voicerecording_toss.wav").c_str()), TRUE, FALSE);
 	//Health Up = 2
-	powerup[2].Load(_strdup((SoundPath + "drumloop.wav").c_str()), TRUE, FALSE);
+	powerup[2].Load(_strdup((SoundPath + "PowerUps//Voicerecording_healthup.wav").c_str()), TRUE, FALSE);
 	//Boost = 3
-	powerup[3].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_boost.wav").c_str()), TRUE, FALSE);
+	powerup[3].Load(_strdup((SoundPath + "PowerUps//Voicerecording_boost.wav").c_str()), TRUE, FALSE);
 	//Flee = 4
-	powerup[4].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_flee.wav").c_str()), TRUE, FALSE);
+	powerup[4].Load(_strdup((SoundPath + "PowerUps//Voicerecording_flee.wav").c_str()), TRUE, FALSE);
 	//Short Circuit = 5
-	powerup[5].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_sc.wav").c_str()), TRUE, FALSE);
+	powerup[5].Load(_strdup((SoundPath + "PowerUps//Voicerecording_shortcircuit.wav").c_str()), TRUE, FALSE);
 	//Super Shockwave = 6
-	powerup[6].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_ss.wav").c_str()), TRUE, FALSE);
+	powerup[6].Load(_strdup((SoundPath + "PowerUps//Voicerecording_supershockwave.wav").c_str()), TRUE, FALSE);
 	//Invincibility = 7
-	powerup[7].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_invincible.wav").c_str()), TRUE, FALSE);
+	powerup[7].Load(_strdup((SoundPath + "PowerUps//Voicerecording_invincible.wav").c_str()), TRUE, FALSE);
 	//Flipped = 8
-	powerup[8].Load(_strdup((SoundPath + "Soundeffects//Voicerecording_flipped.wav").c_str()), TRUE, FALSE);
+	powerup[8].Load(_strdup((SoundPath + "PowerUps//Voicerecording_flipped.wav").c_str()), TRUE, FALSE);
 
 
 	//Fx sound effects
-	Fx[0].Load(_strdup((SoundPath + "Soundeffects//bounce0.3.wav").c_str()), TRUE, FALSE);//Ball bouncing
-	Fx[1].Load(_strdup((SoundPath + "Soundeffects//crowdsound0.1.wav").c_str()), TRUE, TRUE);//Crowd sound effect
+	Fx[0].Load(_strdup((SoundPath + "Soundeffects//bounce_03.wav").c_str()), TRUE, FALSE);//Ball bouncing
+	Fx[1].Load(_strdup((SoundPath + "Soundeffects//crowdsound_01.wav").c_str()), TRUE, TRUE);//Crowd sound effect
+	Fx[2].Load(_strdup((SoundPath + "Soundeffects//Cheering_01.wav").c_str()), TRUE, FALSE);//Cheering effect, for when someone scores a goal
 
-	//FxChannel[0] = Fx[0].Play();
-
-	FxChannel[0]->setVolume(1.0f);
-	FxChannel[1]->setVolume(0.1f);
-
-	for (int i = 0; i < 2; i++) {
-		Sound::Sys.listenerPos[i].x = 0.0f; Sound::Sys.listenerPos[i].y = 0.0f; Sound::Sys.listenerPos[i].z = 0.0f;
-	}
+	//Set Inital Volume of FX
+	FxChannel[0]->setVolume(1.0);
+	FxChannel[1]->setVolume(0.1);
+	FxChannel[2]->setVolume(0.8);
 }
 
 /**/
@@ -2754,12 +2875,14 @@ void InitializeObjects()
 	GameObjects["Borders_0" + to_string(0)].get()->setScale(glm::vec3(98.0f, 100.0f, 98.0f));
 	GameObjects["Borders_0" + to_string(0)].get()->setSizeOfHitBox(glm::vec3(98.0f, 100.0f, 98.0f)); //HitBox
 	GameObjects["Borders_0" + to_string(0)].get()->setPosition(glm::vec3(0.0f, 50.0f, 0.0f));
-	GameObjects["Borders_0" + to_string(0)].get()->setColour(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
 
 	//PlayerTextures
 	for (int i = 0; i < 3; i++) {
-		PlayerTextures[(i*2)] = ilutGLLoadImage(_strdup((ImagePath + "Player//Blue//B_blitzbot_diff_0" + to_string(i + 1) + ".png").c_str()));
-		PlayerTextures[(i*2)+1] = ilutGLLoadImage(_strdup((ImagePath + "Player//Red//R_blitzbot_diff_0" + to_string(i + 1) + ".png").c_str()));
+		PlayerTextures[(i*2)] = ilutGLLoadImage(_strdup((ImagePath + "Player//Blue//B_blitzbot_diff_0" + to_string(i+1) + ".png").c_str()));
+		PlayerTextures[(i*2)+1] = ilutGLLoadImage(_strdup((ImagePath + "Player//Red//R_blitzbot_diff_0" + to_string(i+1) + ".png").c_str()));
+
+		PlayerTextures[(i*2)+6] = ilutGLLoadImage(_strdup((ImagePath + "Player//Blue//ShockWave_B_0" + to_string(i+1) + ".png").c_str()));
+		PlayerTextures[(i*2)+7] = ilutGLLoadImage(_strdup((ImagePath + "Player//Red//ShockWave_R_0" + to_string(i+1) + ".png").c_str()));
 	}
 	GameObjects["Players_0" + to_string(0)].get()->objectLoader(ObjectPath + "Player//blitzbot.obj");
 	GameObjects["Players_0" + to_string(0)].get()->setMaterial(NASDMaterial);
@@ -2773,13 +2896,13 @@ void InitializeObjects()
 	GameObjects["Shockwave_0" + to_string(0)].get()->objectLoader(ObjectPath + "Player//ShockWave.obj");
 	GameObjects["Shockwave_0" + to_string(0)].get()->setMaterial(NASDMaterial);
 	GameObjects["Shockwave_0" + to_string(0)].get()->Viewable = false;
+	GameObjects["Shockwave_0" + to_string(0)].get()->textureHandle_hasTransparency = true;
 	GameObjects["Shockwave_0" + to_string(0)].get()->setMass(5.0f);
 	for (int i = 1; i < GameObjectsAmount["Players_0"]; i++) {
 		GameObjects["Players_0" + to_string(i)].get()->objectLoader(&GameObjects["Players_0" + to_string(0)]);
 		GameObjects["Players_0" + to_string(i)].get()->setPosition(glm::vec3(-15.0f, -1.0f, 0.0f)); //Position of Object
 		GameObjects["Shockwave_0" + to_string(i)].get()->objectLoader(&GameObjects["Shockwave_0" + to_string(0)]);
 	}
-
 	//set player team textures
 	for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
 		
@@ -2787,13 +2910,13 @@ void InitializeObjects()
 			PlayerValues[i].PlayerColour = 0;
 			PlayerValues[i].PlayerTexture = PlayerTextures[0];
 			GameObjects["Players_0" + to_string(i)].get()->setTexture(PlayerTextures[0]);
-			GameObjects["Shockwave_0" + to_string(i)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//ShockWave_01.png").c_str())));
+			GameObjects["Shockwave_0" + to_string(i)].get()->setTexture(PlayerTextures[6]);
 		}
 		else if (PlayerValues[i].PlayerTeam == 1) {
 			PlayerValues[i].PlayerColour = 1;
 			PlayerValues[i].PlayerTexture = PlayerTextures[1];
 			GameObjects["Players_0" + to_string(i)].get()->setTexture(PlayerTextures[1]);
-			GameObjects["Shockwave_0" + to_string(i)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//ShockWave_02.png").c_str())));
+			GameObjects["Shockwave_0" + to_string(i)].get()->setTexture(PlayerTextures[7]);
 		}
 
 		//camera
@@ -2813,49 +2936,8 @@ void InitializeObjects()
 
 	}
 
-	
-	AffectsOnPlayer[0][0].objectLoader(ObjectPath + "Player//dazzle.obj");
-	AffectsOnPlayer[0][0].setMaterial(NASDMaterial);
-	//bolt
-	AffectsOnPlayer[0][1].objectLoader(ObjectPath + "Player//bolt.obj");
-	AffectsOnPlayer[0][1].setMaterial(NASDMaterial);
-	AffectsOnPlayer[0][1].setScale(glm::vec3(5.0f, 5.0f, 5.0f)); //displayed size
-	AffectsOnPlayer[0][1].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//bolt.png").c_str())));
-	AffectsOnPlayer[0][1].textureHandle_hasTransparency = true;
-	AffectsOnPlayer[0][1].Viewable = false;
-	//dazzle
-	AffectsOnPlayer[0][2].objectLoader(ObjectPath + "Player//dazzle.obj");
-	AffectsOnPlayer[0][2].setMaterial(NASDMaterial);
-	AffectsOnPlayer[0][2].setScale(glm::vec3(5.0f, 5.0f, 5.0f)); //displayed size
-	AffectsOnPlayer[0][2].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//dazzle.png").c_str())));
-	AffectsOnPlayer[0][2].textureHandle_hasTransparency = true;
-	AffectsOnPlayer[0][2].Viewable = false;
-	//spiral_01
-	AffectsOnPlayer[0][3].objectLoader(ObjectPath + "Player//spiral_01.obj");
-	AffectsOnPlayer[0][3].setMaterial(NASDMaterial);
-	AffectsOnPlayer[0][3].setScale(glm::vec3(5.0f, 5.0f, 5.0f)); //displayed size
-	AffectsOnPlayer[0][3].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//swirl.png").c_str())));
-	AffectsOnPlayer[0][3].textureHandle_hasTransparency = true;
-	AffectsOnPlayer[0][3].Viewable = false;
-	//spiral_02
-	AffectsOnPlayer[0][4].objectLoader(ObjectPath + "Player//spiral_02.obj");
-	AffectsOnPlayer[0][4].setMaterial(NASDMaterial);
-	AffectsOnPlayer[0][4].setScale(glm::vec3(5.0f, 5.0f, 5.0f)); //displayed size
-	AffectsOnPlayer[0][4].setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//swirl.png").c_str())));
-	AffectsOnPlayer[0][4].textureHandle_hasTransparency = true;
-	AffectsOnPlayer[0][4].Viewable = false;
 
-	//set player affect objects
-	for (int i = 1; i < GameObjectsAmount["Players_0"]; i++) {
-		for (int j = 0; j < GameObjectsAmount["Affects_0"]; j++) {
-			AffectsOnPlayer[i][j].objectLoader(&AffectsOnPlayer[0][j]);
-		}
-	}
-
-
-
-
-	//Player ONE Tower
+	//Tower
 	GameObjects["Rifts_0" + to_string(0)].get()->objectLoader(ObjectPath + "Square.obj");
 	GameObjects["Rifts_0" + to_string(0)].get()->setMaterial(NASDMaterial);
 	GameObjects["Rifts_0" + to_string(0)].get()->Viewable = true;
@@ -2869,88 +2951,47 @@ void InitializeObjects()
 	GameObjects["Rifts_0" + to_string(1)].get()->setRotation(glm::vec3(0.0f, 180.0f, 0.0f));
 	GameObjects["Rifts_0" + to_string(1)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Hexagons.png").c_str())));
 
+
+
+	GameObjects["Affects_0" + to_string(0)].get()->objectLoader(ObjectPath + "Player//dazzle.obj");
+	GameObjects["Affects_0" + to_string(0)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//dazzle.png").c_str())));
+	GameObjects["Affects_0" + to_string(1)].get()->objectLoader(ObjectPath + "Player//bolt.obj");
+	GameObjects["Affects_0" + to_string(1)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//bolt.png").c_str())));
+	GameObjects["Affects_0" + to_string(2)].get()->objectLoader(ObjectPath + "Player//dazzle.obj");
+	GameObjects["Affects_0" + to_string(2)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//dazzle.png").c_str())));
+	GameObjects["Affects_0" + to_string(3)].get()->objectLoader(ObjectPath + "Player//spiral_01.obj");
+	GameObjects["Affects_0" + to_string(3)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//swirl.png").c_str())));
+	GameObjects["Affects_0" + to_string(4)].get()->objectLoader(ObjectPath + "Player//spiral_02.obj");
+	GameObjects["Affects_0" + to_string(4)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Player//swirl.png").c_str())));
+	//set player affect objects
+	for (int i = 0; i < GameObjectsAmount["Affects_0"]; i++) {
+		GameObjects["Affects_0" + to_string(i)].get()->setMaterial(NASDMaterial);
+		GameObjects["Affects_0" + to_string(i)].get()->setScale(glm::vec3(5.0f, 5.0f, 5.0f));
+		GameObjects["Affects_0" + to_string(i)].get()->textureHandle_hasTransparency = true;
+		GameObjects["Affects_0" + to_string(i)].get()->Viewable = false;
+	}
+
 	//Specials
 	GameObjects["Specials_0" + to_string(0)].get()->objectLoader(ObjectPath + "Square.obj");
-	GameObjects["Specials_0" + to_string(0)].get()->setMaterial(NASDMaterial);
-	GameObjects["Specials_0" + to_string(0)].get()->setColour(glm::vec4(1.5f, 1.5f, 1.5f, 1.0f));
-	GameObjects["Specials_0" + to_string(0)].get()->setMass(1.0f);
-	GameObjects["Specials_0" + to_string(0)].get()->setScale(glm::vec3(4.0f, 4.0f, 4.0f));
-	GameObjects["Specials_0" + to_string(0)].get()->setSizeOfHitBox(glm::vec3(4.0f, 2.0f, 4.0f));
-	GameObjects["Specials_0" + to_string(0)].get()->setSpecialAttribute(0);
-	GameObjects["Specials_0" + to_string(0)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Box.png").c_str())));
-	GameObjects["Specials_0" + to_string(0)].get()->Viewable = false;
-	//Specials[1].objectLoader(&Specials[0]);
 	GameObjects["Specials_0" + to_string(1)].get()->objectLoader(ObjectPath + "PowerUp_Icons//Seeker_Swarm_Icon.obj");
-	GameObjects["Specials_0" + to_string(1)].get()->setMaterial(NASDMaterial);
-	GameObjects["Specials_0" + to_string(1)].get()->setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
-	GameObjects["Specials_0" + to_string(1)].get()->setMass(1.0f);
-	GameObjects["Specials_0" + to_string(1)].get()->setSpecialAttribute(1);
-	GameObjects["Specials_0" + to_string(1)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Blue_background.png").c_str())));
-	GameObjects["Specials_0" + to_string(1)].get()->Viewable = false;
-	//Specials[2].objectLoader(&Specials[0]);
 	GameObjects["Specials_0" + to_string(2)].get()->objectLoader(ObjectPath + "PowerUp_Icons//Toss-Up_Icon.obj");
-	GameObjects["Specials_0" + to_string(2)].get()->setMaterial(NASDMaterial);
-	GameObjects["Specials_0" + to_string(2)].get()->setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
-	GameObjects["Specials_0" + to_string(2)].get()->setMass(1.0f);
-	GameObjects["Specials_0" + to_string(2)].get()->setSpecialAttribute(2);
-	GameObjects["Specials_0" + to_string(2)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Blue_background.png").c_str())));
-	GameObjects["Specials_0" + to_string(2)].get()->Viewable = false;
-	//Specials[3].objectLoader(&Specials[0]);
 	GameObjects["Specials_0" + to_string(3)].get()->objectLoader(ObjectPath + "PowerUp_Icons//Health_Icon.obj");
-	GameObjects["Specials_0" + to_string(3)].get()->setMaterial(NASDMaterial);
-	GameObjects["Specials_0" + to_string(3)].get()->setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
-	GameObjects["Specials_0" + to_string(3)].get()->setMass(1.0f);
-	GameObjects["Specials_0" + to_string(3)].get()->setSpecialAttribute(3);
-	GameObjects["Specials_0" + to_string(3)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Blue_background.png").c_str())));
-	GameObjects["Specials_0" + to_string(3)].get()->Viewable = false;
-	//Specials[4].objectLoader(&Specials[0]);
 	GameObjects["Specials_0" + to_string(4)].get()->objectLoader(ObjectPath + "PowerUp_Icons//Boost_Icon.obj");
-	GameObjects["Specials_0" + to_string(4)].get()->setMaterial(NASDMaterial);
-	GameObjects["Specials_0" + to_string(4)].get()->setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
-	GameObjects["Specials_0" + to_string(4)].get()->setMass(1.0f);
-	GameObjects["Specials_0" + to_string(4)].get()->setSpecialAttribute(4);
-	GameObjects["Specials_0" + to_string(4)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Blue_background.png").c_str())));
-	GameObjects["Specials_0" + to_string(4)].get()->Viewable = false;
-	//Specials[5].objectLoader(&Specials[0]);
 	GameObjects["Specials_0" + to_string(5)].get()->objectLoader(ObjectPath + "PowerUp_Icons//Repulsor_Icon.obj");
-	GameObjects["Specials_0" + to_string(5)].get()->setMaterial(NASDMaterial);
-	GameObjects["Specials_0" + to_string(5)].get()->setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
-	GameObjects["Specials_0" + to_string(5)].get()->setMass(1.0f);
-	GameObjects["Specials_0" + to_string(5)].get()->setSpecialAttribute(5);
-	GameObjects["Specials_0" + to_string(5)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Blue_background.png").c_str())));
-	GameObjects["Specials_0" + to_string(5)].get()->Viewable = false;
-	//Specials[6].objectLoader(&Specials[0]);
 	GameObjects["Specials_0" + to_string(6)].get()->objectLoader(ObjectPath + "PowerUp_Icons//Short_Circuit_Icon.obj");
-	GameObjects["Specials_0" + to_string(6)].get()->setMaterial(NASDMaterial);
-	GameObjects["Specials_0" + to_string(6)].get()->setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
-	GameObjects["Specials_0" + to_string(6)].get()->setMass(1.0f);
-	GameObjects["Specials_0" + to_string(6)].get()->setSpecialAttribute(6);
-	GameObjects["Specials_0" + to_string(6)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Blue_background.png").c_str())));
-	GameObjects["Specials_0" + to_string(6)].get()->Viewable = false;
-	//Specials[7].objectLoader(&Specials[0]);
 	GameObjects["Specials_0" + to_string(7)].get()->objectLoader(ObjectPath + "PowerUp_Icons//Super_Shockwave_Icon.obj");
-	GameObjects["Specials_0" + to_string(7)].get()->setMaterial(NASDMaterial);
-	GameObjects["Specials_0" + to_string(7)].get()->setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
-	GameObjects["Specials_0" + to_string(7)].get()->setMass(1.0f);
-	GameObjects["Specials_0" + to_string(7)].get()->setSpecialAttribute(7);
-	GameObjects["Specials_0" + to_string(7)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Blue_background.png").c_str())));
-	GameObjects["Specials_0" + to_string(7)].get()->Viewable = false;
-	//Specials[8].objectLoader(&Specials[0]);
 	GameObjects["Specials_0" + to_string(8)].get()->objectLoader(ObjectPath + "PowerUp_Icons//Invincibility_Icon.obj");
-	GameObjects["Specials_0" + to_string(8)].get()->setMaterial(NASDMaterial);
-	GameObjects["Specials_0" + to_string(8)].get()->setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
-	GameObjects["Specials_0" + to_string(8)].get()->setMass(1.0f);
-	GameObjects["Specials_0" + to_string(8)].get()->setSpecialAttribute(8);
-	GameObjects["Specials_0" + to_string(8)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Blue_background.png").c_str())));
-	GameObjects["Specials_0" + to_string(8)].get()->Viewable = false;
-	//Specials[9].objectLoader(&Specials[0]);
 	GameObjects["Specials_0" + to_string(9)].get()->objectLoader(ObjectPath + "PowerUp_Icons//Flipped_Icon.obj");
-	GameObjects["Specials_0" + to_string(9)].get()->setMaterial(NASDMaterial);
-	GameObjects["Specials_0" + to_string(9)].get()->setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
-	GameObjects["Specials_0" + to_string(9)].get()->setMass(1.0f);
-	GameObjects["Specials_0" + to_string(9)].get()->setSpecialAttribute(9);
-	GameObjects["Specials_0" + to_string(9)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Blue_background.png").c_str())));
-	GameObjects["Specials_0" + to_string(9)].get()->Viewable = false;
+	for (int i = 1; i < GameObjectsAmount["Specials_0"]; i++) {
+		GameObjects["Specials_0" + to_string(i)].get()->setMaterial(NASDMaterial);
+		GameObjects["Specials_0" + to_string(i)].get()->setSizeOfHitBox(glm::vec3(2.0f, 1.0f, 2.0f));
+		GameObjects["Specials_0" + to_string(i)].get()->setMass(1.0f);
+		GameObjects["Specials_0" + to_string(i)].get()->setSpecialAttribute(i);
+		GameObjects["Specials_0" + to_string(i)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Power_Ups//Blue_background.png").c_str())));
+		GameObjects["Specials_0" + to_string(i)].get()->Viewable = false;
+		GameObjects["Specials_0" + to_string(i)].get()->WillRotateForward = false;
+	}
+
 
 
 
@@ -2958,19 +2999,14 @@ void InitializeObjects()
 	GameObjects["Objects_0" + to_string(0)].get()->objectLoader(ObjectPath + "Rift//Ground.obj");
 	GameObjects["Objects_0" + to_string(0)].get()->setMaterial(NASDMaterial);
 	GameObjects["Objects_0" + to_string(0)].get()->Viewable = true;
-	GameObjects["Objects_0" + to_string(0)].get()->setColour(glm::vec4(0.5f, 0.5f, 0.5f, 1.0f));
 	GameObjects["Objects_0" + to_string(0)].get()->setMass(0.0f);
 	GameObjects["Objects_0" + to_string(0)].get()->setSizeOfHitBox(glm::vec3(100.0f, 0.01f, 100.0f)); //HitBox
-	GameObjects["Objects_0" + to_string(0)].get()->setRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-	GameObjects["Objects_0" + to_string(0)].get()->setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
 	GameObjects["Objects_0" + to_string(0)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Ground_03.png").c_str())));
-	GameObjects["Objects_0" + to_string(0)].get()->setTexture(1, ilutGLLoadImage(_strdup((ImagePath + "NormalMap.png").c_str())));
-
+	
 	//Walls Left
 	GameObjects["Objects_0" + to_string(1)].get()->objectLoader(ObjectPath + "Rift//stadium.obj");
 	GameObjects["Objects_0" + to_string(1)].get()->setMaterial(NASDMaterial);
 	GameObjects["Objects_0" + to_string(1)].get()->Viewable = true;
-	GameObjects["Objects_0" + to_string(1)].get()->setColour(glm::vec4(0.5f, 0.50f, 0.5f, 1.0f));
 	GameObjects["Objects_0" + to_string(1)].get()->setMass(0.0f);
 	GameObjects["Objects_0" + to_string(1)].get()->setScale(glm::vec3(1.0f, 1.0f, 1.0f)); //size
 	GameObjects["Objects_0" + to_string(1)].get()->setPosition(glm::vec3(0.0f, -1.0f, 0.0f));
@@ -2984,7 +3020,7 @@ void InitializeObjects()
 	GameObjects["Objects_0" + to_string(2)].get()->setMass(0.0f);
 	GameObjects["Objects_0" + to_string(2)].get()->setScale(glm::vec3(1.0f, 1.50f, 1.50f));
 	GameObjects["Objects_0" + to_string(2)].get()->setSizeOfHitBox(glm::vec3(2.650f, 7.0f, 3.60f));
-	GameObjects["Objects_0" + to_string(2)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Magnet_Rift_01.png").c_str())));
+	GameObjects["Objects_0" + to_string(2)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Magnet_Rift_02.png").c_str())));
 	GameObjects["Objects_0" + to_string(3)].get()->objectLoader(ObjectPath + "Rift//Magnet_Right.obj");
 	GameObjects["Objects_0" + to_string(3)].get()->setMaterial(NASDMaterial);
 	GameObjects["Objects_0" + to_string(3)].get()->Viewable = true;
@@ -2992,26 +3028,25 @@ void InitializeObjects()
 	GameObjects["Objects_0" + to_string(3)].get()->setMass(0.0f);
 	GameObjects["Objects_0" + to_string(3)].get()->setScale(glm::vec3(1.0f, 1.50f, 1.50f));
 	GameObjects["Objects_0" + to_string(3)].get()->setSizeOfHitBox(glm::vec3(2.650f, 7.0f, 3.60f));
-	GameObjects["Objects_0" + to_string(3)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Magnet_Rift_01.png").c_str())));
+	GameObjects["Objects_0" + to_string(3)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Magnet_Rift_02.png").c_str())));
 	GameObjects["Objects_0" + to_string(4)].get()->objectLoader(&GameObjects["Objects_0" + to_string(2)]);//left
 	GameObjects["Objects_0" + to_string(4)].get()->setPosition(glm::vec3(-53.0f, 08.0f, 20.0f));
 	GameObjects["Objects_0" + to_string(4)].get()->setRotation(glm::vec3(0.0f, 180.0f, 0.0f));
-	GameObjects["Objects_0" + to_string(4)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Magnet_Rift_02.png").c_str())));
+	GameObjects["Objects_0" + to_string(4)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Magnet_Rift_01.png").c_str())));
 	GameObjects["Objects_0" + to_string(5)].get()->objectLoader(&GameObjects["Objects_0" + to_string(3)]);//right
 	GameObjects["Objects_0" + to_string(5)].get()->setPosition(glm::vec3(-53.0f, 08.0f, -20.0f));
 	GameObjects["Objects_0" + to_string(5)].get()->setRotation(glm::vec3(0.0f, 180.0f, 0.0f));
-	GameObjects["Objects_0" + to_string(5)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Magnet_Rift_02.png").c_str())));
-	//
+	GameObjects["Objects_0" + to_string(5)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Magnet_Rift_01.png").c_str())));
+	//crowd
 	GameObjects["Objects_0" + to_string(6)].get()->objectLoader(ObjectPath + "Rift//crowd.obj");
 	GameObjects["Objects_0" + to_string(6)].get()->setMaterial(NASDMaterial);
 	GameObjects["Objects_0" + to_string(6)].get()->Viewable = true;
-	GameObjects["Objects_0" + to_string(6)].get()->setColour(glm::vec4(0.5f, 0.50f, 0.5f, 1.0f));
 	GameObjects["Objects_0" + to_string(6)].get()->setMass(0.0f);
 	GameObjects["Objects_0" + to_string(6)].get()->setScale(glm::vec3(1.0f, 1.0f, 1.0f)); //size
 	GameObjects["Objects_0" + to_string(6)].get()->setPosition(glm::vec3(0.0f, -1.0f, 0.0f));
 	GameObjects["Objects_0" + to_string(6)].get()->setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
 	GameObjects["Objects_0" + to_string(6)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//crowd.png").c_str())));
-	//
+	//banners
 	GameObjects["Objects_0" + to_string(7)].get()->objectLoader(ObjectPath + "Rift//baners_01.obj");
 	GameObjects["Objects_0" + to_string(7)].get()->setMaterial(NASDMaterial);
 	GameObjects["Objects_0" + to_string(7)].get()->Viewable = true;
@@ -3022,7 +3057,7 @@ void InitializeObjects()
 	GameObjects["Objects_0" + to_string(8)].get()->setMaterial(NASDMaterial);
 	GameObjects["Objects_0" + to_string(8)].get()->setMass(0.0f);
 	GameObjects["Objects_0" + to_string(8)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "HUD//HUD_Display_R.png").c_str())));
-	//
+	//sky
 	GameObjects["Objects_0" + to_string(9)].get()->objectLoader(ObjectPath + "Rift//Sky.obj");
 	GameObjects["Objects_0" + to_string(9)].get()->setMaterial(NASDMaterial);
 	GameObjects["Objects_0" + to_string(9)].get()->Viewable = true;
@@ -3048,114 +3083,10 @@ void InitializeObjects()
 	GameObjects["Shadows_0" + to_string(0)].get()->Viewable = true;
 	GameObjects["Shadows_0" + to_string(0)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Shadow_01.png").c_str())));
 	GameObjects["Shadows_0" + to_string(0)].get()->textureHandle_hasTransparency = true;
-	GameObjectsAmount["Shadows_0"] = 1;
-
-
+	
 }
 
-/**/
-void InitializeVariables() {
-	//Menu Objects Amounts
-	MenuObjectsAmount["HUD_Planes_0"] = 6;
-	MenuObjectsAmount["HUD_Buttons_0"] = 15;
-	MenuObjectsAmount["HUD_Sliders_0"] = 10;
-	for (int i = 0; i < MenuObjectsAmount["HUD_Planes_0"]; i++) { MenuObjects["HUD_Planes_0" + to_string(i)] = std::make_shared<GameObject>(); }
-	for (int i = 0; i < MenuObjectsAmount["HUD_Buttons_0"]; i++) { MenuObjects["HUD_Buttons_0" + to_string(i)] = std::make_shared<GameObject>(); }
-	for (int i = 0; i < MenuObjectsAmount["HUD_Sliders_0"]; i++) {
-		MenuObjects["HUD_Slider_Bar_0" + to_string(i)] = std::make_shared<GameObject>();
-		MenuObjects["HUD_Slider_Button_0" + to_string(i)] = std::make_shared<GameObject>();
-	}
-	Slider = new Sliders[MenuObjectsAmount["HUD_Sliders_0"]];
-	Button = new Buttons[MenuObjectsAmount["HUD_Buttons_0"]];
 
-
-	//Game Objects amounts
-	GameObjectsAmount["Borders_0"] = 1;
-	GameObjectsAmount["Objects_0"] = 10;
-	GameObjectsAmount["HUD_Score_Planes_0"] = 8;
-	GameObjectsAmount["Shadows_0"] = 1;
-	GameObjectsAmount["Affects_0"] = 5;
-	GameObjectsAmount["Specials_0"] = 10;
-	GameObjectsAmount["Enemies_0"] = 12;
-	GameObjectsAmount["Players_0"] = 4;
-	GameObjectsAmount["Rifts_0"] = 2;
-	for (int i = 0; i < GameObjectsAmount["Objects_0"]; i++) { GameObjects["Objects_0" + to_string(i)] = std::make_shared<GameObject>(); }
-	for (int i = 0; i < GameObjectsAmount["Borders_0"]; i++) { GameObjects["Borders_0" + to_string(i)] = std::make_shared<GameObject>(); }
-	for (int i = 0; i < GameObjectsAmount["HUD_Score_Planes_0"]; i++) { GameObjects["HUD_Score_Planes_0" + to_string(i)] = std::make_shared<GameObject>(); }
-	for (int i = 0; i < GameObjectsAmount["Shadows_0"]; i++) { GameObjects["Shadows_0" + to_string(i)] = std::make_shared<GameObject>(); }
-	for (int i = 0; i < GameObjectsAmount["Affects_0"]; i++) { GameObjects["Affects_0" + to_string(i)] = std::make_shared<GameObject>(); }
-	for (int i = 0; i < GameObjectsAmount["Specials_0"]; i++) { GameObjects["Specials_0" + to_string(i)] = std::make_shared<GameObject>(); }
-	for (int i = 0; i < GameObjectsAmount["Enemies_0"]; i++) { GameObjects["Enemies_0" + to_string(i)] = std::make_shared<GameObject>(); }
-	for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
-		GameObjects["Players_0" + to_string(i)] = std::make_shared<GameObject>();
-		GameObjects["Shockwave_0" + to_string(i)] = std::make_shared<GameObject>();
-	}
-	for (int i = 0; i < GameObjectsAmount["Rifts_0"]; i++) { GameObjects["Rifts_0" + to_string(i)] = std::make_shared<GameObject>(); }
-
-
-	PlayerValues = new PlayerInfo[GameObjectsAmount["Players_0"]];
-	for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
-
-		if (i % 2 == 0) {
-			PlayerValues[i].PlayerTeam			 = 0;
-			PlayerValues[i].PlayerColour		 = 0;
-			PlayerValues[i].forwardVector		 = glm::vec3(-1.0f, 0.0f, 0.0f);
-		}
-		else {
-			PlayerValues[i].PlayerTeam			 = 1;
-			PlayerValues[i].PlayerColour		 = 1;
-			PlayerValues[i].forwardVector		 = glm::vec3(1.0f, 0.0f, 0.0f);
-		}
-
-		//camera
-		if (PlayerValues[i].PlayerTeam == 0) {
-			PlayerValues[i].cameraTransform = glm::lookAt(
-				glm::vec3(50.0f, 50.0f, 0.0f),
-				glm::vec3(0.0f, 1.0f, 0.0f),
-				glm::vec3(0.0f, 1.0f, 0.0f));
-		}
-		else {
-			PlayerValues[i].cameraTransform = glm::lookAt(
-				glm::vec3(-50.0f, 50.0f, 0.0f),
-				glm::vec3(0.0f, 1.0f, 0.0f),
-				glm::vec3(0.0f, 1.0f, 0.0f));
-		}
-		PlayerValues[i].cameraPosition			 = glm::vec3(0.0f);
-		PlayerValues[i].rightVector				 = glm::vec3(1.0f);
-		PlayerValues[i].cameraMode				 = 0;
-
-		PlayerValues[i].MenuSwitchCounter		 = 0.0f;
-		//Shock wave attributes
-		PlayerValues[i].Right_TRIGGERED			 = false;
-		PlayerValues[i].Left_TRIGGERED			 = false;
-		PlayerValues[i].ShockWave				 = false;
-		PlayerValues[i].ShockWaveCounter		 = 0.0f;
-		PlayerValues[i].ShockWaveChargeUp		 = 0.0f;
-		//Sprint attributes
-		PlayerValues[i].SprintSpeed				 = 1.5f;
-		PlayerValues[i].SprintCounter			 = 0.0f;
-		PlayerValues[i].SprintCoolDown			 = 2.0f;
-		//Abilitys
-		PlayerValues[i].FlipedControllers		 = false;
-		PlayerValues[i].AbilityAffected			 = new bool [GameObjectsAmount["Specials_0"]];
-		PlayerValues[i].AbilityCounter			 = new float[GameObjectsAmount["Specials_0"]];
-		PlayerValues[i].AbilityLength			 = new float[GameObjectsAmount["Specials_0"]];
-		//setting abilitys
-		for (int j = 0; j < GameObjectsAmount["Specials_0"]; j++) {
-			PlayerValues[i].AbilityAffected[j]	 = false;
-			PlayerValues[i].AbilityCounter[j]	 = 4.0f;
-			PlayerValues[i].AbilityLength[j]	 = 4.0f;
-		}
-
-	}
-
-	for (int i = 0; i < 2; i++) {
-		PlayerHp[i].MaxHealth = 99;
-		PlayerHp[i].MinHealth = 0;
-		PlayerHp[i].CurrentHealth = 50;
-		PlayerHp[i].PreviousHealth = 0;
-	}
-}
 
 void init()
 {
@@ -3184,7 +3115,8 @@ void init()
 	iluInit();
 	ilutRenderer(ILUT_OPENGL);
 
-	std::cout << "[Fonts]_____________________________________" << std::endl;
+	std::cout << std::endl << "_____________________________________";
+	std::cout << std::endl << "[Fonts]";
 	TextLoader loadTextFile;
 	if (DoesFileExists("..//Assets")) { loadTextFile.objectLoader("..//Assets//file.txt"); }
 	else if (DoesFileExists("Assets")) { loadTextFile.objectLoader("Assets//file.txt"); }
@@ -3193,25 +3125,25 @@ void init()
 	else if (DoesFileExists("Assets//Fonts//")) { SystemText.LoadTextFont("Assets//Fonts//FreeSerif.ttf", SystemText); }
 	else { std::cout << "[ERROR] Could not find [Font]" << std::endl; }
 	
-	std::cout << "[Values]____________________________________" << std::endl;
+	std::cout << std::endl << "[Values]";
 	InitializeVariables();
-	std::cout << "[Shaders]___________________________________" << std::endl;
+	std::cout << std::endl << "[Shaders]";
 	InitializeShaders();
-	std::cout << "[Menu]______________________________________" << std::endl;
+	std::cout << std::endl << "[Menu]";
 	InitializeTextPlane();
-	std::cout << "[Sounds]____________________________________" << std::endl;
+	std::cout << std::endl << "[Sounds]";
 	InitializeSounds();
-	std::cout << "[HUD #]_____________________________________" << std::endl;
+	std::cout << std::endl << "[HUD #]";
 	InitializeNumbers();
-	std::cout << "[Game Objects]______________________________" << std::endl;
+	std::cout << std::endl << "[Game Objects]";
 	InitializeObjects();
 	
-
-
+	ParticleTexture = ilutGLLoadImage("Assets//Img//Particles//smoke_256_dm.png");
+	InitializeParticles();
 
 	
 
-	randomSpecialTime = (rand() % 45 + 15) + ((rand() % 100 - 50)*0.01f);
+	randomSpecialTime = Random(10.0f, 30.0f);
 	//setting all four camera's
 	for (int i = 0; i < 4; i++) {
 		cameralook = i;

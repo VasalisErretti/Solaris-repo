@@ -14,9 +14,9 @@
 #include <glm\glm\gtc\type_ptr.hpp>
 
 // User Libraries
-#include "Shader.h"
-#include "JointTypes.h"
-#include "Material.h"
+#include "Shader_Functions\Shader.h"
+#include "Shader_Functions\Material.h"
+#include "Other_Functions\JointTypes.h"
 
 struct Face
 {
@@ -77,6 +77,7 @@ protected:
 public:
 	bool Viewable = true;
 	float SprintSpeed = 1.5f;
+	bool WillRotateForward = true;
 
 	bool inAir = false; float InAirCounter = 0.0f; bool IsJumping = false;
 	bool onObject = false; int onObjectNum = 0;

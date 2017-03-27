@@ -143,34 +143,40 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Include\ExtraFunctions.cpp" />
     <ClCompile Include="Include\FMOD\SoundEngine.cpp" />
-    <ClCompile Include="Include\FrameBufferObject.cpp" />
     <ClCompile Include="Include\GameObject.cpp" />
-    <ClCompile Include="Include\HTRLoader.cpp" />
-    <ClCompile Include="Include\Shader.cpp" />
-    <ClCompile Include="Include\ShaderProgram.cpp" />
+    <ClCompile Include="Include\Other_Functions\HTRLoader.cpp" />
+    <ClCompile Include="Include\Shader_Functions\Shader.cpp" />
+    <ClCompile Include="Include\Shader_Functions\ShaderProgram.cpp" />
+    <ClCompile Include="Include\Useful_Functions\ExtraFunctions.cpp" />
+    <ClCompile Include="Include\Useful_Functions\FrameBufferObject.cpp" />
+    <ClCompile Include="Include\Useful_Functions\ParticleEmitterSoA.cpp" />
+    <ClCompile Include="Include\Useful_Functions\Sort_and_Search.cpp" />
+    <ClCompile Include="Include\Useful_Functions\VertexBufferObject.cpp" />
     <ClCompile Include="Src\Main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\FMOD\SoundEngine.h" />
-    <ClInclude Include="Include\FrameBufferObject.h" />
     <ClInclude Include="Include\GameObject.h" />
-    <ClInclude Include="Include\GamePadControls.h" />
-    <ClInclude Include="Include\HTRLoader.h" />
-    <ClInclude Include="Include\JointTypes.h" />
-    <ClInclude Include="Include\Material.h" />
-    <ClInclude Include="Include\MorphMath.h" />
-    <ClInclude Include="Include\Shader.h" />
-    <ClInclude Include="Include\FileLoader.h" />
-    <ClInclude Include="Include\ShaderProgram.h" />
-    <ClInclude Include="Include\TileSet.h" />
+    <ClInclude Include="Include\Other_Functions\FileLoader.h" />
+    <ClInclude Include="Include\Other_Functions\HTRLoader.h" />
+    <ClInclude Include="Include\Other_Functions\JointTypes.h" />
+    <ClInclude Include="Include\Shader_Functions\Material.h" />
+    <ClInclude Include="Include\Shader_Functions\Shader.h" />
+    <ClInclude Include="Include\Shader_Functions\ShaderProgram.h" />
+    <ClInclude Include="Include\Useful_Functions\FrameBufferObject.h" />
+    <ClInclude Include="Include\Useful_Functions\GamePadControls.h" />
+    <ClInclude Include="Include\Useful_Functions\MorphMath.h" />
+    <ClInclude Include="Include\Useful_Functions\ParticleEmitterSoA.h" />
+    <ClInclude Include="Include\Useful_Functions\Sort_and_Search.h" />
+    <ClInclude Include="Include\Useful_Functions\VertexBufferObject.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Shaders\default_f.glsl" />
     <None Include="Assets\Shaders\default_v.glsl" />
     <None Include="Assets\Shaders\NASD_f.glsl" />
-    <None Include="Assets\Shaders\NASD_v.glsl" />
+    <None Include="Assets\Shaders\normals_g.glsl" />
+    <None Include="Assets\Shaders\particles_g.glsl" />
     <None Include="Assets\Shaders\passThru_f.glsl" />
     <None Include="Assets\Shaders\passThru_v.glsl" />
     <None Include="Assets\Shaders\text_f.glsl" />

@@ -1,5 +1,5 @@
 #include "GameObject.h"
-#include "MorphMath.h"
+#include "Useful_Functions\MorphMath.h"
 
 
 
@@ -53,7 +53,7 @@ void GameObject::update(float deltaT)
 	if (Viewable == true) {
 		if (inShock) {
 			TimeInShock += deltaT;
-			if (TimeInShock > 3.0f) {
+			if (TimeInShock > 1.0f) {
 				TimeInShock = 0.0f;
 				inShock = false;
 			}
@@ -72,7 +72,7 @@ void GameObject::update(float deltaT)
 				else { m_Velocity -= (m_Velocity * m_Drag); }
 
 				//facing a direction
-				if (m_Velocity.x != (0.0f) || m_Velocity.z != (0.0f)) {
+				if (WillRotateForward && (m_Velocity.x != (0.0f) || m_Velocity.z != (0.0f))) {
 				//if (m_Velocity.x <= -0.01f || m_Velocity.x >= 0.01f || m_Velocity.z <= -0.01f || m_Velocity.z >= 0.01f) {
 					ForwardDirection = (m_Position - (m_Position + m_Velocity));
 					FaceYRotation = atan2(ForwardDirection.z, -ForwardDirection.x);
@@ -113,7 +113,7 @@ void GameObject::updateP(float deltaT)
 	if (Viewable == true) {
 		if (inShock) {
 			TimeInShock += deltaT;
-			if (TimeInShock > 2.0f) {
+			if (TimeInShock >= 0.20f) {
 				TimeInShock = 0.0f;
 				inShock = false;
 			}
@@ -130,7 +130,7 @@ void GameObject::updateP(float deltaT)
 					//if no force is applyed to the object
 					else { m_Velocity -= (m_Velocity * m_Drag); }
 					//facing a direction
-					if (m_Velocity.x <= -0.01f || m_Velocity.x >= 0.01f || m_Velocity.z <= -0.01f || m_Velocity.z >= 0.01f) {
+					if (WillRotateForward && (m_Velocity.x <= -0.01f || m_Velocity.x >= 0.01f || m_Velocity.z <= -0.01f || m_Velocity.z >= 0.01f)) {
 						//ForwardDirection = (m_Position - (m_Position + m_Velocity));
 						FaceYRotation = atan2(-ForwardDirection.z, ForwardDirection.x);
 						if (!IsJumping) { this->setRotation(glm::vec3(0.0f, FaceYRotation*(180.0f / 3.14159f), 0.0f)); }
@@ -228,11 +228,12 @@ bool GameObject::objectLoader(const char* filePath)
 
 	if (!file) //if the file can't be read
 	{
-		std::cout <<"[FO.1] File not opened. [" << filePath << "]\n"; return false;
+		std::cout <<"[FF.1] [" << filePath << "]\n"; return false;
 	}
 	else //if the file is read
 	{
-		std::cout << "[FO.2] File opened. [" << filePath << "]\n";
+		std::cout << ".";
+		//std::cout << "[FO.2] [" << filePath << "]\n";
 		while (1)// this can't be 0
 		{
 			char lineHeader[64];
@@ -413,11 +414,12 @@ bool GameObject::objectLoader(std::string filePath1)
 
 	if (!file) //if the file can't be read
 	{
-		std::cout << "[FO.1] File not opened. [" << filePath << "]\n"; return false;
+		std::cout << "[FF.1] [" << filePath << "]\n"; return false;
 	}
 	else //if the file is read
 	{
-		std::cout << "[FO.2] File opened. [" << filePath << "]\n";
+		std::cout << ".";
+		//std::cout << "[FO.2] [" << filePath << "]\n";
 		while (1)// this can't be 0
 		{
 			char lineHeader[64];

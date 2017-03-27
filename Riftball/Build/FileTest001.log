@@ -1,10 +1,13 @@
 ﻿  Main.cpp
-C:\Stuff_And_Things\GitHub\Solaris-repo\Riftball\Include\ExtraFunctions.cpp(357): warning C4838: conversion from 'FT_Pos' to 'GLuint' requires a narrowing conversion
+C:\Users\100581854\Desktop\Riftball\Include\Useful_Functions\ExtraFunctions.cpp(358): warning C4838: conversion from 'FT_Pos' to 'GLuint' requires a narrowing conversion
+Src\Main.cpp(1335): warning C4305: 'argument': truncation from 'double' to 'float'
+Src\Main.cpp(2791): warning C4305: 'argument': truncation from 'double' to 'float'
+Src\Main.cpp(2792): warning C4305: 'argument': truncation from 'double' to 'float'
 LINK : warning LNK4098: defaultlib 'MSVCRTD' conflicts with use of other libs; use /NODEFAULTLIB:library
   Generating code
-  4 of 2027 functions ( 0.2%) were compiled, the rest were copied from previous compilation.
+  1 of 2095 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
     1 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
-  FileTest001.vcxproj -> C:\Stuff_And_Things\GitHub\Solaris-repo\Riftball\Bin\FileTest001.exe
-  FileTest001.vcxproj -> C:\Stuff_And_Things\GitHub\Solaris-repo\Riftball\Bin\FileTest001.pdb (Full PDB)
+  FileTest001.vcxproj -> C:\Users\100581854\Desktop\Riftball\Bin\FileTest001.exe
+  FileTest001.vcxproj -> C:\Users\100581854\Desktop\Riftball\Bin\FileTest001.pdb (Full PDB)

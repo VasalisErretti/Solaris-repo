@@ -33,11 +33,12 @@ public:
 
 		if (!file) //if the file can't be read
 		{
-			std::cout << "[FO.1] File not opened. [" << filename << "]\n"; return false;
+			std::cout << "[FF.1] [" << filename << "]\n"; return false;
 		}
 		else //if the file is read
 		{
-			std::cout << "[FO.2] File opened. [" << filename << "]\n";
+			std::cout << ".";
+			//std::cout << "[FO.2] [" << filename << "]\n";
 			while (1)// this can't be 0
 			{
 				char lineHeader[64];

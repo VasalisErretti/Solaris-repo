@@ -2,21 +2,18 @@
 #version 330
 
 uniform sampler2D tex1;
-uniform vec4 u_lightPos_01;
-uniform vec4 u_lightPos_02;
+uniform vec4 u_lightPos;
 
 uniform mat4 localTransform;
-uniform mat4 mvm; // modelview matrix
 uniform mat4 u_mv;
 
 // Fragment Shader Inputs
 in VertexData
 {
 	vec3 normal;
-	vec2 texCoord;
+	vec3 texCoord;
 	vec4 colour;
 	vec3 eyePos;
-	vec3 vertex;
 } vIn;
 
 layout(location = 0) out vec4 FragColor; //FragColor response to GL_COLOR_ATTACHMENT0 [location = 0 so GL_COLOR_ATTACHMENT0]
@@ -29,11 +26,8 @@ void main()
 	float shininess = 10.0; //make this a uniform
 	vec3 N = normalize(vIn.normal);
 	vec3 E = normalize(-vIn.eyePos);
-	vec3 L_01 = normalize(u_lightPos_01.xyz - vIn.eyePos);
-	vec3 L_02 = normalize(u_lightPos_02.xyz - vIn.eyePos);
-	//vec4 modelViewSpace = mvm * (vec4(localTransform * vec4(vIn.vertex, 1.0)));
-	//vec3 L_01 = normalize(u_lightPos_01.xyz - modelViewSpace.xyz);
-	//vec3 L_02 = normalize(u_lightPos_02.xyz - modelViewSpace.xyz);
+	vec3 L_01 = normalize(u_lightPos.xyz - vIn.eyePos);
+	vec3 L_02 = normalize((u_lightPos.xyz- vec3(0.0, 50.0, 0.0)) - vIn.eyePos);
 	vec3 H_01 = normalize(L_01 + E);
 	vec3 H_02 = normalize(L_02 + E);
 	vec4 textureColor = texture2D(tex1, vIn.texCoord.st);

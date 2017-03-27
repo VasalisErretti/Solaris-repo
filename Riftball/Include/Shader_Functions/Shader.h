@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include <GL\glew.h>
+#include "GLEW\glew.h"
 
 class Shader
 {
@@ -15,8 +15,8 @@ public:
 	enum AttributeLocations
 	{
 		VERTEX = 0,
-		TEXCOORD = 1, //normal
-		NORMAL = 2, //texcord
+		TEXCOORD = 1, // or normal
+		NORMAL = 2, // or texcord
 		COLOUR = 3
 		// ... any other attributes...
 	};

@@ -91,12 +91,13 @@ public:
 
 		if (!file) //if the file can't be read
 		{
-			std::cout << "[FO.1] File not opened. [" << filePath << "] \n";
+			std::cout << "[FF.1] [" << filePath << "] \n";
 			return false;
 		}
 		else //if the file is read
 		{
-			std::cout << "[FO.2] File opened. [" << filePath << "]\n";
+			std::cout << ".";
+			//std::cout << "[FO.2] [" << filePath << "]\n";
 			unsigned int NoOF = 0; //number of objects found
 			while (1)// this can't be 0
 			{

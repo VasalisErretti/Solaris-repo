@@ -2,7 +2,7 @@
 
 #include "Shader.h"
 #include <glm\glm\matrix.hpp>
-#include <GL\glew.h>
+#include "GLEW\glew.h"
 
 class ShaderProgram
 {
@@ -33,6 +33,8 @@ public:
 	void sendUniformMat4(const std::string& uniformName, glm::mat4& mat4);
 
 	void destroy();
+
+	unsigned int getHandle() { return handle; }
 
 private:
 	unsigned int handle;
