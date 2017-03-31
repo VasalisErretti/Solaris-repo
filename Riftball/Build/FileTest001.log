@@ -4,7 +4,7 @@ LINK : warning LNK4098: defaultlib 'MSVCRTD' conflicts with use of other libs; u
   Generating code
   2 of 2337 functions ( 0.1%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    1 functions had inline decision re-evaluated but remain unchanged
+    0 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   FileTest001.vcxproj -> C:\Stuff_And_Things\GitHub\Solaris-repo\Riftball\Bin\FileTest001.exe
   FileTest001.vcxproj -> C:\Stuff_And_Things\GitHub\Solaris-repo\Riftball\Bin\FileTest001.pdb (Full PDB)

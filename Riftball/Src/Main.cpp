@@ -1330,7 +1330,7 @@ void InGameDraw(int Inum)
 			PlayerParticleEmitter[i].initialPosition = GameObjects["Players_0" + to_string(i)].get()->Position();
 			PlayerParticleEmitter[i].update(deltaTasSecs / 1.0f);
 			PlayerParticleEmitter[i].draw(&cameras[Inum]);
-			PlayerParticleEmitter[i].Viewable = false;
+			//PlayerParticleEmitter[i].Viewable = false;
 		}
 	}
 	for (int i = 0; i < GameObjectsAmount["Enemies_0"]; i++) {
@@ -1338,7 +1338,7 @@ void InGameDraw(int Inum)
 			EnemyParticleEmitter[i].initialPosition = GameObjects["Enemies_0" + to_string(i)].get()->Position();
 			EnemyParticleEmitter[i].update(deltaTasSecs / 1.0f);
 			EnemyParticleEmitter[i].draw(&cameras[Inum]);
-			EnemyParticleEmitter[i].Viewable = false;
+			//EnemyParticleEmitter[i].Viewable = false;
 		}
 	}
 
@@ -2213,7 +2213,16 @@ void DisplayCallbackFunction(void)
 	
 	if (inMenu) { InMenuDraw(2); }
 	else if (inOptions) { InOptionDraw(inOptionsTab); }
-	else if (inGame) { for (int i = 0; i <= 1; i++) { InGameDraw(i); } }
+	else if (inGame) {
+		for (int i = 0; i <= 1; i++) { InGameDraw(i); }
+
+		for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
+			if (PlayerParticleEmitter[i].Viewable) { PlayerParticleEmitter[i].Viewable = false; }
+		}
+		for (int i = 0; i < GameObjectsAmount["Enemies_0"]; i++) {
+			if (EnemyParticleEmitter[i].Viewable) { EnemyParticleEmitter[i].Viewable = false; }
+		}
+	}
 	else {}
 
 	glutSwapBuffers();
