@@ -131,5 +131,14 @@
     <None Include="Assets\Shaders\default_v.glsl">
       <Filter>Shader\Vertex Shaders</Filter>
     </None>
+    <None Include="Assets\Shaders\Depth_f.glsl">
+      <Filter>Shader\Fragment Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\G_Buffer_f.glsl">
+      <Filter>Shader\Fragment Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\simpleDepthShader_v.glsl">
+      <Filter>Shader\Vertex Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

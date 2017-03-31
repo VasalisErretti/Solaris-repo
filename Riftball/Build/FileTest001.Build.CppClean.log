@@ -1,7 +1,6 @@
 c:\stuff_and_things\github\solaris-repo\riftball\build\vc140.pdb
 c:\stuff_and_things\github\solaris-repo\riftball\build\main.obj
 c:\stuff_and_things\github\solaris-repo\riftball\build\vertexbufferobject.obj
-c:\stuff_and_things\github\solaris-repo\riftball\build\sort_and_search.obj
 c:\stuff_and_things\github\solaris-repo\riftball\build\particleemittersoa.obj
 c:\stuff_and_things\github\solaris-repo\riftball\build\framebufferobject.obj
 c:\stuff_and_things\github\solaris-repo\riftball\build\extrafunctions.obj
@@ -14,6 +13,7 @@ c:\stuff_and_things\github\solaris-repo\riftball\bin\filetest001.exe
 c:\stuff_and_things\github\solaris-repo\riftball\bin\filetest001.ipdb
 c:\stuff_and_things\github\solaris-repo\riftball\bin\filetest001.iobj
 c:\stuff_and_things\github\solaris-repo\riftball\bin\filetest001.pdb
+c:\stuff_and_things\github\solaris-repo\riftball\build\sort_and_search.obj
 c:\stuff_and_things\github\solaris-repo\riftball\build\filetest001.tlog\cl.command.1.tlog
 c:\stuff_and_things\github\solaris-repo\riftball\build\filetest001.tlog\cl.read.1.tlog
 c:\stuff_and_things\github\solaris-repo\riftball\build\filetest001.tlog\cl.write.1.tlog

@@ -100,28 +100,34 @@ void ParticleEmitterSoA::update(float dt)
 
 void ParticleEmitterSoA::draw(Camera* camera)
 {
-	AttributeDescriptor* attrib = vbo.getAttributeDescriptor(VERTEX);
+	if (Viewable) {
+		AttributeDescriptor* attrib = vbo.getAttributeDescriptor(VERTEX);
 
-	glBindVertexArray(vbo.getVAO());
-	glEnableVertexAttribArray(attrib->attributeLocation);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo.getVBO(VERTEX));
-	glBufferSubData(GL_ARRAY_BUFFER, 0, attrib->numElements * attrib->elementSize, attrib->data);
+		glBindVertexArray(vbo.getVAO());
+		glEnableVertexAttribArray(attrib->attributeLocation);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo.getVBO(VERTEX));
+		glBufferSubData(GL_ARRAY_BUFFER, 0, attrib->numElements * attrib->elementSize, attrib->data);
 
-	material->shader->bind();
-	material->mat4Uniforms["u_mvp"] = camera->viewProjMatrix;
-	material->mat4Uniforms["u_mv"] = camera->viewMatrix;
-	material->mat4Uniforms["u_mp"] = camera->projMatrix;
-	material->intUniforms["u_tex"] = 0;
+		material->shader->bind();
+		material->mat4Uniforms["u_mvp"] = camera->viewProjMatrix;
+		material->mat4Uniforms["u_mv"] = camera->viewMatrix;
+		material->mat4Uniforms["u_mp"] = camera->projMatrix;
+		material->intUniforms["u_tex"] = 0;
 
-	material->sendUniforms();
+		material->sendUniforms();
 
-	if (texture) {
-		texture = (GL_TEXTURE0);
+		if (texture != NULL) {
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, texture);
+		}
+
+		glDepthMask(GL_FALSE);
+		vbo.draw();
+		glDepthMask(GL_TRUE);
+
+
+		glBindTexture(GL_TEXTURE_2D, 0);
 	}
-
-	glDepthMask(GL_FALSE);
-	vbo.draw();
-	glDepthMask(GL_TRUE);
 }
 
 void ParticleEmitterSoA::freeMemory()

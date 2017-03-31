@@ -18,7 +18,7 @@ in VertexData
 	vec3 eyePos;
 } vIn;
 
-layout(location = 0) out vec4 FragColor; //FragColor response to GL_COLOR_ATTACHMENT0 [location = 0 so GL_COLOR_ATTACHMENT0]
+layout(location = 0) out vec4 FragColor;
 
 void main()
 {
@@ -62,11 +62,8 @@ void main()
 	//ambient
 	vec3 ambient = diffuseTexture.xyz * 0.2;
 
-
-	FragColor = vec4(diffuse + specular + ambient, 1.0); FragColor.w = 1.0;
+	FragColor = vec4(diffuse + specular + ambient, 1.0); FragColor.w = diffuseTexture.w;
 	FragColor.a = diffuseTexture.a;
-	//if (textureColor.a < 0.9){ FragColor.a = (textureColor.a*0.5); }
-	//if (textureColor.a < 0.3){ discard; }
 
 	//FragColor = vec4(vIn.normal * 0.5 + 0.5, 1.0f);
 	//FragColor = vec4(N , 1.0f);

@@ -25,14 +25,9 @@ void main()
 	vOut.texCoord = vIn_uv;
 	vOut.colour = vec4(vIn_colour, 1.0);
 
-	vOut.normal = (u_mv * localTransform * vec4(vIn_normal, 0.0)).xyz; //real
-	vOut.eyePos = (u_mv * localTransform * vec4(vIn_vertex, 1.0)).xyz; //real
+	vOut.normal = (u_mv * localTransform * vec4(vIn_normal, 0.0)).xyz;
+	vOut.eyePos = (u_mv * localTransform * vec4(vIn_vertex, 1.0)).xyz;
 
-	//vec4 localSpace = localTransform * vec4(vIn_vertex, 1.0);
-	//vec4 modelViewSpace = u_mv * localSpace;
-	//vec4 worldSpace = u_mp * modelViewSpace;
-	//gl_Position = worldSpace;
-	//or
 	gl_Position = u_mvp * localTransform * vec4(vIn_vertex, 1.0);
 }
 

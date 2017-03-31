@@ -46,7 +46,7 @@ static float TestFloat = 0.0f; static float TestFloatIncrementAmount = 01.0f;
 
 // Create Shader
 Shader *shader; Shader *TextShader;
-glm::vec3 lightPosition(0.0f, 100.0f, 0.0f);
+glm::vec3 lightPosition(0.01f, 100.0f, 0.01f);
 
 // Defines Core variables//
 #define FRAMES_PER_SECOND 60
@@ -65,15 +65,13 @@ std::map<std::string, int> MenuObjectsAmount; std::map<std::string, std::shared_
 std::map<std::string, int> GameObjectsAmount; std::map<std::string, std::shared_ptr<GameObject>> GameObjects;
 Sliders *Slider; Buttons *Button;
 //Particals
-ParticleEmitterSoA particleEmitter;
+ParticleEmitterSoA PlayerParticleEmitter[4];
+ParticleEmitterSoA EnemyParticleEmitter[12];
 //Framebuffer objects
 std::map<std::string, std::shared_ptr<FrameBufferObject>> FBOs;
 //Sounds
 Sound powerup[9]; FMOD::Channel *powChannel[3];//Powerup sounds
 Sound Fx[3]; FMOD::Channel *FxChannel[3];//Fx sounds
-
-
-
 
 
 //textures
@@ -83,11 +81,12 @@ GLuint ParticleTexture;
 //structures
 Gamepad gamepad; Manifold m; MorphMath morphmath; RenderText SystemText;
 PlayerHealth PlayerHp[2]; PlayerInfo *PlayerValues; Camera cameras[4];
+Quad myVBO;
 //Bool's
 bool inMenu = true; bool inGame = false; bool inOptions = false;
 int inOptionsTab = 0; std::string lastMenu = "inMenu";
 bool ApplyingGravity = true; bool CollisionBetweenObjects = true;
-bool IdleEnemiesRespawn = true; bool EnableShadows = true;
+bool IdleEnemiesRespawn = true; bool EnableShadows = true; bool TeamThatLost[2];
 float randomSpecialTime;
 glm::vec3 speedToWallDegradation = glm::vec3(0.80f, 0.50f, 0.80f);
 int cameralook = 0;//camera in use
@@ -118,6 +117,7 @@ void setBoardStart() {
 
 			GameObjects["Players_0" + to_string(i)].get()->setVelocity(glm::vec3(0.0f));
 			GameObjects["Players_0" + to_string(i)].get()->setForceOnObject(glm::vec3(0.0f));
+			GameObjects["Players_0" + to_string(i)].get()->setScale(glm::vec3(5.0f, 5.0f, 5.0f));
 		}
 	}
 
@@ -218,7 +218,7 @@ void WhatCameraIsLookingAt(int PlayerLookAt)//int CameraLookAt
 			for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
 				if (PlayerValues[i].PlayerTeam == 0) {
 					glViewport(0, 0, (windowWidth / 2), windowHeight);
-					cameras[0].projMatrix = glm::perspective(45.0f, (windowWidth / windowHeight)*1.0f, 0.01f, 100000.f);
+					cameras[0].projMatrix = glm::perspective(45.0f, (windowWidth / windowHeight)*1.0f, 0.01f, 10000.f);
 
 					glm::vec3 CameraLocation = glm::vec3((GameObjects["Players_0" + to_string(i)].get()->Position().x + 50.0f), 50.0f, (GameObjects["Players_0" + to_string(i)].get()->Position().z));
 					glm::vec3 CameraLookAt = glm::vec3((GameObjects["Players_0" + to_string(i)].get()->Position().x), 1.0f, (GameObjects["Players_0" + to_string(i)].get()->Position().z));
@@ -932,12 +932,32 @@ void KeyBoardDelayButton(float deltaTasSeconds) {
 
 
 //////////////////////////////////////////////////////////////////////
-void SendUniformsToShaders(std::shared_ptr<Material> SendMe, int Inum) {
-	SendMe->mat4Uniforms["u_mvp"] = cameras[Inum].viewProjMatrix;
-	SendMe->mat4Uniforms["u_mv"] = cameras[Inum].viewMatrix;
-	SendMe->mat4Uniforms["u_mp"] = cameras[Inum].projMatrix;
-	SendMe->mat4Uniforms["u_lightPos"] = (cameras[Inum].viewMatrix * glm::translate(glm::mat4(1.0f), lightPosition));
-	SendMe->sendUniforms();
+void SendUniformsToShaders(std::string SendMe, int Inum) {
+	auto _Material = materials[SendMe];
+	//_Material->shader->bind();
+	_Material->mat4Uniforms["u_mvp"] = cameras[Inum].viewProjMatrix;
+	_Material->mat4Uniforms["u_mv"] = cameras[Inum].viewMatrix;
+	_Material->mat4Uniforms["u_mp"] = cameras[Inum].projMatrix;
+	_Material->mat4Uniforms["u_lightPos"] = (cameras[Inum].viewMatrix * glm::translate(glm::mat4(1.0f), lightPosition));
+	_Material->sendUniforms();
+}
+
+void setAllObjectMaterials(std::string Name) {
+	auto _Material = materials[Name];
+	for (auto itr = GameObjects.begin(); itr != GameObjects.end(); itr++) {
+		itr->second->material = _Material;
+	}
+}
+
+void DepthPass(std::string FirstfBO, std::string  SecondfBO, int ScreenNumber) {
+	auto _FirstfBO = FBOs[FirstfBO];
+	auto _SecondfBO = FBOs[SecondfBO];
+	
+	_SecondfBO->clearFrameBuffer(glm::vec4(0.2f, 0.2f, 0.2f, 1.0f));
+	_SecondfBO->bindFrameBufferForDrawing();
+
+	_FirstfBO->bindTextureForSampling(0, GL_TEXTURE1);
+	SendUniformsToShaders("Depth", ScreenNumber);
 }
 
 
@@ -948,17 +968,9 @@ void SendUniformsToShaders(std::shared_ptr<Material> SendMe, int Inum) {
 void InMenuDraw(int Inum)
 {
 	Inum = 2;
-	auto defaultMaterial = materials["default"];
-	auto passThroughMaterial = materials["passThrough"];
-	auto textMaterial = materials["text"];
-
-
-
-	passThroughMaterial->shader->bind();
-
 	cameralook = Inum; //window
 	WhatCameraIsLookingAt(); //Resising Window
-	SendUniformsToShaders(passThroughMaterial, Inum);
+	SendUniformsToShaders("passThrough", Inum);
 
 	
 	if (MenuObjects["HUD_Planes_0" + to_string(0)]->Viewable) { MenuObjects["HUD_Planes_0" + to_string(0)]->drawObject(); }
@@ -967,7 +979,7 @@ void InMenuDraw(int Inum)
 		if (MenuObjects["HUD_Buttons_0" + to_string(i)]->Viewable) { MenuObjects["HUD_Buttons_0" + to_string(i)]->drawObject(); }
 	}
 
-	//passThroughMaterial->shader->unbind();
+
 }
 
 /* function MenuScreen()
@@ -1008,18 +1020,12 @@ void MenuScreen(float deltaTasSeconds)
 */
 void InOptionDraw(int Inum)
 {
-	auto defaultMaterial = materials["default"];
-	auto passThroughMaterial = materials["passThrough"];
-	auto textMaterial = materials["text"];
-
-
-	passThroughMaterial->shader->bind();
 	Inum = 2;
 	cameralook = Inum; //window
 	WhatCameraIsLookingAt(); //Resising Window
 
 	// Draw our scene
-	SendUniformsToShaders(passThroughMaterial, Inum);
+	SendUniformsToShaders("passThrough", Inum);
 
 	//for (auto itr = MenuObjects.begin(); itr != MenuObjects.end(); ++itr) {
 	//	auto MenuObjects = itr->second;
@@ -1072,8 +1078,27 @@ void InOptionDraw(int Inum)
 			if (MenuObjects["HUD_Buttons_0" + to_string(i)]->Viewable) { MenuObjects["HUD_Buttons_0" + to_string(i)]->drawObject(); }
 		}
 	}
+	//end screen
+	else if (inOptionsTab == 5) {
+		if (MenuObjects["HUD_Planes_0" + to_string(inOptionsTab + 1)]->Viewable) { MenuObjects["HUD_Planes_0" + to_string(inOptionsTab + 1)]->drawObject(); }
+		if (MenuObjects["HUD_Buttons_0" + to_string(3)]->Viewable) { MenuObjects["HUD_Buttons_0" + to_string(3)]->drawObject(); }
 
-	//passThroughMaterial->shader->unbind();
+		for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
+			if (PlayerValues[i].ControllerActive) {}
+			else {}
+
+			if (PlayerValues[i].PlayerTeam == 0) {
+				GameObjects["Players_0" + to_string(0)].get()->setScale(glm::vec3(1.0f, 1.0f, 1.0f));
+				GameObjects["Players_0" + to_string(0)].get()->setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+			}
+			else if (PlayerValues[i].PlayerTeam == 1) {
+				GameObjects["Players_0" + to_string(1)].get()->setScale(glm::vec3(1.0f, 1.0f, 1.0f));
+				GameObjects["Players_0" + to_string(1)].get()->setPosition(glm::vec3(1.0f, 1.0f, 1.0f));
+			}
+
+			GameObjects["Players_0" + to_string(i)].get()->drawObject();
+		}
+	}
 
 }
 
@@ -1117,6 +1142,16 @@ void OptionScreen(float deltaTasSeconds)
 			}
 			//setBoardStart(); inOptions = false; inGame = true;
 		}
+		//end screen
+		else if (inOptionsTab == 5) {
+			//Back
+			if (Button[3].button(MPosToOPosX, MPosToOPosY)) { inOptions = false; inMenu = true; }
+
+			for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
+				if (PlayerValues[i].ControllerActive) {}
+				if (ControllerAPress[i] == true) { ControllerAPress[i] = false; }
+			}
+		}
 	}
 	if (mouseDown[1]) {
 		mouseDown[1] = false;
@@ -1153,32 +1188,17 @@ void OptionScreen(float deltaTasSeconds)
 void InGameDraw(int Inum)
 {
 	cameralook = Inum;
-	WhatCameraIsLookingAt(Inum); //Resising Window
+	WhatCameraIsLookingAt(Inum);
 
-	//Draw scene
-	SendUniformsToShaders(materials["default"], Inum);
-	SendUniformsToShaders(materials["passThrough"], Inum);
-	SendUniformsToShaders(materials["NASD"], Inum);
-	SendUniformsToShaders(materials["normals"], Inum);
-	SendUniformsToShaders(materials["particles"], Inum);
-	materials["passThrough"]->shader->bind();
-	//GameObjects["Players_00"]->material = materials["normals"];
+	//setAllObjectMaterials("Depth");
+	//Draw scene //NEEDS TO BE IN THIS ORDER for particles to work
+	SendUniformsToShaders("passThrough", Inum);	 //1
+	SendUniformsToShaders("NASD", Inum);		 //2
+	SendUniformsToShaders("Depth", Inum);		 //3
+	SendUniformsToShaders("particles", Inum);	 //4
+	materials["passThrough"]->shader->bind();	 //then bind passThrough
+	
 
-	//Score
-	if (changeInHealth(PlayerHp[0])) {
-		//Player One
-		GameObjects["HUD_Score_Planes_0" + to_string(0)]->setTexture(TextureNumbers[static_cast<int>(PlayerHp[0].CurrentHealth % 10)]);
-		GameObjects["HUD_Score_Planes_0" + to_string(1)]->setTexture(TextureNumbers[static_cast<int>(PlayerHp[0].CurrentHealth / 10 % 10)]);
-		GameObjects["HUD_Score_Planes_0" + to_string(4)]->setTexture(TextureNumbers[static_cast<int>(PlayerHp[0].CurrentHealth % 10)]);
-		GameObjects["HUD_Score_Planes_0" + to_string(5)]->setTexture(TextureNumbers[static_cast<int>(PlayerHp[0].CurrentHealth / 10 % 10)]);
-	}
-	if (changeInHealth(PlayerHp[1])) {
-		//Player Two
-		GameObjects["HUD_Score_Planes_0" + to_string(2)]->setTexture(TextureNumbers[static_cast<int>(PlayerHp[1].CurrentHealth % 10)]);
-		GameObjects["HUD_Score_Planes_0" + to_string(3)]->setTexture(TextureNumbers[static_cast<int>(PlayerHp[1].CurrentHealth / 10 % 10)]);
-		GameObjects["HUD_Score_Planes_0" + to_string(6)]->setTexture(TextureNumbers[static_cast<int>(PlayerHp[1].CurrentHealth % 10)]);
-		GameObjects["HUD_Score_Planes_0" + to_string(7)]->setTexture(TextureNumbers[static_cast<int>(PlayerHp[1].CurrentHealth / 10 % 10)]);
-	}
 	
 	for (int i = 0; i < GameObjectsAmount["Objects_0"]; i++) {
 		if (GameObjects["Objects_0" + to_string(i)].get()->Viewable) {
@@ -1197,7 +1217,7 @@ void InGameDraw(int Inum)
 			if (EnableShadows) {
 				if (GameObjects["Shadows_0" + to_string(0)].get()->textureHandle_hasTransparency == true) { disableCulling(); }
 				else { enableCulling(); }
-				GameObjects["Shadows_0" + to_string(0)].get()->setPosition(glm::vec3(GameObjects["Enemies_0" + to_string(i)].get()->Position().x, 0.01f, GameObjects["Enemies_0" + to_string(i)].get()->Position().z));
+				GameObjects["Shadows_0" + to_string(0)].get()->setPosition(glm::vec3(GameObjects["Enemies_0" + to_string(i)].get()->Position().x, 0.04f, GameObjects["Enemies_0" + to_string(i)].get()->Position().z));
 				if ((GameObjects["Enemies_0" + to_string(i)].get()->Position().y*0.05f) > 1.50f) { GameObjects["Shadows_0" + to_string(0)].get()->setScale(GameObjects["Enemies_0" + to_string(i)].get()->Scale()*1.50f); }
 				else if ((GameObjects["Enemies_0" + to_string(i)].get()->Position().y*0.05f) < 1.0f) { GameObjects["Shadows_0" + to_string(0)].get()->setScale(GameObjects["Enemies_0" + to_string(i)].get()->Scale()*1.0f); }
 				else { GameObjects["Shadows_0" + to_string(0)].get()->setScale(GameObjects["Enemies_0" + to_string(i)].get()->Scale()*(GameObjects["Enemies_0" + to_string(i)].get()->Position().y*0.05f)); }
@@ -1215,7 +1235,7 @@ void InGameDraw(int Inum)
 			if (EnableShadows) {
 				if (GameObjects["Shadows_0" + to_string(0)].get()->textureHandle_hasTransparency == true) { disableCulling(); }
 				else { enableCulling(); }
-				GameObjects["Shadows_0" + to_string(0)].get()->setPosition(glm::vec3(GameObjects["Specials_0" + to_string(i)].get()->Position().x, 0.01f, GameObjects["Specials_0" + to_string(i)].get()->Position().z));
+				GameObjects["Shadows_0" + to_string(0)].get()->setPosition(glm::vec3(GameObjects["Specials_0" + to_string(i)].get()->Position().x, 0.06f, GameObjects["Specials_0" + to_string(i)].get()->Position().z));
 				GameObjects["Shadows_0" + to_string(0)].get()->setScale(GameObjects["Specials_0" + to_string(i)].get()->Scale());
 				GameObjects["Shadows_0" + to_string(0)].get()->setRotation(GameObjects["Specials_0" + to_string(i)].get()->Angle());
 				GameObjects["Shadows_0" + to_string(0)].get()->drawObject();
@@ -1232,62 +1252,60 @@ void InGameDraw(int Inum)
 			if (EnableShadows) {
 				if (GameObjects["Shadows_0" + to_string(0)].get()->textureHandle_hasTransparency == true) { disableCulling(); }
 				else { enableCulling(); }
-				GameObjects["Shadows_0" + to_string(0)].get()->setPosition(glm::vec3(GameObjects["Players_0" + to_string(i)].get()->Position().x, 0.01f, GameObjects["Players_0" + to_string(i)].get()->Position().z));
+				GameObjects["Shadows_0" + to_string(0)].get()->setPosition(glm::vec3(GameObjects["Players_0" + to_string(i)].get()->Position().x, 0.05f, GameObjects["Players_0" + to_string(i)].get()->Position().z));
 				GameObjects["Shadows_0" + to_string(0)].get()->setScale(GameObjects["Players_0" + to_string(i)].get()->Scale());
 				GameObjects["Shadows_0" + to_string(0)].get()->setRotation(GameObjects["Players_0" + to_string(i)].get()->Angle());
 				GameObjects["Shadows_0" + to_string(0)].get()->drawObject();
 			}
-			
-			//Short Circuit [6]
-			if (GameObjects["Players_0" + to_string(i)].get()->inShock) {
-				GameObjects["Affects_0" + to_string(1)].get()->setPosition(GameObjects["Players_0" + to_string(i)].get()->Position());
-				GameObjects["Affects_0" + to_string(2)].get()->setPosition(GameObjects["Players_0" + to_string(i)].get()->Position());
-				GameObjects["Affects_0" + to_string(1)].get()->Viewable = true;
-				GameObjects["Affects_0" + to_string(2)].get()->Viewable = true;
-				GameObjects["Affects_0" + to_string(1)].get()->setRotation(glm::vec3(0.0f, GameObjects["Affects_0" + to_string(1)].get()->Angle().y - (deltaTasSecs*316.0f), 0.0f));
-				GameObjects["Affects_0" + to_string(2)].get()->setRotation(glm::vec3(0.0f, GameObjects["Affects_0" + to_string(2)].get()->Angle().y + (deltaTasSecs*147.0f), 0.0f));
-			}
-			else if (!GameObjects["Players_0" + to_string(i)].get()->inShock) {
-				GameObjects["Affects_0" + to_string(1)].get()->Viewable = false;
-				GameObjects["Affects_0" + to_string(2)].get()->Viewable = false;
-			}
-			//Flipped [9]
-			if (PlayerValues[i].FlipedControllers) {
-				PlayerValues[i].AbilityCounter[9] += deltaTasSecs;
-				GameObjects["Affects_0" + to_string(3)].get()->setPosition(GameObjects["Players_0" + to_string(i)].get()->Position());
-				GameObjects["Affects_0" + to_string(4)].get()->setPosition(GameObjects["Players_0" + to_string(i)].get()->Position());
-				GameObjects["Affects_0" + to_string(3)].get()->Viewable = true;
-				GameObjects["Affects_0" + to_string(4)].get()->Viewable = true;
-				GameObjects["Affects_0" + to_string(3)].get()->setRotation(glm::vec3(0.0f, GameObjects["Affects_0" + to_string(3)].get()->Angle().y + (deltaTasSecs*147.0f), 0.0f));
-				GameObjects["Affects_0" + to_string(4)].get()->setRotation(glm::vec3(0.0f, GameObjects["Affects_0" + to_string(4)].get()->Angle().y - (deltaTasSecs*316.0f), 0.0f));
-				if (PlayerValues[i].AbilityCounter[9] > PlayerValues[i].AbilityLength[9]) {
-					PlayerValues[i].AbilityCounter[9] = 0.0f;
-					PlayerValues[i].FlipedControllers = false;
-					GameObjects["Affects_0" + to_string(3)].get()->Viewable = false;
-					GameObjects["Affects_0" + to_string(4)].get()->Viewable = false;
-				}
-			}
-			//Affects
-			for (int j = 0; j < GameObjectsAmount["Affects_0"]; j++) {
-				if (GameObjects["Affects_0" + to_string(j)].get()->Viewable) {
-					if (GameObjects["Affects_0" + to_string(j)].get()->textureHandle_hasTransparency == true) { disableCulling(); }
-					else { enableCulling(); }
-					GameObjects["Affects_0" + to_string(j)].get()->drawObject();
-				}
-			}
 		}
 	}
-	//Shockwave
-	glDepthMask(GL_FALSE);
 	for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
+		//Shockwave
+		glDepthMask(GL_FALSE);
 		if (GameObjects["Shockwave_0" + to_string(i)].get()->Viewable) {
 			if (GameObjects["Shockwave_0" + to_string(i)].get()->textureHandle_hasTransparency == true) { disableCulling(); }
 			else { enableCulling(); }
 			GameObjects["Shockwave_0" + to_string(i)].get()->drawObject();
 		}
+		glDepthMask(GL_TRUE);
+		//Short Circuit [6]
+		if (GameObjects["Players_0" + to_string(i)].get()->inShock) {
+			GameObjects["Affects_0" + to_string(1)].get()->setPosition(GameObjects["Players_0" + to_string(i)].get()->Position());
+			GameObjects["Affects_0" + to_string(2)].get()->setPosition(GameObjects["Players_0" + to_string(i)].get()->Position());
+			GameObjects["Affects_0" + to_string(1)].get()->Viewable = true;
+			GameObjects["Affects_0" + to_string(2)].get()->Viewable = true;
+			GameObjects["Affects_0" + to_string(1)].get()->setRotation(glm::vec3(0.0f, GameObjects["Affects_0" + to_string(1)].get()->Angle().y - (deltaTasSecs*316.0f), 0.0f));
+			GameObjects["Affects_0" + to_string(2)].get()->setRotation(glm::vec3(0.0f, GameObjects["Affects_0" + to_string(2)].get()->Angle().y + (deltaTasSecs*147.0f), 0.0f));
+		}
+		else if (!GameObjects["Players_0" + to_string(i)].get()->inShock) {
+			GameObjects["Affects_0" + to_string(1)].get()->Viewable = false;
+			GameObjects["Affects_0" + to_string(2)].get()->Viewable = false;
+		}
+		//Flipped [9]
+		if (PlayerValues[i].FlipedControllers) {
+			PlayerValues[i].AbilityCounter[9] += deltaTasSecs;
+			GameObjects["Affects_0" + to_string(3)].get()->setPosition(GameObjects["Players_0" + to_string(i)].get()->Position());
+			GameObjects["Affects_0" + to_string(4)].get()->setPosition(GameObjects["Players_0" + to_string(i)].get()->Position());
+			GameObjects["Affects_0" + to_string(3)].get()->Viewable = true;
+			GameObjects["Affects_0" + to_string(4)].get()->Viewable = true;
+			GameObjects["Affects_0" + to_string(3)].get()->setRotation(glm::vec3(0.0f, GameObjects["Affects_0" + to_string(3)].get()->Angle().y + (deltaTasSecs*147.0f), 0.0f));
+			GameObjects["Affects_0" + to_string(4)].get()->setRotation(glm::vec3(0.0f, GameObjects["Affects_0" + to_string(4)].get()->Angle().y - (deltaTasSecs*316.0f), 0.0f));
+			if (PlayerValues[i].AbilityCounter[9] > PlayerValues[i].AbilityLength[9]) {
+				PlayerValues[i].AbilityCounter[9] = 0.0f;
+				PlayerValues[i].FlipedControllers = false;
+				GameObjects["Affects_0" + to_string(3)].get()->Viewable = false;
+				GameObjects["Affects_0" + to_string(4)].get()->Viewable = false;
+			}
+		}
+		//Affects
+		for (int j = 0; j < GameObjectsAmount["Affects_0"]; j++) {
+			if (GameObjects["Affects_0" + to_string(j)].get()->Viewable) {
+				if (GameObjects["Affects_0" + to_string(j)].get()->textureHandle_hasTransparency == true) { disableCulling(); }
+				else { enableCulling(); }
+				GameObjects["Affects_0" + to_string(j)].get()->drawObject();
+			}
+		}
 	}
-	glDepthMask(GL_TRUE);
-
 	for (int i = 0; i < GameObjectsAmount["Rifts_0"]; i++) {
 		if (GameObjects["Rifts_0" + to_string(i)]->Viewable) {
 			//Rifts
@@ -1305,13 +1323,27 @@ void InGameDraw(int Inum)
 	}
 	
 
-	//glDepthMask(GL_FALSE);
-	//glDepthMask(GL_TRUE);
-
+	GameObjects["Objects_09"].get()->material = materials["Depth"]; //bind an object that is at 0.0.0 to the depth material
 	
-	particleEmitter.initialPosition = glm::vec3(0.0, 0.0, 0.0);
-	particleEmitter.update(deltaTasSecs/10.0f);
-	particleEmitter.draw(&cameras[Inum]);
+	for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
+		if (PlayerParticleEmitter[i].Viewable) {
+			PlayerParticleEmitter[i].initialPosition = GameObjects["Players_0" + to_string(i)].get()->Position();
+			PlayerParticleEmitter[i].update(deltaTasSecs / 1.0f);
+			PlayerParticleEmitter[i].draw(&cameras[Inum]);
+			PlayerParticleEmitter[i].Viewable = false;
+		}
+	}
+	for (int i = 0; i < GameObjectsAmount["Enemies_0"]; i++) {
+		if (EnemyParticleEmitter[i].Viewable) {
+			EnemyParticleEmitter[i].initialPosition = GameObjects["Enemies_0" + to_string(i)].get()->Position();
+			EnemyParticleEmitter[i].update(deltaTasSecs / 1.0f);
+			EnemyParticleEmitter[i].draw(&cameras[Inum]);
+			EnemyParticleEmitter[i].Viewable = false;
+		}
+	}
+
+
+	myVBO.vbo.draw();
 
 	//for (auto itr = GameObjects.begin(); itr != GameObjects.end(); itr++) {
 	//	auto GameObjects = itr->second;
@@ -1323,6 +1355,7 @@ void InGameDraw(int Inum)
 	//}
 }
 
+float lastHit = 0.0f;
 /* function GameField()
 * Description:
 *  - does all the functions/calculations for the game screen
@@ -1332,7 +1365,7 @@ void GameScreen(float deltaTasSeconds)
 	Sound::Sys.Update();
 	//Intialize the crowd sound to play when the game starts
 	FxChannel[1] = Fx[1].Play();
-	FxChannel[1]->setVolume(0.1);
+	FxChannel[1]->setVolume(0.3f);
 
 	for (int i = 0; i < 2; i++) {
 		Sound::Sys.listenerPos[i].x = GameObjects["Players_0" + to_string(i)].get()->Position().x*10.0f;
@@ -1340,7 +1373,7 @@ void GameScreen(float deltaTasSeconds)
 		Sound::Sys.listenerPos[i].z = GameObjects["Players_0" + to_string(i)].get()->Position().z*10.0f;
 	}
 	
-	
+	if (lastHit > 0.0f) { lastHit -= deltaTasSeconds; }
 
 
 	//Collision between things
@@ -1545,12 +1578,17 @@ void GameScreen(float deltaTasSeconds)
 							float ranPosY = static_cast<float>(rand() % 1000 + 100); //100 to 1100
 							GameObjects["Enemies_0" + to_string(ij)].get()->setForceOnObject(GameObjects["Enemies_0" + to_string(ij)].get()->ForceOnObject() + glm::vec3(0.0f, ranPosY, 0.0f));
 						}
+
+						PlayerValues[i].AbilityAffected[2] = true;
+						PlayerValues[i].AbilityCounter[2] = 0.0f;
 					}
 					//Health Up
 					else if (m.B->SpecialAttribute() == 3) {
 						powChannel[0] = powerup[2].Play();
 						m.B->Viewable = false;
 						PlayerHp[PlayerValues[i].PlayerTeam].CurrentHealth += 10;
+						PlayerValues[i].AbilityAffected[3] = true;
+						PlayerValues[i].AbilityCounter[3] = 0.0f;
 					}
 					//Boost
 					else if (m.B->SpecialAttribute() == 4) {
@@ -1699,7 +1737,10 @@ void GameScreen(float deltaTasSeconds)
 				if (CheckCollision(m)) {
 					ResolveCollision(m, 0.0f, 1.0f);
 					applySeekSystem(m, -0.50f);
-					FxChannel[0] = Fx[0].Play();
+					if (lastHit <= 0.0f) {
+						lastHit = 0.25;
+						FxChannel[0] = Fx[0].PlayNow();
+					}
 				}
 				GameObjects["Enemies_0" + to_string(j)] = m.B;
 			}//end for
@@ -1872,9 +1913,23 @@ void GameScreen(float deltaTasSeconds)
 					m.B = GameObjects["Enemies_0" + to_string(j)];
 					applySeekSystem(m, 3.0f);
 					GameObjects["Enemies_0" + to_string(j)] = m.B;
+					EnemyParticleEmitter[j].Viewable = true;
 				}
 			}
 			else { PlayerValues[i].AbilityAffected[1] = false; }
+			
+			//Toss-Up [2]
+			if (PlayerValues[i].AbilityAffected[2] && PlayerValues[i].AbilityCounter[2] < PlayerValues[i].AbilityLength[2]) {
+				PlayerValues[i].AbilityCounter[2] += deltaTasSeconds;
+				for (int j = 0; j < GameObjectsAmount["Enemies_0"]; j++) { EnemyParticleEmitter[j].Viewable = true; }
+			}
+			else { PlayerValues[i].AbilityAffected[2] = false; }
+
+			//Health Up [3]
+			if (PlayerValues[i].AbilityAffected[3] && PlayerValues[i].AbilityCounter[3] < PlayerValues[i].AbilityLength[3]) {
+				PlayerValues[i].AbilityCounter[3] += deltaTasSeconds;
+			}
+			else { PlayerValues[i].AbilityAffected[3] = false; }
 
 			//Boost [4]
 			if (PlayerValues[i].AbilityAffected[4] && PlayerValues[i].AbilityCounter[4] < PlayerValues[i].AbilityLength[4]) {
@@ -1892,7 +1947,9 @@ void GameScreen(float deltaTasSeconds)
 				m.A = GameObjects["Players_0" + to_string(i)];
 				for (int i = 0; i < GameObjectsAmount["Enemies_0"]; i++) {
 					m.B = GameObjects["Enemies_0" + to_string(i)];
-					applyRadialFleeingSystem(m, 20.0f, 10.0f);
+					if (applyRadialFleeingSystem(m, 20.0f, 10.0f)) {
+						EnemyParticleEmitter[i].Viewable = true;
+					}
 					GameObjects["Enemies_0" + to_string(i)] = m.B;
 				}
 			}
@@ -1950,7 +2007,16 @@ void GameScreen(float deltaTasSeconds)
 			}
 			else { PlayerValues[i].AbilityAffected[9] = false; }
 
+
+			for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
+				if (GameObjects["Players_0" + to_string(i)].get()->inShock) { PlayerParticleEmitter[i].Viewable = true; }
+			}
+
 		}//end for
+
+		for (int i = 0; i < GameObjectsAmount["Enemies_0"]; i++) {
+			if (GameObjects["Enemies_0" + to_string(i)].get()->inShock) { EnemyParticleEmitter[i].Viewable = true; }
+		}
 	}//end enableAbilitys
 
 
@@ -1982,7 +2048,12 @@ void GameScreen(float deltaTasSeconds)
 				//collision to Enemies
 				for (int j = 0; j < GameObjectsAmount["Enemies_0"]; j++) {
 					m.B = GameObjects["Enemies_0" + to_string(j)];
-					if (checkRadialCollision(m)) { applySeekSystem(m, ForceModifier); ResolveCollision(m, 0.0f, 1.0f); m.B->inShock = true; }
+					if (checkRadialCollision(m)) { 
+						applySeekSystem(m, ForceModifier);
+						ResolveCollision(m, 0.0f, 1.0f);
+						m.B->inShock = true;
+						EnemyParticleEmitter[j].Viewable = true;
+					}
 					GameObjects["Enemies_0" + to_string(j)] = m.B;
 				}//end for
 				//collision to Specials
@@ -2012,6 +2083,7 @@ void GameScreen(float deltaTasSeconds)
 		else { GameObjects["Shockwave_0" + to_string(i)].get()->Viewable = false; }
 	}//end for
 	
+
 
 	//Idle Enemies will despawn then respawn
 	if (IdleEnemiesRespawn) {
@@ -2092,7 +2164,35 @@ void GameScreen(float deltaTasSeconds)
 		}
 	}
 
-
+	//Score
+	if (changeInHealth(PlayerHp[0])) {
+		if (PlayerHp[0].CurrentHealth < 0) {
+			PlayerHp[0].CurrentHealth = 0;
+			TeamThatLost[0] = true;
+			inGame = false; inOptions = true;
+			inOptionsTab = 5;
+		}
+		if (PlayerHp[0].CurrentHealth > PlayerHp[0].MaxHealth) { PlayerHp[0].CurrentHealth = PlayerHp[0].MaxHealth; }
+		//Player One
+		GameObjects["HUD_Score_Planes_0" + to_string(0)]->setTexture(TextureNumbers[static_cast<int>(PlayerHp[0].CurrentHealth % 10)]);
+		GameObjects["HUD_Score_Planes_0" + to_string(1)]->setTexture(TextureNumbers[static_cast<int>(PlayerHp[0].CurrentHealth / 10 % 10)]);
+		GameObjects["HUD_Score_Planes_0" + to_string(4)]->setTexture(TextureNumbers[static_cast<int>(PlayerHp[0].CurrentHealth % 10)]);
+		GameObjects["HUD_Score_Planes_0" + to_string(5)]->setTexture(TextureNumbers[static_cast<int>(PlayerHp[0].CurrentHealth / 10 % 10)]);
+	}
+	if (changeInHealth(PlayerHp[1])) {
+		if (PlayerHp[1].CurrentHealth < 0) { 
+			PlayerHp[1].CurrentHealth = 0;
+			TeamThatLost[1] = true;
+			inGame = false; inOptions = true;
+			inOptionsTab = 5;
+		}
+		if (PlayerHp[1].CurrentHealth > PlayerHp[1].MaxHealth) { PlayerHp[1].CurrentHealth = PlayerHp[1].MaxHealth; }
+		//Player Two
+		GameObjects["HUD_Score_Planes_0" + to_string(2)]->setTexture(TextureNumbers[static_cast<int>(PlayerHp[1].CurrentHealth % 10)]);
+		GameObjects["HUD_Score_Planes_0" + to_string(3)]->setTexture(TextureNumbers[static_cast<int>(PlayerHp[1].CurrentHealth / 10 % 10)]);
+		GameObjects["HUD_Score_Planes_0" + to_string(6)]->setTexture(TextureNumbers[static_cast<int>(PlayerHp[1].CurrentHealth % 10)]);
+		GameObjects["HUD_Score_Planes_0" + to_string(7)]->setTexture(TextureNumbers[static_cast<int>(PlayerHp[1].CurrentHealth / 10 % 10)]);
+	}
 
 }
 
@@ -2110,6 +2210,7 @@ void DisplayCallbackFunction(void)
 {
 	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //Clear the screen
+	
 	if (inMenu) { InMenuDraw(2); }
 	else if (inOptions) { InOptionDraw(inOptionsTab); }
 	else if (inGame) { for (int i = 0; i <= 1; i++) { InGameDraw(i); } }
@@ -2402,22 +2503,34 @@ void MousePassiveMotionCallbackFunction(int x, int y) //while a mouse button isn
 
 
 void InitializeParticles() {
-	//they are being drawn inversely proportional from the player the the center of the map
-	particleEmitter.lifeRange		 = glm::vec3(01.0, 05.0, 00.0);
-	particleEmitter.initialForceMin	 = glm::vec3(-1.0, 05.0, -1.0);
-	particleEmitter.initialForceMax	 = glm::vec3(01.0, 15.0, 01.0);
 
-	particleEmitter.material		 = materials["particles"];
-	particleEmitter.texture			 = ParticleTexture;
+	for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
+		PlayerParticleEmitter[i].lifeRange = glm::vec3(01.0, 02.0, 00.0);
+		PlayerParticleEmitter[i].initialForceMin = glm::vec3(-1.0, 03.0, -1.0);
+		PlayerParticleEmitter[i].initialForceMax = glm::vec3(01.0, 10.0, 01.0);
+		PlayerParticleEmitter[i].setMaterial(materials["particles"]);
+		PlayerParticleEmitter[i].setTexture(ParticleTexture);
+		PlayerParticleEmitter[i].initialize(300);
+		PlayerParticleEmitter[i].play();
+	}
 
-	particleEmitter.initialize(1000);
-	particleEmitter.play();
+	//for (int i = 0; i < GameObjectsAmount["Enemies_0"]; i++) { EnemyParticleEmitter = new ParticleEmitterSoA; }
+
+	for (int i = 0; i < GameObjectsAmount["Enemies_0"]; i++) {
+		EnemyParticleEmitter[i].lifeRange = glm::vec3(0.250, 01.0, 00.0);
+		EnemyParticleEmitter[i].initialForceMin = glm::vec3(-1.0, -03.0, -1.0);
+		EnemyParticleEmitter[i].initialForceMax = glm::vec3(01.0, -10.0, 01.0);
+		EnemyParticleEmitter[i].setMaterial(materials["particles"]);
+		EnemyParticleEmitter[i].setTexture(ParticleTexture);
+		EnemyParticleEmitter[i].initialize(100);
+		EnemyParticleEmitter[i].play();
+	}
 }
 
 /**/
 void InitializeVariables() {
 	//Menu Objects Amounts
-	MenuObjectsAmount["HUD_Planes_0"] = 7;
+	MenuObjectsAmount["HUD_Planes_0"] = 8;
 	MenuObjectsAmount["HUD_Messages_0"] = 1;
 	MenuObjectsAmount["HUD_Buttons_0"] = 11;
 	MenuObjectsAmount["HUD_Sliders_0"] = 10;
@@ -2456,6 +2569,7 @@ void InitializeVariables() {
 	for (int i = 0; i < GameObjectsAmount["Rifts_0"]; i++) { GameObjects["Rifts_0" + to_string(i)] = std::make_shared<GameObject>(); }
 
 
+	
 	PlayerValues = new PlayerInfo[GameObjectsAmount["Players_0"]];
 	for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
 
@@ -2534,8 +2648,27 @@ void InitializeVariables() {
 /**/
 void InitializeFrameBufferObjects()
 {
-	FBOs["One"] = std::make_shared<FrameBufferObject>();
-	FBOs["One"]->createFrameBuffer(windowWidth, windowHeight, 1, true);
+	// Triangle 1
+	myVBO.vertices.push_back(glm::vec3(1.0f, 1.0f, 0.0f));
+	myVBO.textureCoordinates.push_back(glm::vec2(1.0f, 1.0f));
+	myVBO.vertices.push_back(glm::vec3(-1.0f, 1.0f, 0.0f));
+	myVBO.textureCoordinates.push_back(glm::vec2(0.0f, 1.0f));
+	myVBO.vertices.push_back(glm::vec3(-1.0, -1.0, 0.0f));
+	myVBO.textureCoordinates.push_back(glm::vec2(0.0f, 0.0f));
+	// Triangle 2
+	myVBO.vertices.push_back(glm::vec3(1.0, 1.0, 0.0f));
+	myVBO.textureCoordinates.push_back(glm::vec2(1.0f, 1.0f));
+	myVBO.vertices.push_back(glm::vec3(-1.0, -1.0, 0.0f));
+	myVBO.textureCoordinates.push_back(glm::vec2(0.0f, 0.0f));
+	myVBO.vertices.push_back(glm::vec3(1.0, -1.0, 0.0f));
+	myVBO.textureCoordinates.push_back(glm::vec2(1.0f, 0.0f));
+	createVBO(myVBO);
+
+
+	FBOs["1"] = std::make_shared<FrameBufferObject>();
+	FBOs["1"]->createFrameBuffer(windowWidth, windowHeight, 1, true);
+	FBOs["2"] = std::make_shared<FrameBufferObject>();
+	FBOs["2"]->createFrameBuffer(windowWidth, windowHeight, 1, true);
 }
 
 /**/
@@ -2549,16 +2682,18 @@ void InitializeShaders()
 	else { std::cout << "[ERROR] Could not find [Shaders]" << std::endl; }
 
 	//Load vertex shaders
-	Shader v_default, v_passThrough, v_textShader;
+	Shader v_default, v_passThrough, v_textShader, v_simpleDepthShader;
 	v_default.loadShaderFromFile(shaderPath + "default_v.glsl", GL_VERTEX_SHADER);
 	v_passThrough.loadShaderFromFile(shaderPath + "passThru_v.glsl", GL_VERTEX_SHADER);
 	v_textShader.loadShaderFromFile(shaderPath + "text_v.glsl", GL_VERTEX_SHADER);
+	v_simpleDepthShader.loadShaderFromFile(shaderPath + "simpleDepthShader_v.glsl", GL_VERTEX_SHADER);
 	//Load fragment shaders
-	Shader f_default, f_passThrough, f_textShader, f_NASD;
+	Shader f_default, f_passThrough, f_textShader, f_NASD, f_Depth;
 	f_default.loadShaderFromFile(shaderPath + "default_f.glsl", GL_FRAGMENT_SHADER);
 	f_passThrough.loadShaderFromFile(shaderPath + "passThru_f.glsl", GL_FRAGMENT_SHADER);
 	f_NASD.loadShaderFromFile(shaderPath + "NASD_f.glsl", GL_FRAGMENT_SHADER);
 	f_textShader.loadShaderFromFile(shaderPath + "text_f.glsl", GL_FRAGMENT_SHADER);
+	f_Depth.loadShaderFromFile(shaderPath + "Depth_f.glsl", GL_FRAGMENT_SHADER);
 	// Load Geometry Shaders
 	Shader g_normals, g_particles;
 	g_normals.loadShaderFromFile(shaderPath + "normals_g.glsl", GL_GEOMETRY_SHADER);
@@ -2580,6 +2715,12 @@ void InitializeShaders()
 	materials["NASD"]->shader->attachShader(v_default);
 	materials["NASD"]->shader->attachShader(f_NASD);
 	materials["NASD"]->shader->linkProgram();
+
+	//NASD material that all objects use
+	materials["Depth"] = std::make_shared<Material>();
+	materials["Depth"]->shader->attachShader(v_simpleDepthShader);
+	materials["Depth"]->shader->attachShader(f_Depth);
+	materials["Depth"]->shader->linkProgram();
 
 
 	// Default lambert material with normal visualization  geometry shader
@@ -2630,6 +2771,7 @@ void InitializeTextPlane()
 	
 
 
+
 	////////////////	//Text planes
 	MenuObjects["HUD_Planes_0" + to_string(0)].get()->objectLoader(ObjectPath + "PlainForText.obj");
 	MenuObjects["HUD_Planes_0" + to_string(0)].get()->setMaterial(passThroughMaterial);
@@ -2647,7 +2789,8 @@ void InitializeTextPlane()
 	MenuObjects["HUD_Planes_0" + to_string(3)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Power_Ups.png").c_str())));
 	MenuObjects["HUD_Planes_0" + to_string(4)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Options.png").c_str())));
 	MenuObjects["HUD_Planes_0" + to_string(5)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Player_Select.png").c_str())));
-	MenuObjects["HUD_Planes_0" + to_string(6)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Game_Mode.png").c_str())));
+	MenuObjects["HUD_Planes_0" + to_string(6)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//End_Screen.png").c_str())));
+	MenuObjects["HUD_Planes_0" + to_string(7)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Menu//Game_Mode.png").c_str())));
 	//
 
 	MenuObjects["HUD_Messages_0" + to_string(0)].get()->objectLoader(ObjectPath + "PlainForText.obj");
@@ -2787,9 +2930,9 @@ void InitializeSounds() {
 	Fx[2].Load(_strdup((SoundPath + "Soundeffects//Cheering_01.wav").c_str()), TRUE, FALSE);//Cheering effect, for when someone scores a goal
 
 	//Set Inital Volume of FX
-	FxChannel[0]->setVolume(1.0);
-	FxChannel[1]->setVolume(0.1);
-	FxChannel[2]->setVolume(0.8);
+	FxChannel[0]->setVolume(1.0f);
+	FxChannel[1]->setVolume(0.1f);
+	FxChannel[2]->setVolume(0.8f);
 }
 
 /**/
@@ -2850,7 +2993,7 @@ void InitializeObjects()
 {
 	auto defaultMaterial = materials["default"];
 	auto passThroughMaterial = materials["passThrough"];
-	auto NASDMaterial = materials["NASD"];
+	auto NASDMaterial = materials["NASD"];//Depth //NASD
 	//Load Objects///////////////////////////////////
 	std::string ImagePath;
 	std::string ObjectPath;
@@ -3137,10 +3280,11 @@ void init()
 	InitializeNumbers();
 	std::cout << std::endl << "[Game Objects]";
 	InitializeObjects();
-	
+	std::cout << std::endl << "[Particles]";
 	ParticleTexture = ilutGLLoadImage("Assets//Img//Particles//smoke_256_dm.png");
 	InitializeParticles();
-
+	std::cout << std::endl << "[FBO's]";
+	InitializeFrameBufferObjects();
 	
 
 	randomSpecialTime = Random(10.0f, 30.0f);
