@@ -1,0 +1,29 @@
+
+obj 0
+number 3
+pos 1.0 1.0 1.0
+rot 0.0 0.0 0.0
+siz 1.0 1.0 1.0
+
+obj 1
+number 3
+pos 6.0 6.0 6.0
+rot 90.0 180.0 270.0
+siz 2.0 4.0 6.0
+
+obj 2
+number 3
+pos 1.0 1.0 1.0
+rot 0.0 0.0 0.0
+siz 1.0 1.0 1.0
+
+obj 3
+number 3
+pos 1.0 1.0 1.0
+rot 0.0 0.0 0.0
+siz 1.0 1.0 1.0
+obj 4
+number 3
+pos 1.0 1.0 1.0
+rot 0.0 0.0 0.0
+siz 1.0 1.0 1.0
