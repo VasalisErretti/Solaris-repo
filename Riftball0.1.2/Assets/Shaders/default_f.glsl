@@ -28,7 +28,7 @@ void main()
 	vec3 H_02 = normalize(L_02 + E);
 	vec4 textureColor = texture2D(tex1, vIn.texCoord.st);
 	//Transparent
-	if (textureColor.a < 0.7){ discard; }
+	//if (textureColor.a < 0.7){ discard; }
 
 
 	//diffuse conponent
@@ -59,4 +59,5 @@ void main()
 	FragColor = (out_Color_01 + out_Color_02)*0.5; FragColor.w = 1.0;
 
 	FragColor = vec4(vIn.normal * 0.5 + 0.5, 1.0f);
+	FragColor.a = textureColor.a;
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GL\glew.h>
+#include "VertexBufferObject.h"
 #include "GameObject.h"
 #include <string>
 #include <iomanip> //setfill //setw
@@ -112,7 +113,7 @@ public:
 				if (SNob_Precent.z < 1.0f) { SNob_Precent.z = 1.0f; }
 				else if (SNob_Precent.z > 100.0f) { SNob_Precent.z = 100.0f; }
 
-				std::cout << "[" << SNob_Precent.x << "]" << std::endl;
+				//std::cout << "[" << SNob_Precent.x << "]" << std::endl;
 				return true;
 			}
 		}
@@ -134,7 +135,7 @@ public:
 				if (SNob_Precent.z < 1.0f) { SNob_Precent.z = 1.0f; }
 				else if (SNob_Precent.z > 100.0f) { SNob_Precent.z = 100.0f; }
 
-				std::cout << "[" << SNob_Precent.z << "]" << std::endl;
+				//std::cout << "[" << SNob_Precent.z << "]" << std::endl;
 				return true;
 			}
 		}
@@ -191,7 +192,7 @@ public:
 		//if the button is going side to side
 		if ((MPosToOPosX >= SBut_Bot.x) && (MPosToOPosX <= SBut_Top.x)) {
 			if ((MPosToOPosY >= SBut_Bot.z) && (MPosToOPosY <= SBut_Top.z)) {
-				std::cout << "[Hit]" << std::endl;
+				//std::cout << "[Button]" << std::endl;
 				return true;
 			}
 		}
@@ -386,11 +387,12 @@ struct PlayerHealth {
 	int MinHealth;
 	int CurrentHealth;
 	int PreviousHealth;
+	int AccumulatedHealth;
 };
 static bool changeInHealth(PlayerHealth Pnum) {
-	if (Pnum.CurrentHealth > Pnum.MaxHealth) { Pnum.CurrentHealth = Pnum.MaxHealth; }
-	if (Pnum.CurrentHealth < Pnum.MinHealth) { Pnum.CurrentHealth = Pnum.MinHealth; }
-	if (Pnum.CurrentHealth != Pnum.PreviousHealth) { return true; }
+	if (Pnum.CurrentHealth > Pnum.MaxHealth) { Pnum.CurrentHealth = Pnum.MaxHealth; return true; }
+	else if (Pnum.CurrentHealth < Pnum.MinHealth) { Pnum.CurrentHealth = Pnum.MinHealth; return true; }
+	else if (Pnum.CurrentHealth != Pnum.PreviousHealth) { Pnum.PreviousHealth = Pnum.CurrentHealth; return true; }
 	else { return false; }
 }
 
@@ -822,7 +824,7 @@ static bool CheckIfObjectInBorderOfBox(Manifold &m) {
 */
 static bool ObjectsWithinRange(Manifold &m, float range) {
 	glm::vec3 seek = (m.A.get()->Position() - m.B.get()->Position());
-	if (glm::length(seek) > 0.0f && glm::length(seek) < range) { seek = glm::normalize(seek);  return true; }
+	if (glm::length(seek) > 0.0f && glm::length(seek) < range) { seek = glm::normalize(seek); return true; }
 	else { seek = glm::vec3(0.0f); return false; }
 }
 /* function applyWanderingSystem()
@@ -900,9 +902,69 @@ static void someTempFiles() {
 	char s[25];
 	sprintf(s, "%02d - %02d - %04d", mm, dd, yy);
 	std::cout << s;
-
-
-
 	std::cout << std::setfill('0') << std::setw(5) << 25;
+}
 
+
+
+struct Quad {
+	std::vector<glm::vec3> vertices;
+	std::vector<glm::vec3> normals;
+	std::vector<glm::vec2> textureCoordinates;
+	std::vector<glm::vec4> colours;
+	VertexBufferObject vbo;
+};
+
+static void createVBO(Quad myVBO)
+{
+	int numTris = myVBO.vertices.size() / 3;
+
+	// Setup VBO
+
+	// Set up position (vertex) attribute
+	if (myVBO.vertices.size() > 0)
+	{
+		AttributeDescriptor positionAttrib;
+		positionAttrib.attributeLocation = AttributeLocations::VERTEX;
+		positionAttrib.attributeName = "vertex";
+		positionAttrib.data = &myVBO.vertices[0];
+		positionAttrib.elementSize = sizeof(float);
+		positionAttrib.elementType = GL_FLOAT;
+		positionAttrib.numElements = numTris * 3 * 3; // (num triangles * three vertices per triangle * three floats per vertex)
+		positionAttrib.numElementsPerAttrib = 3;
+		myVBO.vbo.addAttributeArray(positionAttrib);
+
+	}
+
+	// Set up UV attribute
+	if (myVBO.textureCoordinates.size() > 0)
+	{
+		AttributeDescriptor uvAttrib;
+		uvAttrib.attributeLocation = AttributeLocations::TEX_COORD;
+		uvAttrib.attributeName = "uv";
+		uvAttrib.data = &myVBO.textureCoordinates[0];
+		uvAttrib.elementSize = sizeof(float);
+		uvAttrib.elementType = GL_FLOAT;
+		uvAttrib.numElements = numTris * 3 * 2;
+		uvAttrib.numElementsPerAttrib = 2;
+		myVBO.vbo.addAttributeArray(uvAttrib);
+	}
+
+	// Set up normal attribute
+	if (myVBO.normals.size() > 0)
+	{
+		AttributeDescriptor normalAttrib;
+		normalAttrib.attributeLocation = AttributeLocations::NORMAL;
+		normalAttrib.attributeName = "normal";
+		normalAttrib.data = &myVBO.normals[0];
+		normalAttrib.elementSize = sizeof(float);
+		normalAttrib.elementType = GL_FLOAT;
+		normalAttrib.numElements = numTris * 3 * 3;
+		normalAttrib.numElementsPerAttrib = 3;
+		myVBO.vbo.addAttributeArray(normalAttrib);
+	}
+
+	// set up other attributes...
+
+	myVBO.vbo.createVBO(GL_STATIC_DRAW);
 }

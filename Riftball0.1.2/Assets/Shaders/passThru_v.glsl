@@ -25,7 +25,7 @@ void main()
 	vOut.texCoord = vIn_uv;
 	vOut.colour = vec4(vIn_colour, 1.0);
 	vOut.normal = vIn_normal;
-	gl_Position = vec4(vIn_vertex, 1.0) * localTransform;
+	gl_Position = localTransform * vec4(vIn_vertex, 1.0);
 }
 
 

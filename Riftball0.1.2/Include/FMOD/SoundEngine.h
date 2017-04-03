@@ -47,7 +47,7 @@ public:
 
 	bool isPlaying;
 	bool isPlayingF();
-
+	FMOD::Channel* PlayNow();
 	FMOD::Channel* Play();
 	void SetPosition(glm::vec3 position);
 	void SetPosition(FMOD::Channel *channel, FMOD_VECTOR position);

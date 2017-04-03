@@ -151,7 +151,6 @@
     <ClCompile Include="Include\Useful_Functions\ExtraFunctions.cpp" />
     <ClCompile Include="Include\Useful_Functions\FrameBufferObject.cpp" />
     <ClCompile Include="Include\Useful_Functions\ParticleEmitterSoA.cpp" />
-    <ClCompile Include="Include\Useful_Functions\Sort_and_Search.cpp" />
     <ClCompile Include="Include\Useful_Functions\VertexBufferObject.cpp" />
     <ClCompile Include="Src\Main.cpp" />
   </ItemGroup>
@@ -168,17 +167,19 @@
     <ClInclude Include="Include\Useful_Functions\GamePadControls.h" />
     <ClInclude Include="Include\Useful_Functions\MorphMath.h" />
     <ClInclude Include="Include\Useful_Functions\ParticleEmitterSoA.h" />
-    <ClInclude Include="Include\Useful_Functions\Sort_and_Search.h" />
     <ClInclude Include="Include\Useful_Functions\VertexBufferObject.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Shaders\default_f.glsl" />
     <None Include="Assets\Shaders\default_v.glsl" />
+    <None Include="Assets\Shaders\Depth_f.glsl" />
+    <None Include="Assets\Shaders\G_Buffer_f.glsl" />
     <None Include="Assets\Shaders\NASD_f.glsl" />
     <None Include="Assets\Shaders\normals_g.glsl" />
     <None Include="Assets\Shaders\particles_g.glsl" />
     <None Include="Assets\Shaders\passThru_f.glsl" />
     <None Include="Assets\Shaders\passThru_v.glsl" />
+    <None Include="Assets\Shaders\simpleDepthShader_v.glsl" />
     <None Include="Assets\Shaders\text_f.glsl" />
     <None Include="Assets\Shaders\text_v.glsl" />
   </ItemGroup>

@@ -53,11 +53,22 @@ public:
 	VertexBufferObject vbo;
 
 	bool playing;	// false is update is paused
+	bool Viewable = false;
 
+
+	void setMaterial(std::shared_ptr<Material> newMaterial) { material = newMaterial; }
+ 
+	void setTexture(GLuint _textureHandle) {
+		texture = _textureHandle;
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	}
+private:
+	GLuint texture;
 	std::shared_ptr<Material> material;
 
-	GLuint texture;
-private:
 	unsigned int numParticles; // Number of particles passed into initialize()
 	bool allocated; // false if memory not allocated
 };

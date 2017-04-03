@@ -20,9 +20,6 @@
     <ClCompile Include="Include\Useful_Functions\FrameBufferObject.cpp">
       <Filter>Other Functions</Filter>
     </ClCompile>
-    <ClCompile Include="Include\Useful_Functions\Sort_and_Search.cpp">
-      <Filter>Other Functions</Filter>
-    </ClCompile>
     <ClCompile Include="Include\Other_Functions\HTRLoader.cpp">
       <Filter>HTR_Loader</Filter>
     </ClCompile>
@@ -56,9 +53,6 @@
       <Filter>Other Functions</Filter>
     </ClInclude>
     <ClInclude Include="Include\Useful_Functions\MorphMath.h">
-      <Filter>Other Functions</Filter>
-    </ClInclude>
-    <ClInclude Include="Include\Useful_Functions\Sort_and_Search.h">
       <Filter>Other Functions</Filter>
     </ClInclude>
     <ClInclude Include="Include\Other_Functions\FileLoader.h">
@@ -129,6 +123,15 @@
       <Filter>Shader\Vertex Shaders</Filter>
     </None>
     <None Include="Assets\Shaders\default_v.glsl">
+      <Filter>Shader\Vertex Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\Depth_f.glsl">
+      <Filter>Shader\Fragment Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\G_Buffer_f.glsl">
+      <Filter>Shader\Fragment Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\simpleDepthShader_v.glsl">
       <Filter>Shader\Vertex Shaders</Filter>
     </None>
   </ItemGroup>
