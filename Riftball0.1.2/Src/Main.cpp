@@ -70,9 +70,11 @@ ParticleEmitterSoA particleEmitter;
 std::map<std::string, std::shared_ptr<FrameBufferObject>> FBOs;
 //Sounds
 Sound powerup[9]; FMOD::Channel *powChannel[3];//Powerup sounds
-Sound Fx[3]; FMOD::Channel *FxChannel[3];//Fx sounds
+Sound Fx[5]; FMOD::Channel *FxChannel[5];//Fx sounds
+Sound ST[3]; FMOD::Channel *STChannel[3];//Soundtrack
 
-
+bool isPlaying = FALSE; // for menu song to repeat
+bool isPlaying2 = FALSE; // for engine sound
 
 
 
@@ -357,24 +359,28 @@ void ControllerDelayButton(int portNumber, float deltaTasSeconds)
 
 
 	if (inGame) {
+		FxChannel[3] = Fx[3].Play();
+		
 		if (PlayerValues[portNumber].cameraMode == 0) {
 			//JoySticks
 			if (PlayerValues[portNumber].PlayerTeam == 0) {
 				float Tx = 0.0f; float Ty = 0.0f; float Tz = 0.0f; float rotY = 0.0f;
 				//checks to see if the sticks are out of the deadzone, then translates them based on how far the stick is pushed.
+				bool isMoving = false;
 				if (!PlayerValues[portNumber].FlipedControllers) {
-					if (gamepad.leftStickY < -0.1) { Tx -= gamepad.leftStickY * 0.0666666f; } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
-					if (gamepad.leftStickY > 00.1) { Tx -= gamepad.leftStickY * 0.0666666f; } //Y-Up
-					if (gamepad.leftStickX < -0.1) { Tz -= gamepad.leftStickX * 0.0666666f; } //X-Left
-					if (gamepad.leftStickX > 00.1) { Tz -= gamepad.leftStickX * 0.0666666f; } //X-Right
+					if (gamepad.leftStickY < -0.1){Tx -= gamepad.leftStickY * 0.0666666f; isMoving = true;} //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
+					if (gamepad.leftStickY > 00.1) { Tx -= gamepad.leftStickY * 0.0666666f; isMoving = true;} //Y-Up
+					if (gamepad.leftStickX < -0.1) { Tz -= gamepad.leftStickX * 0.0666666f; isMoving = true;} //X-Left
+					if (gamepad.leftStickX > 00.1) { Tz -= gamepad.leftStickX * 0.0666666f; isMoving = true;} //X-Right
 				}
 				else {
-					if (gamepad.leftStickY < -0.1) { Tx -= gamepad.leftStickY * -0.0666666f; } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
-					if (gamepad.leftStickY > 00.1) { Tx -= gamepad.leftStickY * -0.0666666f; } //Y-Up
-					if (gamepad.leftStickX < -0.1) { Tz -= gamepad.leftStickX * -0.0666666f; } //X-Left
-					if (gamepad.leftStickX > 00.1) { Tz -= gamepad.leftStickX * -0.0666666f; } //X-Right
+					if (gamepad.leftStickY < -0.1) { Tx -= gamepad.leftStickY * -0.0666666f; isMoving = true;} //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
+					if (gamepad.leftStickY > 00.1) { Tx -= gamepad.leftStickY * -0.0666666f; isMoving = true;} //Y-Up
+					if (gamepad.leftStickX < -0.1) { Tz -= gamepad.leftStickX * -0.0666666f; isMoving = true;} //X-Left
+					if (gamepad.leftStickX > 00.1) { Tz -= gamepad.leftStickX * -0.0666666f; isMoving = true;} //X-Right
 				}
-
+				if (isMoving) { FxChannel[3]->setVolume(0.8f); }
+				else { FxChannel[3]->setVolume(0.1f); }
 				if (Tx > 00.055f) { Tx = 00.055f; }
 				else if (Tx < -0.055f) { Tx = -0.055f; }
 				if (Tz > 00.055f) { Tz = 00.055f; }
@@ -984,6 +990,16 @@ void MenuScreen(float deltaTasSeconds)
 	powerup[5].SetPosition(powChannel[0], drumPos, drumVel);
 	Fx[0].SetPosition(FxChannel[0], drumPos, drumVel);
 	Fx[1].SetPosition(FxChannel[1], drumPos, drumVel);
+	Fx[4].SetPosition(FxChannel[4], drumPos, drumVel);
+	ST[0].SetPosition(STChannel[0], drumPos, drumVel);
+	ST[1].SetPosition(STChannel[1], drumPos, drumVel);
+
+	if (isPlaying == FALSE)
+	{
+		STChannel[0] = ST[0].Play();
+		//FxChannel[4] = Fx[4].Play();
+		isPlaying = TRUE;
+	}
 
 	if (mouseDown[0]) {
 		mouseDown[0] = false;
@@ -1334,6 +1350,12 @@ void GameScreen(float deltaTasSeconds)
 	FxChannel[1] = Fx[1].Play();
 	FxChannel[1]->setVolume(0.1);
 
+	if (isPlaying == TRUE) 
+	{
+		STChannel[0]->stop();
+		FxChannel[4]->stop();
+		STChannel[1] = ST[1].Play();
+	}
 	for (int i = 0; i < 2; i++) {
 		Sound::Sys.listenerPos[i].x = GameObjects["Players_0" + to_string(i)].get()->Position().x*10.0f;
 		Sound::Sys.listenerPos[i].y = GameObjects["Players_0" + to_string(i)].get()->Position().y*10.0f;
@@ -2212,15 +2234,13 @@ void KeyboardCallbackFunction(unsigned char key, int x, int y)
 			}
 			break;
 		case '1':
-			FxChannel[0] = Fx[0].Play();
-			FxChannel[0]->setVolume(1.0f);
+
 			break;
 		case '2': 
-			FxChannel[1] = Fx[1].Play();
-			FxChannel[1]->setVolume(0.1f);
+			
 			break;
 		case '3': 
-			Fx[2].Play();
+			
 			break;
 		case '4': 
 			break;
@@ -2785,11 +2805,24 @@ void InitializeSounds() {
 	Fx[0].Load(_strdup((SoundPath + "Soundeffects//bounce_03.wav").c_str()), TRUE, FALSE);//Ball bouncing
 	Fx[1].Load(_strdup((SoundPath + "Soundeffects//crowdsound_01.wav").c_str()), TRUE, TRUE);//Crowd sound effect
 	Fx[2].Load(_strdup((SoundPath + "Soundeffects//Cheering_01.wav").c_str()), TRUE, FALSE);//Cheering effect, for when someone scores a goal
+	Fx[3].Load(_strdup((SoundPath + "Soundeffects//Power Core 3.wav").c_str()), TRUE, FALSE);//Engine sound which will occur whenever the player is moving
+	Fx[4].Load(_strdup((SoundPath + "Soundeffects//Bluezone_BC0230_ambience_009.wav").c_str()), TRUE, TRUE);//Ambient noise for menu
+
+
+	//Soundtrack loading
+	ST[0].Load(_strdup((SoundPath + "Soundtrack//Voltaic.mp3").c_str()), TRUE, TRUE);//Menu song 1
+	ST[1].Load(_strdup((SoundPath + "Soundtrack//Laser Groove.mp3").c_str()), TRUE, TRUE);//In game song 1
+
+	//Set Inital Volume of sountrack
+	STChannel[0]->setVolume(1.0);
+	STChannel[1]->setVolume(0.5);
 
 	//Set Inital Volume of FX
 	FxChannel[0]->setVolume(1.0);
 	FxChannel[1]->setVolume(0.1);
 	FxChannel[2]->setVolume(0.8);
+	FxChannel[3]->setVolume(0.5);
+	FxChannel[4]->setVolume(0.0000000000001);
 }
 
 /**/
