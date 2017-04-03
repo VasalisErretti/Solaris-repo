@@ -1,0 +1,20 @@
+﻿  SoundEngine.cpp
+  GameObject.cpp
+  HTRLoader.cpp
+  Shader.cpp
+  ShaderProgram.cpp
+  ExtraFunctions.cpp
+Include\Useful_Functions\ExtraFunctions.cpp(359): warning C4838: conversion from 'FT_Pos' to 'GLuint' requires a narrowing conversion
+  FrameBufferObject.cpp
+  ParticleEmitterSoA.cpp
+C:\Stuff_And_Things\GitHub\Solaris-repo\Riftball0.1.2\Include\Useful_Functions\ExtraFunctions.cpp(359): warning C4838: conversion from 'FT_Pos' to 'GLuint' requires a narrowing conversion
+  VertexBufferObject.cpp
+  Main.cpp
+C:\Stuff_And_Things\GitHub\Solaris-repo\Riftball0.1.2\Include\Useful_Functions\ExtraFunctions.cpp(359): warning C4838: conversion from 'FT_Pos' to 'GLuint' requires a narrowing conversion
+LINK : warning LNK4098: defaultlib 'MSVCRTD' conflicts with use of other libs; use /NODEFAULTLIB:library
+  Generating code
+c:\stuff_and_things\github\solaris-repo\riftball0.1.2\include\shader_functions\shaderprogram.cpp(66): warning C4715: 'ShaderProgram::linkProgram': not all control paths return a value
+  All 2561 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  FileTest001.vcxproj -> C:\Stuff_And_Things\GitHub\Solaris-repo\Riftball0.1.2\Bin\FileTest001.exe
+  FileTest001.vcxproj -> C:\Stuff_And_Things\GitHub\Solaris-repo\Riftball0.1.2\Bin\FileTest001.pdb (Full PDB)
