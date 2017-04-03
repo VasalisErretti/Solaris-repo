@@ -165,8 +165,44 @@ void setBoardStart() {
 			GameObjects["Specials_0" + to_string(i)].get()->setRotation(glm::vec3(0.0f));
 		}
 	}
+
+
+	for (int i = 0; i < 4; i++)
+	{
+		PlayerValues[i].MenuSwitchCounter = 0.0f;
+		//Shock wave attributes
+		PlayerValues[i].Right_TRIGGERED = false;
+		PlayerValues[i].Left_TRIGGERED = false;
+		PlayerValues[i].ShockWave = false;
+		PlayerValues[i].ShockWaveCounter = 0.0f;
+		PlayerValues[i].ShockWaveChargeUp = 0.0f;
+		//Sprint attributes
+		PlayerValues[i].SprintSpeed = 1.5f;
+		PlayerValues[i].SprintCounter = 0.0f;
+		PlayerValues[i].SprintCoolDown = 2.0f;
+		//Abilitys
+		PlayerValues[i].FlipedControllers = false;
+		//setting abilitys
+		for (int j = 0; j < GameObjectsAmount["Specials_0"]; j++) {
+			PlayerValues[i].AbilityAffected[j] = false;
+			PlayerValues[i].AbilityCounter[j] = 5.0f;
+			PlayerValues[i].AbilityLength[j] = 5.0f;
+		}
+		//Seeker Swarm = 1
+		//Toss-Up = 2
+		//Health Up = 3
+		//Boost = 4
+		//Flee = 5
+		//Short Circuit = 6
+		PlayerValues[i].AbilityLength[6] = 1.0f;
+		//Super Shockwave = 7
+		//Invincibility = 8
+		//Flipped = 9
+		PlayerValues[i].AbilityLength[9] = 3.0f;
+	}
 }
 
+/**/
 void exitProgram() {
 
 	//if (&ShadowObject != NULL) { ShadowObject.~GameObject(); }
@@ -187,7 +223,7 @@ void exitProgram() {
 	//}
 	//for (unsigned int i = 0; i < NumberOfButtons; i++) { if (&ButtonObjects[i] != NULL) { ButtonObjects[i].~GameObject(); } }
 	//for (unsigned int i = 0; i < NumberOfBorders; i++) { if (&Borders[i] != NULL) { Borders[i].~GameObject(); } }
-	
+
 	for (std::map<std::string, std::shared_ptr<GameObject>>::iterator itr = MenuObjects.begin(); itr != MenuObjects.end(); itr++) { MenuObjects.erase(itr); }
 	for (std::map<std::string, std::shared_ptr<GameObject>>::iterator itr = GameObjects.begin(); itr != GameObjects.end(); itr++) { GameObjects.erase(itr); }
 	for (std::map<std::string, std::shared_ptr<Material>>::iterator itr = materials.begin(); itr != materials.end(); itr++) { materials.erase(itr); }
@@ -2914,6 +2950,7 @@ void InitializeVariables() {
 		//Super Shockwave = 7
 		//Invincibility = 8
 		//Flipped = 9
+		PlayerValues[i].AbilityLength[9] = 3.0f;
 	}
 	//health
 	for (int i = 0; i < 2; i++) {
