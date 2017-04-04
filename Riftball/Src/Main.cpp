@@ -465,16 +465,16 @@ void ControllerDelayButton(int portNumber, float deltaTasSeconds)
 				//checks to see if the sticks are out of the deadzone, then translates them based on how far the stick is pushed.
 				bool isMoving = false;
 				if (!PlayerValues[portNumber].FlipedControllers) {
-					if (gamepad.leftStickY < -0.1) { Tx -= gamepad.leftStickY * 0.0666666f; isMoving = true; } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
-					if (gamepad.leftStickY > 00.1) { Tx -= gamepad.leftStickY * 0.0666666f; isMoving = true; } //Y-Up
-					if (gamepad.leftStickX < -0.1) { Tz -= gamepad.leftStickX * 0.0666666f; isMoving = true; } //X-Left
-					if (gamepad.leftStickX > 00.1) { Tz -= gamepad.leftStickX * 0.0666666f; isMoving = true; } //X-Right
-				}
-				else {
 					if (gamepad.leftStickY < -0.1) { Tx -= gamepad.leftStickY * -0.0666666f; isMoving = true; } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
 					if (gamepad.leftStickY > 00.1) { Tx -= gamepad.leftStickY * -0.0666666f; isMoving = true; } //Y-Up
 					if (gamepad.leftStickX < -0.1) { Tz -= gamepad.leftStickX * -0.0666666f; isMoving = true; } //X-Left
 					if (gamepad.leftStickX > 00.1) { Tz -= gamepad.leftStickX * -0.0666666f; isMoving = true; } //X-Right
+				}
+				else {
+					if (gamepad.leftStickY < -0.1) { Tx -= gamepad.leftStickY * 0.0666666f; isMoving = true; } //Y-Down // divide by [15.0f] or multiplay by [0.0666666f]
+					if (gamepad.leftStickY > 00.1) { Tx -= gamepad.leftStickY * 0.0666666f; isMoving = true; } //Y-Up
+					if (gamepad.leftStickX < -0.1) { Tz -= gamepad.leftStickX * 0.0666666f; isMoving = true; } //X-Left
+					if (gamepad.leftStickX > 00.1) { Tz -= gamepad.leftStickX * 0.0666666f; isMoving = true; } //X-Right
 				}
 				if (isMoving) { FxChannel[3]->setVolume((0.05f*FxVolume)*MasterVolume); }
 				else { FxChannel[3]->setVolume((0.01f*FxVolume)*MasterVolume); }
@@ -3557,7 +3557,7 @@ void InitializeObjects()
 	GameObjects["Objects_0" + to_string(2)].get()->setMass(0.0f);
 	GameObjects["Objects_0" + to_string(2)].get()->setScale(glm::vec3(1.0f, 1.50f, 1.50f));
 	GameObjects["Objects_0" + to_string(2)].get()->setSizeOfHitBox(glm::vec3(2.650f, 7.0f, 3.60f));
-	GameObjects["Objects_0" + to_string(2)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Magnet_Rift_02.png").c_str())));
+	GameObjects["Objects_0" + to_string(2)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Magnet_Rift_01.png").c_str())));
 	GameObjects["Objects_0" + to_string(3)].get()->objectLoader(ObjectPath + "Rift//Magnet_Right.obj");
 	GameObjects["Objects_0" + to_string(3)].get()->setMaterial(NASDMaterial);
 	GameObjects["Objects_0" + to_string(3)].get()->Viewable = true;
@@ -3565,15 +3565,15 @@ void InitializeObjects()
 	GameObjects["Objects_0" + to_string(3)].get()->setMass(0.0f);
 	GameObjects["Objects_0" + to_string(3)].get()->setScale(glm::vec3(1.0f, 1.50f, 1.50f));
 	GameObjects["Objects_0" + to_string(3)].get()->setSizeOfHitBox(glm::vec3(2.650f, 7.0f, 3.60f));
-	GameObjects["Objects_0" + to_string(3)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Magnet_Rift_02.png").c_str())));
+	GameObjects["Objects_0" + to_string(3)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Magnet_Rift_01.png").c_str())));
 	GameObjects["Objects_0" + to_string(4)].get()->objectLoader(&GameObjects["Objects_0" + to_string(2)]);//left
 	GameObjects["Objects_0" + to_string(4)].get()->setPosition(glm::vec3(-53.0f, 08.0f, 20.0f));
 	GameObjects["Objects_0" + to_string(4)].get()->setRotation(glm::vec3(0.0f, 180.0f, 0.0f));
-	GameObjects["Objects_0" + to_string(4)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Magnet_Rift_01.png").c_str())));
+	GameObjects["Objects_0" + to_string(4)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Magnet_Rift_02.png").c_str())));
 	GameObjects["Objects_0" + to_string(5)].get()->objectLoader(&GameObjects["Objects_0" + to_string(3)]);//right
 	GameObjects["Objects_0" + to_string(5)].get()->setPosition(glm::vec3(-53.0f, 08.0f, -20.0f));
 	GameObjects["Objects_0" + to_string(5)].get()->setRotation(glm::vec3(0.0f, 180.0f, 0.0f));
-	GameObjects["Objects_0" + to_string(5)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Magnet_Rift_01.png").c_str())));
+	GameObjects["Objects_0" + to_string(5)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "Rifts//Magnet_Rift_02.png").c_str())));
 	//crowd
 	GameObjects["Objects_0" + to_string(6)].get()->objectLoader(ObjectPath + "Rift//crowd.obj");
 	GameObjects["Objects_0" + to_string(6)].get()->setMaterial(NASDMaterial);
@@ -3685,7 +3685,7 @@ void init()
 	InitializeParticles();
 	std::cout << std::endl << "[FBO's]";
 	InitializeFrameBufferObjects();
-	GameObjectsAmount["Players_0"] = 2;
+	GameObjectsAmount["Players_0"] = 4;
 
 	randomSpecialTime = Random(10.0f, 20.0f);
 	//setting all four camera's
