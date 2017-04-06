@@ -1,0 +1,138 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Src\Main.cpp" />
+    <ClCompile Include="Include\GameObject.cpp">
+      <Filter>Game Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\FMOD\SoundEngine.cpp">
+      <Filter>Sound Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\Shader_Functions\Shader.cpp">
+      <Filter>Shader</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\Shader_Functions\ShaderProgram.cpp">
+      <Filter>Shader</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\Useful_Functions\ExtraFunctions.cpp">
+      <Filter>Other Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\Useful_Functions\FrameBufferObject.cpp">
+      <Filter>Other Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\Other_Functions\HTRLoader.cpp">
+      <Filter>HTR_Loader</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\Useful_Functions\ParticleEmitterSoA.cpp">
+      <Filter>Other Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\Useful_Functions\VertexBufferObject.cpp">
+      <Filter>Other Functions</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Include\GameObject.h">
+      <Filter>Game Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\FMOD\SoundEngine.h">
+      <Filter>Sound Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Shader_Functions\Material.h">
+      <Filter>Shader</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Shader_Functions\Shader.h">
+      <Filter>Shader</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Shader_Functions\ShaderProgram.h">
+      <Filter>Shader</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Useful_Functions\FrameBufferObject.h">
+      <Filter>Other Functions</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Useful_Functions\GamePadControls.h">
+      <Filter>Other Functions</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Useful_Functions\MorphMath.h">
+      <Filter>Other Functions</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Other_Functions\FileLoader.h">
+      <Filter>HTR_Loader</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Other_Functions\HTRLoader.h">
+      <Filter>HTR_Loader</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Other_Functions\JointTypes.h">
+      <Filter>HTR_Loader</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Useful_Functions\ParticleEmitterSoA.h">
+      <Filter>Other Functions</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Useful_Functions\VertexBufferObject.h">
+      <Filter>Other Functions</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Shader">
+      <UniqueIdentifier>{9af44f3e-9adb-46fb-9e9c-13889e570d5c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="HTR_Loader">
+      <UniqueIdentifier>{547aefc9-2063-4d78-8121-2a8071603d49}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Game Object">
+      <UniqueIdentifier>{6a91ddc0-e612-4f52-8c34-6f89dace038b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sound Engine">
+      <UniqueIdentifier>{08843787-7d4e-424f-93e2-fd2b7ccb1976}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Other Functions">
+      <UniqueIdentifier>{a8dbd533-60c8-4c34-9a4e-c446b4570aed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shader\Fragment Shaders">
+      <UniqueIdentifier>{e98a5de6-d2b8-4b5b-9129-659c242fa53c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shader\Vertex Shaders">
+      <UniqueIdentifier>{d9789a8e-045c-46bc-878f-ecef34b512a1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shader\Geometry Shaders">
+      <UniqueIdentifier>{3d5da48f-ed2c-475e-9331-c28e96011f1b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Assets\Shaders\particles_g.glsl">
+      <Filter>Shader\Geometry Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\normals_g.glsl">
+      <Filter>Shader\Geometry Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\default_f.glsl">
+      <Filter>Shader\Fragment Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\NASD_f.glsl">
+      <Filter>Shader\Fragment Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\passThru_f.glsl">
+      <Filter>Shader\Fragment Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\text_f.glsl">
+      <Filter>Shader\Fragment Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\passThru_v.glsl">
+      <Filter>Shader\Vertex Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\text_v.glsl">
+      <Filter>Shader\Vertex Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\default_v.glsl">
+      <Filter>Shader\Vertex Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\Depth_f.glsl">
+      <Filter>Shader\Fragment Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\G_Buffer_f.glsl">
+      <Filter>Shader\Fragment Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\simpleDepthShader_v.glsl">
+      <Filter>Shader\Vertex Shaders</Filter>
+    </None>
+  </ItemGroup>
+</Project>

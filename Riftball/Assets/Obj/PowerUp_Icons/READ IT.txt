@@ -1,0 +1,21 @@
+GameObject powerupIcons[8];
+/*
+  * [0] - Boost Icon
+  * [1] - Flee Icon
+  * [2] - Flipped Icon
+  * [3] - Invincibility Icon
+  * [4] - Seeker Swarm Icon
+  * [5] - Short Circuit Icon
+  * [6] - Super Shockwave Icon
+  * [7] - Toss-Up Icon
+/*
+
+///////////load in powerup icons
+powerupIcons[0].load("Boost Icon.obj");
+powerupIcons[1].load("Flee Icon.obj");
+powerupIcons[2].load("Flipped Icon.obj");
+powerupIcons[3].load("Invincibility Icon.obj");
+powerupIcons[4].load("Seeker Swarm Icon.obj");
+powerupIcons[5].load("Short Circuit Icon.obj");
+powerupIcons[6].load("Super Shockwave Icon.obj");
+powerupIcons[7].load("Toss-Up Icon.obj");

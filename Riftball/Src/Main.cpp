@@ -72,8 +72,8 @@ ParticleEmitterSoA EnemyParticleEmitter[24];
 std::map<std::string, std::shared_ptr<FrameBufferObject>> FBOs;
 //Sounds
 Sound powerup[9]; FMOD::Channel *powChannel[3];//Powerup sounds
-Sound Fx[5]; FMOD::Channel *FxChannel[5];//Fx sounds
-Sound ST[3]; FMOD::Channel *STChannel[3];//Soundtrack
+Sound Fx[8]; FMOD::Channel *FxChannel[8];//Fx sounds
+Sound ST[5]; FMOD::Channel *STChannel[5];//Soundtrack
 float MasterVolume = 1.0f;
 float MusicVolume = 1.0f;
 float FxVolume = 1.0f;
@@ -568,11 +568,16 @@ void ControllerDelayButton(int portNumber, float deltaTasSeconds)
 				else if (PlayerValues[portNumber].Right_TRIGGERED == true) {
 					//holding [RIGHT_TRIGGERED]
 					if (gamepad.rightTrigger > 0.2) {
+						FxChannel[6] = Fx[6].Play();
+						FxChannel[6]->setVolume((0.4f*FxVolume)*MasterVolume);
 						if (PlayerValues[portNumber].ShockWaveChargeUp < 0.25f) { PlayerValues[portNumber].ShockWaveChargeUp += (deltaTasSeconds*5.0f); }
 					}
 					//[RIGHT_TRIGGERED] released
 					else {
 						if (PlayerValues[portNumber].ShockWaveChargeUp < 0.50f) { PlayerValues[portNumber].ShockWaveChargeUp = 0.0f; }
+						FxChannel[6]->stop();
+						FxChannel[5] = Fx[5].Play();
+						FxChannel[5]->setVolume((1.0f*FxVolume)*MasterVolume);
 						PlayerValues[portNumber].Right_TRIGGERED = false;
 						PlayerValues[portNumber].ShockWave = true;
 						PlayerValues[portNumber].ShockWaveCounter = 0.250f;
@@ -655,6 +660,8 @@ void ControllerDelayButton(int portNumber, float deltaTasSeconds)
 			if (PlayerValues[portNumber].MenuSwitchCounter > 0.0f) { PlayerValues[portNumber].MenuSwitchCounter -= deltaTasSeconds; }
 			else {
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_A)) {
+					FxChannel[7] = Fx[7].Play();
+					FxChannel[7]->setVolume((1.0f*FxVolume)*MasterVolume);
 					INPUT input;
 					input.type = INPUT_MOUSE;
 					input.mi.dwFlags = (MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP);
@@ -678,6 +685,8 @@ void ControllerDelayButton(int portNumber, float deltaTasSeconds)
 					else { PlayerValues[portNumber].MenuSwitchCounter = 0.50f; }
 				}
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_B)) {
+					FxChannel[7] = Fx[7].Play();
+					FxChannel[7]->setVolume((1.0f*FxVolume)*MasterVolume);
 					INPUT input;
 					input.type = INPUT_MOUSE;
 					input.mi.dwFlags = (MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP);
@@ -688,6 +697,7 @@ void ControllerDelayButton(int portNumber, float deltaTasSeconds)
 
 					if (inOptions) {
 						if (inOptionsTab == 4 && PlayerValues[portNumber].ControllerActive) { PlayerValues[portNumber].ControllerActive = false; }
+						else if (inOptionsTab == 4) { inOptions = false; inMenu = true; }
 						else if (inOptionsTab == 5) { inOptions = false; inMenu = true; }
 						else if (inOptionsTab != 0) { inOptionsTab = 0; }
 						else { inOptions = false; inMenu = true; }
@@ -731,7 +741,7 @@ void ControllerDelayButton(int portNumber, float deltaTasSeconds)
 						//inMenu = false; inGame = true;
 						//PlayerValues[portNumber].MenuSwitchCounter = 1.0f;
 					}
-					if (inOptions) {
+					else if (inOptions) {
 						if (inOptionsTab == 4) {
 							int OnTeamZero = 0;
 							int ActivePlayers = 0;
@@ -759,7 +769,9 @@ void ControllerDelayButton(int portNumber, float deltaTasSeconds)
 						else { inOptions = false; inMenu = true; }
 						PlayerValues[portNumber].MenuSwitchCounter = 1.0f;
 					}
-					else { exitProgram(); }
+					else { 
+						//exitProgram();
+					}
 				}
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_LEFT_SHOULDER)) { }
 				if (gamepad.IsPressed(XINPUT_GAMEPAD_RIGHT_SHOULDER)) { }
@@ -816,11 +828,16 @@ void KeyBoardDelayButton(float deltaTasSeconds) {
 					else if (PlayerValues[i].Right_TRIGGERED == true) {
 						//holding [RIGHT_TRIGGERED]
 						if (keyDown['e'] || keyDown['E']) {
+							FxChannel[6] = Fx[6].Play();
+							FxChannel[6]->setVolume((0.4f*FxVolume)*MasterVolume);
 							PlayerValues[i].ShockWaveChargeUp += deltaTasSeconds;
 						}
 						//[RIGHT_TRIGGERED] released
 						else {
 							if (PlayerValues[i].ShockWaveChargeUp < 0.50f) { PlayerValues[i].ShockWaveChargeUp = 0.0f; }
+							FxChannel[6]->stop();
+							FxChannel[5] = Fx[5].Play();
+							FxChannel[5]->setVolume((1.0f*FxVolume)*MasterVolume); 
 							PlayerValues[i].Right_TRIGGERED = false;
 							PlayerValues[i].ShockWave = true;
 							PlayerValues[i].ShockWaveCounter = 0.250f;
@@ -861,11 +878,16 @@ void KeyBoardDelayButton(float deltaTasSeconds) {
 					else if (PlayerValues[i].Right_TRIGGERED == true) {
 						//holding [RIGHT_TRIGGERED]
 						if (keyDown['U'] || keyDown['u']) {
+							FxChannel[6] = Fx[6].Play();
+							FxChannel[6]->setVolume((0.4f*FxVolume)*MasterVolume);
 							PlayerValues[i].ShockWaveChargeUp += deltaTasSeconds;
 						}
 						//[RIGHT_TRIGGERED] released
 						else {
 							if (PlayerValues[i].ShockWaveChargeUp < 0.50f) { PlayerValues[i].ShockWaveChargeUp = 0.0f; }
+							FxChannel[6]->stop();
+							FxChannel[5] = Fx[5].Play();
+							FxChannel[5]->setVolume((1.0f*FxVolume)*MasterVolume); 
 							PlayerValues[i].Right_TRIGGERED = false;
 							PlayerValues[i].ShockWave = true;
 							PlayerValues[i].ShockWaveCounter = 0.250f;
@@ -916,11 +938,16 @@ void KeyBoardDelayButton(float deltaTasSeconds) {
 					else if (PlayerValues[i].Right_TRIGGERED == true) {
 						//holding [RIGHT_TRIGGERED]
 						if (keyDown['e'] || keyDown['E']) {
+							FxChannel[6] = Fx[6].Play();
+							FxChannel[6]->setVolume((0.4f*FxVolume)*MasterVolume);
 							PlayerValues[i].ShockWaveChargeUp += deltaTasSeconds;
 						}
 						//[RIGHT_TRIGGERED] released
 						else {
 							if (PlayerValues[i].ShockWaveChargeUp < 0.50f) { PlayerValues[i].ShockWaveChargeUp = 0.0f; }
+							FxChannel[6]->stop();
+							FxChannel[5] = Fx[5].Play();
+							FxChannel[5]->setVolume((1.0f*FxVolume)*MasterVolume); 
 							PlayerValues[i].Right_TRIGGERED = false;
 							PlayerValues[i].ShockWave = true;
 							PlayerValues[i].ShockWaveCounter = 0.250f;
@@ -957,11 +984,16 @@ void KeyBoardDelayButton(float deltaTasSeconds) {
 					else if (PlayerValues[i].Right_TRIGGERED == true) {
 						//holding [RIGHT_TRIGGERED]
 						if (keyDown['U'] || keyDown['u']) {
+							FxChannel[6] = Fx[6].Play();
+							FxChannel[6]->setVolume((0.4f*FxVolume)*MasterVolume);
 							PlayerValues[i].ShockWaveChargeUp += deltaTasSeconds;
 						}
 						//[RIGHT_TRIGGERED] released
 						else {
 							if (PlayerValues[i].ShockWaveChargeUp < 0.50f) { PlayerValues[i].ShockWaveChargeUp = 0.0f; }
+							FxChannel[6]->stop();
+							FxChannel[5] = Fx[5].Play();
+							FxChannel[5]->setVolume((1.0f*FxVolume)*MasterVolume); 
 							PlayerValues[i].Right_TRIGGERED = false;
 							PlayerValues[i].ShockWave = true;
 							PlayerValues[i].ShockWaveCounter = 0.250f;
@@ -1064,14 +1096,22 @@ void MenuScreen(float deltaTasSeconds)
 	Fx[4].SetPosition(FxChannel[4], drumPos, drumVel);
 	ST[0].SetPosition(STChannel[0], drumPos, drumVel);
 	ST[1].SetPosition(STChannel[1], drumPos, drumVel);
+	ST[2].SetPosition(STChannel[2], drumPos, drumVel);
 
 
 	STChannel[1]->stop();
+	STChannel[4]->stop();
 	STChannel[0] = ST[0].Play();
 	STChannel[0]->setVolume((0.1f*MusicVolume)*MasterVolume);
 	FxChannel[4] = Fx[4].Play();
 	FxChannel[4]->setVolume((0.04f*FxVolume)*MasterVolume);
 
+	if (GameObjectsAmount["Players_0"] != 4) {
+		GameObjectsAmount["Players_0"] = 4;
+		for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
+			PlayerValues[i].ControllerActive = false;
+		}
+	}
 
 
 	if (mouseDown[0]) {
@@ -1136,6 +1176,11 @@ void InOptionDraw(int Inum)
 		}
 		glm::vec3 posTemp;
 
+		//Test Number
+		posTemp = MenuObjects["HUD_Slider_Bar_0" + to_string(0)].get()->Position();
+		posTemp.x = (((posTemp.x + 28.0f) / 56.0f)*(16 * 80))*0.33f;
+		posTemp.z = ((((-posTemp.z + 28.0f) / 56.0f)*(9 * 80)) - ((9 * 80)*0.52f));
+		SystemText.TextDraw(*materials["text"], &cameras[3].projMatrix, "Float [" + to_string(TestFloat) + "]", posTemp.x, posTemp.z, 1.0f, glm::vec3(0.0f, 0.0f, 0.0f), 2);
 		//Number of enemies
 		posTemp = MenuObjects["HUD_Slider_Bar_0" + to_string(1)].get()->Position();
 		posTemp.x = (((posTemp.x + 28.0f) / 56.0f)*(16 * 80))*0.33f;
@@ -1150,17 +1195,17 @@ void InOptionDraw(int Inum)
 		posTemp = MenuObjects["HUD_Slider_Bar_0" + to_string(3)].get()->Position();
 		posTemp.x = (((posTemp.x + 28.0f) / 56.0f)*(16 * 80))*0.33f;
 		posTemp.z = ((((-posTemp.z + 28.0f) / 56.0f)*(9 * 80)) - ((9 * 80)*0.52f));
-		SystemText.TextDraw(*materials["text"], &cameras[3].projMatrix, "Master Volume [" + to_string(MasterVolume) + "]", posTemp.x, posTemp.z, 1.0f, glm::vec3(0.0f, 0.0f, 0.0f), 2);
+		SystemText.TextDraw(*materials["text"], &cameras[3].projMatrix, "Master Volume [" + to_string((int)Slider[3].SNob_Precent.x) + "]", posTemp.x, posTemp.z, 1.0f, glm::vec3(0.0f, 0.0f, 0.0f), 2);
 		//MusicVolume
 		posTemp = MenuObjects["HUD_Slider_Bar_0" + to_string(4)].get()->Position();
 		posTemp.x = (((posTemp.x + 28.0f) / 56.0f)*(16 * 80))*0.33f;
 		posTemp.z = ((((-posTemp.z + 28.0f) / 56.0f)*(9 * 80)) - ((9 * 80)*0.52f));
-		SystemText.TextDraw(*materials["text"], &cameras[3].projMatrix, "Music Volume [" + to_string(MusicVolume) + "]", posTemp.x, posTemp.z, 1.0f, glm::vec3(0.0f, 0.0f, 0.0f), 2);
+		SystemText.TextDraw(*materials["text"], &cameras[3].projMatrix, "Music Volume [" + to_string((int)Slider[4].SNob_Precent.x) + "]", posTemp.x, posTemp.z, 1.0f, glm::vec3(0.0f, 0.0f, 0.0f), 2);
 		//FxVolume
 		posTemp = MenuObjects["HUD_Slider_Bar_0" + to_string(5)].get()->Position();
 		posTemp.x = (((posTemp.x + 28.0f) / 56.0f)*(16 * 80))*0.33f;
 		posTemp.z = ((((-posTemp.z + 28.0f) / 56.0f)*(9 * 80)) - ((9 * 80)*0.52f));
-		SystemText.TextDraw(*materials["text"], &cameras[3].projMatrix, "Fx Volume [" + to_string(FxVolume) + "]", posTemp.x, posTemp.z, 1.0f, glm::vec3(0.0f, 0.0f, 0.0f), 2);
+		SystemText.TextDraw(*materials["text"], &cameras[3].projMatrix, "Fx Volume [" + to_string((int)Slider[5].SNob_Precent.x) + "]", posTemp.x, posTemp.z, 1.0f, glm::vec3(0.0f, 0.0f, 0.0f), 2);
 		//SpecialSpawnSpeed
 		posTemp = MenuObjects["HUD_Slider_Bar_0" + to_string(6)].get()->Position();
 		posTemp.x = (((posTemp.x + 28.0f) / 56.0f)*(16 * 80))*0.33f;
@@ -1306,19 +1351,47 @@ void OptionScreen(float deltaTasSeconds)
 	if (mouseDown[0]) {
 		mouseDown[0] = false; 
 		if (inOptionsTab == 0) {
-			if (Button[4].button(MPosToOPosX, MPosToOPosY)) { inOptionsTab = 1; }
-			if (Button[5].button(MPosToOPosX, MPosToOPosY)) { inOptionsTab = 2; }
-			if (Button[6].button(MPosToOPosX, MPosToOPosY)) { inOptionsTab = 3; }
-			if (Button[3].button(MPosToOPosX, MPosToOPosY)) { inOptions = false; inMenu = true; }
+			if (Button[4].button(MPosToOPosX, MPosToOPosY)) {
+				FxChannel[7] = Fx[7].Play();
+				FxChannel[7]->setVolume((1.0f*FxVolume)*MasterVolume);
+				inOptionsTab = 1;
+			}
+			if (Button[5].button(MPosToOPosX, MPosToOPosY)) {
+				FxChannel[7] = Fx[7].Play();
+				FxChannel[7]->setVolume((1.0f*FxVolume)*MasterVolume);
+				inOptionsTab = 2;
+			}
+			if (Button[6].button(MPosToOPosX, MPosToOPosY)) {
+				FxChannel[7] = Fx[7].Play();
+				FxChannel[7]->setVolume((1.0f*FxVolume)*MasterVolume);
+				inOptionsTab = 3;
+			}
+			if (Button[3].button(MPosToOPosX, MPosToOPosY)) {
+				FxChannel[7] = Fx[7].Play();
+				FxChannel[7]->setVolume((1.0f*FxVolume)*MasterVolume);
+				inOptions = false; inMenu = true;
+			}
 		}
 		else if (inOptionsTab == 1) {
-			if (Button[3].button(MPosToOPosX, MPosToOPosY)) { inOptionsTab = 0; }
+			if (Button[3].button(MPosToOPosX, MPosToOPosY)) {
+				FxChannel[7] = Fx[7].Play();
+				FxChannel[7]->setVolume((1.0f*FxVolume)*MasterVolume);
+				inOptionsTab = 0;
+			}
 		}
 		else if (inOptionsTab == 2) {
-			if (Button[3].button(MPosToOPosX, MPosToOPosY)) { inOptionsTab = 0; }
+			if (Button[3].button(MPosToOPosX, MPosToOPosY)) {
+				FxChannel[7] = Fx[7].Play();
+				FxChannel[7]->setVolume((1.0f*FxVolume)*MasterVolume);
+				inOptionsTab = 0;
+			}
 		}
 		else if (inOptionsTab == 3) {
-			if (Button[3].button(MPosToOPosX, MPosToOPosY)) { inOptionsTab = 0; }
+			if (Button[3].button(MPosToOPosX, MPosToOPosY)) {
+				FxChannel[7] = Fx[7].Play();
+				FxChannel[7]->setVolume((1.0f*FxVolume)*MasterVolume);
+				inOptionsTab = 0;
+			}
 			for (int i = 0; i < MenuObjectsAmount["HUD_Sliders_0"]; i++) {
 				//move nob along the slider
 				if (Slider[i].moveNob(MPosToOPosX, MPosToOPosY)) { MenuObjects["HUD_Slider_Button_0" + to_string(i)]->setPosition(glm::vec3(MPosToOPosX, 0.02f, Slider[i].SBar_Pos.z)); }
@@ -1327,8 +1400,11 @@ void OptionScreen(float deltaTasSeconds)
 		//Player select screen
 		else if (inOptionsTab == 4) {
 			//Back
-			if (Button[3].button(MPosToOPosX, MPosToOPosY)) { inOptions = false; inMenu = true; }
-
+			if (Button[3].button(MPosToOPosX, MPosToOPosY)) {
+				FxChannel[7] = Fx[7].Play();
+				FxChannel[7]->setVolume((1.0f*FxVolume)*MasterVolume);
+				inOptions = false; inMenu = true;
+			}
 			for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
 				if (PlayerValues[i].ControllerActive) { }
 				if (ControllerAPress[i] == true) { ControllerAPress[i] = false; }
@@ -1338,8 +1414,11 @@ void OptionScreen(float deltaTasSeconds)
 		//end screen
 		else if (inOptionsTab == 5) {
 			//Back
-			if (Button[3].button(MPosToOPosX, MPosToOPosY)) { inOptions = false; inMenu = true; }
-
+			if (Button[3].button(MPosToOPosX, MPosToOPosY)) {
+				FxChannel[7] = Fx[7].Play();
+				FxChannel[7]->setVolume((1.0f*FxVolume)*MasterVolume);
+				inOptions = false; inMenu = true;
+			}
 			for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
 				if (PlayerValues[i].ControllerActive) {}
 				if (ControllerAPress[i] == true) { ControllerAPress[i] = false; }
@@ -1370,9 +1449,9 @@ void OptionScreen(float deltaTasSeconds)
 		}
 		PlayerHp[0].CurrentHealth = PlayerHp[1].CurrentHealth = static_cast<int>(Slider[2].SNob_Precent.x);
 
-		MasterVolume = (Slider[3].SNob_Precent.x / 50.0f);
-		MusicVolume = (Slider[4].SNob_Precent.x / 50.0f);
-		FxVolume = (Slider[5].SNob_Precent.x / 50.0f);
+		MasterVolume = (Slider[3].SNob_Precent.x / 25.0f);
+		MusicVolume = (Slider[4].SNob_Precent.x / 25.0f);
+		FxVolume = (Slider[5].SNob_Precent.x / 25.0f);
 
 		SpecialSpawnSpeed = (Slider[6].SNob_Precent.x / 50.0f);
 
@@ -1602,7 +1681,7 @@ void GameScreen(float deltaTasSeconds)
 
 	STChannel[1] = ST[1].Play();
 	STChannel[1]->setVolume((0.1f*MusicVolume)*MasterVolume);
-
+	STChannel[1]->setPitch(1.0f);
 
 	for (int i = 0; i < 2; i++) {
 		Sound::Sys.listenerPos[i].x = GameObjects["Players_0" + to_string(i)].get()->Position().x*10.0f;
@@ -2426,6 +2505,14 @@ void GameScreen(float deltaTasSeconds)
 			}
 		}
 		if (PlayerHp[0].CurrentHealth > PlayerHp[0].MaxHealth) { PlayerHp[0].CurrentHealth = PlayerHp[0].MaxHealth; }
+		
+		if (PlayerHp[0].CurrentHealth <= 15 || PlayerHp[1].CurrentHealth <= 15) { STChannel[1]->setPitch(1.5); }
+		if (PlayerHp[0].CurrentHealth == 0 || PlayerHp[1].CurrentHealth == 0) {
+			STChannel[1]->stop();
+			STChannel[3] = ST[3].Play();
+			//STChannel[4] = ST[4].Play();
+			//STChannel[3]->stop();
+		}
 		//Player One
 		GameObjects["HUD_Score_Planes_0" + to_string(0)]->setTexture(Textures["TextureNumbers_0" + to_string(static_cast<int>(PlayerHp[0].CurrentHealth % 10))]);
 		GameObjects["HUD_Score_Planes_0" + to_string(1)]->setTexture(Textures["TextureNumbers_0" + to_string(static_cast<int>(PlayerHp[0].CurrentHealth / 10 % 10))]);
@@ -2441,6 +2528,8 @@ void GameScreen(float deltaTasSeconds)
 			}
 		}
 		if (PlayerHp[1].CurrentHealth > PlayerHp[1].MaxHealth) { PlayerHp[1].CurrentHealth = PlayerHp[1].MaxHealth; }
+		
+		if (PlayerHp[0].CurrentHealth <= 15 || PlayerHp[1].CurrentHealth <= 15) { STChannel[1]->setPitch(1.5); }
 		//Player Two
 		GameObjects["HUD_Score_Planes_0" + to_string(2)]->setTexture(Textures["TextureNumbers_0" + to_string(static_cast<int>(PlayerHp[1].CurrentHealth % 10))]);
 		GameObjects["HUD_Score_Planes_0" + to_string(3)]->setTexture(Textures["TextureNumbers_0" + to_string(static_cast<int>(PlayerHp[1].CurrentHealth / 10 % 10))]);
@@ -2484,7 +2573,14 @@ void GameScreen(float deltaTasSeconds)
 
 			GameObjects["Objects_0" + to_string(10)].get()->Viewable = true;
 		}
-		else { EndingGameIn += deltaTasSeconds; }
+		else {
+			EndingGameIn += deltaTasSeconds;
+			for (int i = 0; i < GameObjectsAmount["Specials_0"]; i++) {
+				if (GameObjects["Specials_0" + to_string(i)].get()->Viewable) {
+					GameObjects["Specials_0" + to_string(i)].get()->Viewable = false;
+				}
+			}
+		}
 	}
 	else { 
 		EndingGameIn = 0.0f;
@@ -2507,7 +2603,101 @@ void GameScreen(float deltaTasSeconds)
 }
 
 
+void TESTING_SHADERS(int Inum)
+{
+	cameralook = Inum;
+	WhatCameraIsLookingAt(Inum);
 
+	//
+	FBOs["fbo"]->bindFrameBufferForDrawing();
+	FBOs["fbo"]->clearFrameBuffer(glm::vec4(0.2f, 0.2f, 0.2f, 1.0f));
+	//
+	SendUniformsToShaders("passThrough", Inum);
+	SendUniformsToShaders("NASD", Inum);
+
+	//Draw scene
+	for (int i = 0; i < GameObjectsAmount["Objects_0"]; i++) {
+		if (GameObjects["Objects_0" + to_string(i)].get()->Viewable) {
+			if (GameObjects["Objects_0" + to_string(i)].get()->textureHandle_hasTransparency == true) { disableCulling(); }
+			else { enableCulling(); }
+			GameObjects["Objects_0" + to_string(i)].get()->drawObject();
+		}
+	}
+	//Shadows
+	glDepthMask(GL_FALSE);
+	for (int i = 0; i < GameObjectsAmount["Enemies_0"]; i++) {
+		if (GameObjects["Enemies_0" + to_string(i)].get()->Viewable) {
+			if (EnableShadows) {
+				if (GameObjects["Shadows_0" + to_string(0)].get()->textureHandle_hasTransparency == true) { disableCulling(); }
+				else { enableCulling(); }
+				GameObjects["Shadows_0" + to_string(0)].get()->setPosition(glm::vec3(GameObjects["Enemies_0" + to_string(i)].get()->Position().x, 0.04f, GameObjects["Enemies_0" + to_string(i)].get()->Position().z));
+				if ((GameObjects["Enemies_0" + to_string(i)].get()->Position().y*0.05f) > 1.50f) { GameObjects["Shadows_0" + to_string(0)].get()->setScale(GameObjects["Enemies_0" + to_string(i)].get()->Scale()*1.50f); }
+				else if ((GameObjects["Enemies_0" + to_string(i)].get()->Position().y*0.05f) < 1.0f) { GameObjects["Shadows_0" + to_string(0)].get()->setScale(GameObjects["Enemies_0" + to_string(i)].get()->Scale()*1.0f); }
+				else { GameObjects["Shadows_0" + to_string(0)].get()->setScale(GameObjects["Enemies_0" + to_string(i)].get()->Scale()*(GameObjects["Enemies_0" + to_string(i)].get()->Position().y*0.05f)); }
+				GameObjects["Shadows_0" + to_string(0)].get()->drawObject();
+			}
+		}
+	}
+	for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
+		if (GameObjects["Players_0" + to_string(i)].get()->Viewable) {
+			if (EnableShadows) {
+				if (GameObjects["Shadows_0" + to_string(0)].get()->textureHandle_hasTransparency == true) { disableCulling(); }
+				else { enableCulling(); }
+				GameObjects["Shadows_0" + to_string(0)].get()->setPosition(glm::vec3(GameObjects["Players_0" + to_string(i)].get()->Position().x, 0.05f, GameObjects["Players_0" + to_string(i)].get()->Position().z));
+				GameObjects["Shadows_0" + to_string(0)].get()->setScale(GameObjects["Players_0" + to_string(i)].get()->Scale());
+				GameObjects["Shadows_0" + to_string(0)].get()->setRotation(GameObjects["Players_0" + to_string(i)].get()->Angle());
+				GameObjects["Shadows_0" + to_string(0)].get()->drawObject();
+			}
+		}
+	}
+	glDepthMask(GL_TRUE);
+	//
+	for (int i = 0; i < GameObjectsAmount["Enemies_0"]; i++) {
+		if (GameObjects["Enemies_0" + to_string(i)].get()->Viewable) {
+			//Enemies
+			if (GameObjects["Enemies_0" + to_string(i)].get()->textureHandle_hasTransparency == true) { disableCulling(); }
+			else { enableCulling(); }
+			GameObjects["Enemies_0" + to_string(i)].get()->drawObject();
+		}
+	}
+	for (int i = 0; i < GameObjectsAmount["Specials_0"]; i++) {
+		if (GameObjects["Specials_0" + to_string(i)].get()->Viewable) {
+			//Specials
+			if (GameObjects["Specials_0" + to_string(i)].get()->textureHandle_hasTransparency == true) { disableCulling(); }
+			else { enableCulling(); }
+			GameObjects["Specials_0" + to_string(i)].get()->drawObject();
+			//Shadows
+			if (EnableShadows) {
+				if (GameObjects["Shadows_0" + to_string(0)].get()->textureHandle_hasTransparency == true) { disableCulling(); }
+				else { enableCulling(); }
+				GameObjects["Shadows_0" + to_string(0)].get()->setPosition(glm::vec3(GameObjects["Specials_0" + to_string(i)].get()->Position().x, 0.06f, GameObjects["Specials_0" + to_string(i)].get()->Position().z));
+				GameObjects["Shadows_0" + to_string(0)].get()->setScale(GameObjects["Specials_0" + to_string(i)].get()->Scale());
+				GameObjects["Shadows_0" + to_string(0)].get()->setRotation(GameObjects["Specials_0" + to_string(i)].get()->Angle());
+				GameObjects["Shadows_0" + to_string(0)].get()->drawObject();
+			}
+		}
+	}
+	for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
+		if (GameObjects["Players_0" + to_string(i)].get()->Viewable) {
+			if (GameObjects["Players_0" + to_string(i)].get()->textureHandle_hasTransparency == true) { disableCulling(); }
+			else { enableCulling(); }
+			GameObjects["Players_0" + to_string(i)].get()->drawObject();
+		}
+	}
+
+	//
+	FBOs["fbo"]->unbindFrameBuffer(windowWidth, windowHeight);
+	FBOs["fbo"]->clearFrameBuffer(glm::vec4(0.2f, 0.2f, 0.2f, 1.0f));
+
+
+	FBOs["fbo"]->bindTextureForSampling(0, GL_TEXTURE0);
+	auto _Material = materials["NASD"];
+	_Material->shader->bind();
+	SendUniformsToShaders("NASD", Inum);
+
+	myVBO.vbo.draw();
+
+}
 //////////////////////////////////////////////////////////////////////
 
 
@@ -2523,7 +2713,7 @@ void DisplayCallbackFunction(void)
 	
 	if (inMenu) { InMenuDraw(2); }
 	else if (inOptions) { InOptionDraw(inOptionsTab); }
-	else if (inGame) {
+	else if (inGame){
 		for (int i = 0; i <= 1; i++) { InGameDraw(i); }
 		for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
 			if (PlayerParticleEmitter[i].Viewable) { PlayerParticleEmitter[i].Viewable = false; }
@@ -2574,7 +2764,7 @@ void DisplayCallbackFunction(void)
 			inOptionsTab = 0;
 		}
 	}
-	else {}
+	else {}// { TESTING_SHADERS(0); TESTING_SHADERS(1); }
 
 	glutSwapBuffers();
 }
@@ -2719,16 +2909,19 @@ void TimerCallbackFunction(int value)
 */
 void WindowReshapeCallbackFunction(int w, int h)
 {
-	for (int i = 20; i < 120; i++) {
-		for (int j = 1; j <= 9; j++) {
-			if ((w + j) == (i * 16)) { windowWidth = i * 16; windowHeight = i * 9; }
-			else if ((w - j) == (i * 16)) { windowWidth = i * 16; windowHeight = i * 9; }
-		}
-		for (int j = 1; j <= 5; j++) {
-			if ((h + j) == (i * 9)) { windowWidth = i * 16; windowHeight = i * 9; }
-			else if ((h - j) == (i * 9)) { windowWidth = i * 16; windowHeight = i * 9; }
-		}
-	}
+	windowWidth = 1920;
+	windowHeight = 1080;
+
+	//for (int i = 20; i < 120; i++) {
+	//	for (int j = 1; j <= 9; j++) {
+	//		if ((w + j) == (i * 16)) { windowWidth = i * 16; windowHeight = i * 9; }
+	//		else if ((w - j) == (i * 16)) { windowWidth = i * 16; windowHeight = i * 9; }
+	//	}
+	//	for (int j = 1; j <= 5; j++) {
+	//		if ((h + j) == (i * 9)) { windowWidth = i * 16; windowHeight = i * 9; }
+	//		else if ((h - j) == (i * 9)) { windowWidth = i * 16; windowHeight = i * 9; }
+	//	}
+	//}
 	glutReshapeWindow(windowWidth, windowHeight);
 	screenpositionX = glutGet((GLenum)GLUT_WINDOW_X); 
 	screenpositionY = glutGet((GLenum)GLUT_WINDOW_Y);
@@ -2991,6 +3184,15 @@ void InitializeFrameBufferObjects()
 	FBOs["1"]->createFrameBuffer(windowWidth, windowHeight, 1, true);
 	FBOs["2"] = std::make_shared<FrameBufferObject>();
 	FBOs["2"]->createFrameBuffer(windowWidth, windowHeight, 1, true);
+
+	FBOs["fbo"] = std::make_shared<FrameBufferObject>();
+	FBOs["fbo"]->createFrameBuffer(windowWidth, windowHeight, 2, true);
+	int downSIzeFactor = 4;
+	FBOs["fboBlurred_A"] = std::make_shared<FrameBufferObject>();
+	FBOs["fboBlurred_A"]->createFrameBuffer(windowWidth/downSIzeFactor, windowHeight/downSIzeFactor, 1, false);
+	FBOs["fboBlurred_B"] = std::make_shared<FrameBufferObject>();
+	FBOs["fboBlurred_B"]->createFrameBuffer(windowWidth/downSIzeFactor, windowHeight/downSIzeFactor, 1, false);
+
 }
 
 /**/
@@ -3257,22 +3459,34 @@ void InitializeSounds() {
 	Fx[2].Load(_strdup((SoundPath + "Soundeffects//Cheering_01.wav").c_str()), TRUE, FALSE);//Cheering effect, for when someone scores a goal
 	Fx[3].Load(_strdup((SoundPath + "Soundeffects//Power Core 3.wav").c_str()), TRUE, FALSE);//Engine sound which will occur whenever the player is moving
 	Fx[4].Load(_strdup((SoundPath + "Soundeffects//Bluezone_BC0230_ambience_009.wav").c_str()), TRUE, TRUE);//Ambient noise for menu
+	Fx[5].Load(_strdup((SoundPath + "Soundeffects//Shockwave02.wav").c_str()), TRUE, FALSE);//Shockwave sound effect 
+	Fx[6].Load(_strdup((SoundPath + "Soundeffects//Bluezone_BC0230_synth_texture_022.wav").c_str()), TRUE, FALSE);//Shockwave sound effect 
+	Fx[7].Load(_strdup((SoundPath + "Soundeffects//InterfaceButtonDigital-06.wav").c_str()), TRUE, FALSE);//Shockwave sound effect 
 
 	//Set Inital Volume of FX
 	FxChannel[0]->setVolume(1.0f);
 	FxChannel[1]->setVolume(0.1f);
 	FxChannel[2]->setVolume(0.8f);
 	FxChannel[3]->setVolume(0.5f);
-	FxChannel[4]->setVolume(0.0000000000001f);
+	FxChannel[4]->setVolume(0.04f);
+	FxChannel[5]->setVolume(1.0f);
+	FxChannel[6]->setVolume(0.4f);
+	FxChannel[7]->setVolume(1.0f);
 
 
 	//Soundtrack loading
 	ST[0].Load(_strdup((SoundPath + "Soundtrack//Voltaic.mp3").c_str()), TRUE, TRUE);//Menu song 1
 	ST[1].Load(_strdup((SoundPath + "Soundtrack//Laser Groove.mp3").c_str()), TRUE, TRUE);//In game song 1
+	ST[2].Load(_strdup((SoundPath + "Soundeffects//Riftball.wav").c_str()), TRUE, FALSE);//Play when game starts up
+	ST[3].Load(_strdup((SoundPath + "Soundeffects//Whoosh Transition Doppler FX 002.wav").c_str()), TRUE, FALSE);//Transition to endscreen sound
+	ST[4].Load(_strdup((SoundPath + "Soundtrack//Furious Freak.mp3").c_str()), TRUE, FALSE);//Endscreen sound
 
 	//Set Inital Volume of sountrack
 	STChannel[0]->setVolume(1.0);
 	STChannel[1]->setVolume(0.5);
+	STChannel[2]->setVolume(1.0);
+	STChannel[3]->setVolume(0.5);
+	STChannel[4]->setVolume(1.0);
 
 
 }
@@ -3593,6 +3807,7 @@ void InitializeObjects()
 	GameObjects["Objects_0" + to_string(8)].get()->Viewable = true;
 	GameObjects["Objects_0" + to_string(8)].get()->setMaterial(NASDMaterial);
 	GameObjects["Objects_0" + to_string(8)].get()->setMass(0.0f);
+	GameObjects["Objects_0" + to_string(8)].get()->setScale(glm::vec3(0.9980f, 1.0f, 1.0f));
 	GameObjects["Objects_0" + to_string(8)].get()->setTexture(ilutGLLoadImage(_strdup((ImagePath + "HUD//HUD_Display_R.png").c_str())));
 	//sky
 	GameObjects["Objects_0" + to_string(9)].get()->objectLoader(ObjectPath + "Rift//Sky.obj");
@@ -3685,7 +3900,7 @@ void init()
 	InitializeParticles();
 	std::cout << std::endl << "[FBO's]";
 	InitializeFrameBufferObjects();
-	GameObjectsAmount["Players_0"] = 4;
+	//GameObjectsAmount["Players_0"] = 4;
 
 	randomSpecialTime = Random(10.0f, 20.0f);
 	//setting all four camera's
@@ -3711,11 +3926,12 @@ int main(int argc, char **argv)
 	SetWindowPos(consoleWindow1, NULL, 10, 10, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 	//Initialize the window and OpenGL properly
 	glutInit(&argc, argv);
-	glutInitWindowPosition(350, 10);
+	glutInitWindowPosition(0, 0);
 	glutInitWindowSize(windowWidth, windowHeight);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
 	glutCreateWindow("Rift Ball");
 	glutGetWindow();
+	glutFullScreen();
 
 
 	//Initialize OpenGL Extention Wrangler
