@@ -390,7 +390,6 @@ void WhatCameraIsLookingAt()//int CameraLookAt
 			glm::vec3(0.0f, 0.0f, -1.0f));//up
 		cameras[2].viewMatrix = transform;
 		glm::vec3 cameraPos = glm::vec3(0.0f, 50.0f, 0.0f);
-		//cameraViewMatrix[2] = glm::mat4(glm::translate(cameraPos)) * modelViewMatrix[2];
 	}
 	else if (cameralook == 3 || cameralook == 1)
 	{
@@ -403,7 +402,6 @@ void WhatCameraIsLookingAt()//int CameraLookAt
 			glm::vec3(0.0f, 1.0f, 0.0f));//up
 		cameras[3].viewMatrix = transform;
 		glm::vec3 cameraPos = glm::vec3(0.0f, 50.0f, 0.0f);
-		//cameraViewMatrix[3] = glm::mat4(glm::translate(cameraPos)) * modelViewMatrix[3];
 	}
 	cameras[2].viewProjMatrix = cameras[2].projMatrix * cameras[2].viewMatrix;
 	cameras[3].viewProjMatrix = cameras[3].projMatrix * cameras[3].viewMatrix;
@@ -1468,7 +1466,6 @@ void InGameDraw(int Inum)
 {
 	cameralook = Inum;
 	WhatCameraIsLookingAt(Inum);
-
 	//setAllObjectMaterials("Depth");
 	//Draw scene //NEEDS TO BE IN THIS ORDER for particles to work
 	SendUniformsToShaders("passThrough", Inum);	 //1
@@ -1476,9 +1473,7 @@ void InGameDraw(int Inum)
 	SendUniformsToShaders("Depth", Inum);		 //3
 	SendUniformsToShaders("particles", Inum);	 //4
 	materials["passThrough"]->shader->bind();	 //then bind passThrough
-	
 
-	
 	for (int i = 0; i < GameObjectsAmount["Objects_0"]; i++) {
 		if (GameObjects["Objects_0" + to_string(i)].get()->Viewable) {
 			if (GameObjects["Objects_0" + to_string(i)].get()->textureHandle_hasTransparency == true) { disableCulling(); }
@@ -1486,11 +1481,6 @@ void InGameDraw(int Inum)
 			GameObjects["Objects_0" + to_string(i)].get()->drawObject();
 		}
 	}
-
-
-
-
-
 	//Shadows
 	glDepthMask(GL_FALSE);
 	for (int i = 0; i < GameObjectsAmount["Enemies_0"]; i++) {
@@ -1519,7 +1509,6 @@ void InGameDraw(int Inum)
 		}
 	}
 	glDepthMask(GL_TRUE);
-
 	for (int i = 0; i < GameObjectsAmount["Enemies_0"]; i++) {
 		if (GameObjects["Enemies_0" + to_string(i)].get()->Viewable) {
 			//Enemies
@@ -1545,7 +1534,6 @@ void InGameDraw(int Inum)
 			}
 		}
 	}
-
 	//Players
 	stack<int> Order_01;
 	for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
@@ -1560,8 +1548,6 @@ void InGameDraw(int Inum)
 		else { enableCulling(); }
 		GameObjects["Players_0" + to_string(j)].get()->drawObject();
 	}
-
-
 	//Player effects
 	glDepthMask(GL_FALSE);
 	for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
@@ -1615,7 +1601,6 @@ void InGameDraw(int Inum)
 		}
 	}
 	glDepthMask(GL_TRUE);
-
 	for (int i = 0; i < GameObjectsAmount["Rifts_0"]; i++) {
 		if (GameObjects["Rifts_0" + to_string(i)]->Viewable) {
 			//Rifts
@@ -1631,8 +1616,6 @@ void InGameDraw(int Inum)
 			GameObjects["HUD_Score_Planes_0" + to_string(i)]->drawObject();
 		}
 	}
-
-
 	GameObjects["Objects_09"].get()->material = materials["Depth"]; //bind an object that is at 0.0.0 to the depth material
 	//Particles
 	for (int i = 0; i < GameObjectsAmount["Players_0"]; i++) {
@@ -1651,8 +1634,6 @@ void InGameDraw(int Inum)
 			//EnemyParticleEmitter[i].Viewable = false;
 		}
 	}
-	
-
 
 	myVBO.vbo.draw();
 

@@ -225,7 +225,7 @@ public:
 
 
 
-
+	//Did not use
 	std::shared_ptr<Material> material;
 	std::shared_ptr<GLuint> diffuseMap;
 	std::shared_ptr<GLuint> normalMap;

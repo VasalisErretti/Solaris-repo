@@ -28,5 +28,3 @@ void main()
 	gl_Position = localTransform * vec4(vIn_vertex, 1.0);
 }
 
-
-
